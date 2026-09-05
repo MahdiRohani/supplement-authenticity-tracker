@@ -1,0 +1,16 @@
+{
+  "name": "supplement-authenticity-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "clean": "hardhat clean"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.18",
+    "typescript": "^5.7.3",
+    "ts-node": "^10.9.2"
+  }
+}
