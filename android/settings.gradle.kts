@@ -22,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "supplement authenticity tracker"
+rootProject.name = "SupplementAuthenticityTracker"
 include(":app")
