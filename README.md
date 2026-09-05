@@ -7,16 +7,16 @@ Blockchain-based supplement authenticity tracking: smart contracts, IPFS metadat
 | Path | Purpose |
 |------|---------|
 | `android/` | Multi-module Android app (Compose) |
-| `contracts/` | Hardhat + Solidity (added in later waves) |
-| `backend/` | NestJS indexer/API (added in later waves) |
-| `packages/abis/` | Shared contract ABIs (added in later waves) |
+| `contracts/` | Hardhat + Solidity (skeleton) |
+| `backend/` | NestJS indexer/API (skeleton) |
+| `packages/abis/` | Shared contract ABIs (skeleton) |
 
 ## Prerequisites
 
 - Git
 - JDK 17+
 - Android Studio (Ladybug or newer recommended) with Android SDK
-- Node.js 20+ (for contracts and backend, when those packages exist)
+- Node.js 20+ (for contracts and backend)
 
 ## Clone
 
@@ -42,7 +42,7 @@ APK output: `android/app/build/outputs/apk/debug/`.
 
 ## Contracts and backend
 
-Not scaffolded yet. Follow upcoming waves for Hardhat local node, NestJS API, and end-to-end flows.
+Package folders are scaffolded. See `contracts/README.md` and `backend/README.md` for run commands once Hardhat and NestJS are bootstrapped in later waves.
 
 ## License
 
