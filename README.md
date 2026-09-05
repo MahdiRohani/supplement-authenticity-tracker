@@ -44,6 +44,33 @@ APK output: `android/app/build/outputs/apk/debug/`.
 
 Package folders are scaffolded. See `contracts/README.md` and `backend/README.md` for run commands once Hardhat and NestJS are bootstrapped in later waves.
 
+## Branch and commits
+
+- Default branch: `master`. Feature work lands here as sequential phase commits (or short-lived topic branches merged into `master`).
+- Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```text
+type(scope): short summary
+
+optional body
+```
+
+| Type | Use |
+|------|-----|
+| `feat` | New user-facing capability |
+| `fix` | Bug fix |
+| `refactor` | Internal change without behavior change |
+| `chore` | Tooling, hygiene, scaffolding |
+| `test` | Tests only |
+| `docs` | Documentation only |
+| `ci` | CI configuration |
+
+Scopes match packages: `repo`, `android`, `contracts`, `backend`, `abis`.
+
+Examples: `feat(contracts): register product units`, `chore(repo): add root gitignore`.
+
+See `.gitmessage` for a local template (optional: `git config commit.template .gitmessage`).
+
 ## License
 
 All rights reserved unless a license file is added later.
