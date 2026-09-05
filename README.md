@@ -6,7 +6,7 @@ Blockchain-based supplement authenticity tracking: smart contracts, IPFS metadat
 
 | Path | Purpose |
 |------|---------|
-| `android/` | Multi-module Android app (Compose) |
+| `android/` | Multi-module Android app (Compose), package `ir.aut.supplementtracker` |
 | `contracts/` | Hardhat + Solidity (skeleton) |
 | `backend/` | NestJS indexer/API (skeleton) |
 | `packages/abis/` | Shared contract ABIs (skeleton) |

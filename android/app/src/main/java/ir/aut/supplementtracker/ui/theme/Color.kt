@@ -1,4 +1,4 @@
-package com.example.supplementauthenticitytracker.ui.theme
+package ir.aut.supplementtracker.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

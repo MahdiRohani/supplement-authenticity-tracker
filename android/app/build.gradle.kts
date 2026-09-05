@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.supplementauthenticitytracker"
+    namespace = "ir.aut.supplementtracker"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.supplementauthenticitytracker"
+        applicationId = "ir.aut.supplementtracker"
         minSdk = 24
         targetSdk = 37
         versionCode = 1
