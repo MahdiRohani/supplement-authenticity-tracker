@@ -23,7 +23,10 @@ describe("SupplementRegistry v0", function () {
     const productId = await registry
       .connect(manufacturer)
       .registerUnit.staticCall();
-    await registry.connect(manufacturer).registerUnit();
+
+    await expect(registry.connect(manufacturer).registerUnit())
+      .to.emit(registry, "ProductRegistered")
+      .withArgs(productId, manufacturer.address, 0);
 
     expect(productId).to.equal(1n);
     const product = await registry.getProduct(productId);
@@ -37,7 +40,14 @@ describe("SupplementRegistry v0", function () {
     const firstId = await registry
       .connect(manufacturer)
       .registerBatch.staticCall(3n);
-    await registry.connect(manufacturer).registerBatch(3n);
+
+    await expect(registry.connect(manufacturer).registerBatch(3n))
+      .to.emit(registry, "ProductRegistered")
+      .withArgs(1n, manufacturer.address, 0)
+      .and.to.emit(registry, "ProductRegistered")
+      .withArgs(2n, manufacturer.address, 0)
+      .and.to.emit(registry, "ProductRegistered")
+      .withArgs(3n, manufacturer.address, 0);
 
     expect(firstId).to.equal(1n);
     expect(await registry.nextProductId()).to.equal(3n);
@@ -47,6 +57,20 @@ describe("SupplementRegistry v0", function () {
       expect(product.owner).to.equal(manufacturer.address);
       expect(product.status).to.equal(0);
     }
+  });
+
+  it("declares ownership, consume, and invalidate events in the ABI", async function () {
+    const { registry } = await deployFixture();
+    const fragmentNames = registry.interface.fragments
+      .filter((fragment) => fragment.type === "event")
+      .map((fragment) => fragment.name);
+
+    expect(fragmentNames).to.include.members([
+      "ProductRegistered",
+      "OwnershipTransferred",
+      "ProductConsumed",
+      "ProductInvalidated",
+    ]);
   });
 
   it("rejects zero-size batches", async function () {
