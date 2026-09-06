@@ -11,6 +11,8 @@ contract SupplementRegistry is AccessControl {
         address owner;
         ProductStatus status;
         bytes32 secretHash;
+        string metadataCid;
+        bytes32 metadataHash;
         bool exists;
     }
 
@@ -20,7 +22,9 @@ contract SupplementRegistry is AccessControl {
     event ProductRegistered(
         ProductId indexed productId,
         address indexed manufacturer,
-        ProductStatus status
+        ProductStatus status,
+        string metadataCid,
+        bytes32 metadataHash
     );
     event OwnershipTransferred(
         ProductId indexed productId,
@@ -36,6 +40,8 @@ contract SupplementRegistry is AccessControl {
     error ProductDoesNotExist(ProductId productId);
     error InvalidBatchSize(uint256 count);
     error InvalidSecretHash();
+    error InvalidMetadataCid();
+    error InvalidMetadataHash();
     error InvalidSecret(ProductId productId);
     error ProductAlreadyConsumed(ProductId productId);
     error ProductNotConsumable(ProductId productId, ProductStatus status);
@@ -46,13 +52,17 @@ contract SupplementRegistry is AccessControl {
     }
 
     function registerUnit(
-        bytes32 secretHash
+        bytes32 secretHash,
+        string calldata metadataCid,
+        bytes32 metadataHash
     ) external onlyRole(MANUFACTURER_ROLE) returns (ProductId productId) {
-        productId = _mintUnit(msg.sender, secretHash);
+        productId = _mintUnit(msg.sender, secretHash, metadataCid, metadataHash);
     }
 
     function registerBatch(
-        bytes32[] calldata secretHashes
+        bytes32[] calldata secretHashes,
+        string calldata metadataCid,
+        bytes32 metadataHash
     ) external onlyRole(MANUFACTURER_ROLE) returns (ProductId firstProductId) {
         uint256 count = secretHashes.length;
         if (count == 0) {
@@ -61,7 +71,7 @@ contract SupplementRegistry is AccessControl {
 
         firstProductId = ProductId.wrap(ProductId.unwrap(_nextProductId) + 1);
         for (uint256 i = 0; i < count; ) {
-            _mintUnit(msg.sender, secretHashes[i]);
+            _mintUnit(msg.sender, secretHashes[i], metadataCid, metadataHash);
             unchecked {
                 ++i;
             }
@@ -93,12 +103,26 @@ contract SupplementRegistry is AccessControl {
 
     function getProduct(
         ProductId productId
-    ) external view returns (address owner, ProductStatus status) {
+    )
+        external
+        view
+        returns (
+            address owner,
+            ProductStatus status,
+            string memory metadataCid,
+            bytes32 metadataHash
+        )
+    {
         Product storage product = _products[productId];
         if (!product.exists) {
             revert ProductDoesNotExist(productId);
         }
-        return (product.owner, product.status);
+        return (
+            product.owner,
+            product.status,
+            product.metadataCid,
+            product.metadataHash
+        );
     }
 
     function nextProductId() external view returns (ProductId) {
@@ -107,10 +131,18 @@ contract SupplementRegistry is AccessControl {
 
     function _mintUnit(
         address owner,
-        bytes32 secretHash
+        bytes32 secretHash,
+        string calldata metadataCid,
+        bytes32 metadataHash
     ) internal returns (ProductId productId) {
         if (secretHash == bytes32(0)) {
             revert InvalidSecretHash();
+        }
+        if (bytes(metadataCid).length == 0) {
+            revert InvalidMetadataCid();
+        }
+        if (metadataHash == bytes32(0)) {
+            revert InvalidMetadataHash();
         }
 
         uint256 next = ProductId.unwrap(_nextProductId) + 1;
@@ -120,8 +152,16 @@ contract SupplementRegistry is AccessControl {
             owner: owner,
             status: ProductStatus.Created,
             secretHash: secretHash,
+            metadataCid: metadataCid,
+            metadataHash: metadataHash,
             exists: true
         });
-        emit ProductRegistered(productId, owner, ProductStatus.Created);
+        emit ProductRegistered(
+            productId,
+            owner,
+            ProductStatus.Created,
+            metadataCid,
+            metadataHash
+        );
     }
 }
