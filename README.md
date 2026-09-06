@@ -7,9 +7,9 @@ Blockchain-based supplement authenticity tracking: smart contracts, IPFS metadat
 | Path | Purpose |
 |------|---------|
 | `android/` | Multi-module Android app (Compose), package `ir.aut.supplementtracker` |
-| `contracts/` | Hardhat + Solidity domain model |
-| `backend/` | NestJS indexer/API (skeleton) |
-| `packages/abis/` | Shared contract ABIs (skeleton) |
+| `contracts/` | Hardhat + Solidity (`SupplementRegistry`) |
+| `backend/` | NestJS indexer/API + Prisma + IPFS adapter |
+| `packages/abis/` | Shared `SupplementRegistry` ABI |
 
 ## Prerequisites
 
@@ -42,7 +42,8 @@ APK output: `android/app/build/outputs/apk/debug/`.
 
 ## Contracts and backend
 
-Hardhat is bootstrapped under `contracts/` with the on-chain domain model (`ProductStatus`, `ProductId`). See `contracts/README.md` and `backend/README.md` for run commands. NestJS arrives in later waves.
+- Contracts: `cd contracts && npm install && npm test && npm run deploy:local`
+- Backend: see `backend/README.md` (`GET /v1/health`, `POST /v1/products`, ProductRegistered indexer)
 
 ## Branch and commits
 
