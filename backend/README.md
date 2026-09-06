@@ -13,4 +13,4 @@ Useful endpoints:
 - `GET /v1/products/:chainProductId`
 - `GET /v1/products/:id/history` — ownership timeline from indexed `OwnershipEvent` rows (target SLA &lt; 3s)
 
-Indexer polls `RPC_URL` for `ProductRegistered` when `REGISTRY_ADDRESS` (or ABI file address) is set.
+Indexer polls `RPC_URL` for `ProductRegistered` and `OwnershipTransferred` when `REGISTRY_ADDRESS` (or ABI file address) is set. Transfers are written to `OwnershipEvent` and product owner/status are updated.
