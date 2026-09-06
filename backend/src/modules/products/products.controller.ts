@@ -16,6 +16,11 @@ export class ProductsController {
     return this.productsService.registerProduct(body);
   }
 
+  @Get(':id/history')
+  getHistory(@Param('id') id: string) {
+    return this.productsService.getOwnershipHistory(id);
+  }
+
   @Get(':chainProductId')
   getByChainId(@Param('chainProductId') chainProductId: string) {
     return this.productsService.getByChainProductId(chainProductId);

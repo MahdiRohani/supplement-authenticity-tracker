@@ -61,4 +61,45 @@ export class ProductsService {
     }
     return product;
   }
+
+  async getOwnershipHistory(id: string) {
+    const started = Date.now();
+    const product = await this.prisma.product.findFirst({
+      where: {
+        OR: [{ chainProductId: id }, { id }],
+      },
+    });
+    if (!product) {
+      throw new NotFoundException(`Product ${id} not found`);
+    }
+
+    const events = await this.prisma.ownershipEvent.findMany({
+      where: { productId: product.id },
+      orderBy: [{ blockNumber: 'asc' }, { createdAt: 'asc' }],
+      select: {
+        id: true,
+        fromAddress: true,
+        toAddress: true,
+        txHash: true,
+        blockNumber: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      productId: product.id,
+      chainProductId: product.chainProductId,
+      currentOwner: product.ownerAddress,
+      status: product.status,
+      elapsedMs: Date.now() - started,
+      events: events.map((event) => ({
+        id: event.id,
+        fromAddress: event.fromAddress,
+        toAddress: event.toAddress,
+        txHash: event.txHash,
+        blockNumber: event.blockNumber.toString(),
+        createdAt: event.createdAt.toISOString(),
+      })),
+    };
+  }
 }
