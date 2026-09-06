@@ -16,6 +16,22 @@ contract SupplementRegistry is AccessControl {
     ProductId private _nextProductId;
     mapping(ProductId => Product) private _products;
 
+    event ProductRegistered(
+        ProductId indexed productId,
+        address indexed manufacturer,
+        ProductStatus status
+    );
+    event OwnershipTransferred(
+        ProductId indexed productId,
+        address indexed from,
+        address indexed to
+    );
+    event ProductConsumed(ProductId indexed productId, address indexed actor);
+    event ProductInvalidated(
+        ProductId indexed productId,
+        address indexed actor
+    );
+
     error ProductDoesNotExist(ProductId productId);
     error InvalidBatchSize(uint256 count);
 
@@ -71,5 +87,6 @@ contract SupplementRegistry is AccessControl {
             status: ProductStatus.Created,
             exists: true
         });
+        emit ProductRegistered(productId, owner, ProductStatus.Created);
     }
 }
