@@ -5,3 +5,11 @@ cd backend && cp .env.example .env && npm install && npx prisma generate && npm 
 ```
 
 Requires Postgres matching `DATABASE_URL` in `.env`.
+
+Useful endpoints:
+
+- `GET /v1/health`
+- `POST /v1/products` with `{ "name": "...", "batch": "..." }` — pins metadata via IPFS adapter (stub CID if Kubo is down) and stores a DB row
+- `GET /v1/products/:chainProductId`
+
+Indexer polls `RPC_URL` for `ProductRegistered` when `REGISTRY_ADDRESS` (or ABI file address) is set.
