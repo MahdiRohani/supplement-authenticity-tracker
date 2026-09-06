@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProductStatus {
+  Created
+  Transferred
+  AtPointOfSale
+  Consumed
+  Invalid
+}
+
+enum SupplyRole {
+  Manufacturer
+  Distributor
+  Pharmacy
+  Admin
+}
+
+model Product {
+  id             String             @id @default(cuid())
+  chainProductId String             @unique
+  ownerAddress   String
+  status         ProductStatus
+  metadataCid    String?
+  metadataHash   String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  ownershipEvents OwnershipEvent[]
+}
+
+model OwnershipEvent {
+  id             String   @id @default(cuid())
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id])
+  chainProductId String
+  fromAddress    String
+  toAddress      String
+  txHash         String
+  blockNumber    BigInt
+  createdAt      DateTime @default(now())
+
+  @@index([chainProductId])
+  @@index([txHash])
+}
+
+model RoleBinding {
+  id        String     @id @default(cuid())
+  address   String
+  role      SupplyRole
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([address, role])
+}
