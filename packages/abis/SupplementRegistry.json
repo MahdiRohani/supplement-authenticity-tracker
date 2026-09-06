@@ -88,6 +88,43 @@
           "internalType": "ProductId",
           "name": "productId",
           "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "enum ProductStatus",
+          "name": "status",
+          "type": "uint8"
+        }
+      ],
+      "name": "InvalidTransfer",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "ProductId",
+          "name": "productId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "NotProductOwner",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "ProductId",
+          "name": "productId",
+          "type": "uint256"
         }
       ],
       "name": "ProductAlreadyConsumed",
@@ -336,7 +373,33 @@
     },
     {
       "inputs": [],
+      "name": "DISTRIBUTOR_ROLE",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "MANUFACTURER_ROLE",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "PHARMACY_ROLE",
       "outputs": [
         {
           "internalType": "bytes32",
@@ -604,6 +667,24 @@
         }
       ],
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "ProductId",
+          "name": "productId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        }
+      ],
+      "name": "transferOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
