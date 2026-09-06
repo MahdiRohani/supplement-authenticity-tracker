@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ProductStatus } from '@prisma/client';
 import { ethers } from 'ethers';
+import { RelayerService } from '../../infrastructure/blockchain/relayer.service';
 import { IpfsService } from '../../infrastructure/ipfs/ipfs.service';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 
@@ -15,6 +16,7 @@ export class ProductsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ipfs: IpfsService,
+    private readonly relayer: RelayerService,
   ) {}
 
   async registerProduct(input: RegisterProductInput) {
@@ -50,6 +52,10 @@ export class ProductsService {
       secretHash,
       status: product.status,
     };
+  }
+
+  transferProduct(id: string, toAddress: string) {
+    return this.relayer.transferOwnership(id, toAddress);
   }
 
   async getByChainProductId(chainProductId: string) {
