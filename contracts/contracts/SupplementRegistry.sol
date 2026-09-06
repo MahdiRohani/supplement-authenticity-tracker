@@ -10,6 +10,7 @@ contract SupplementRegistry is AccessControl {
     struct Product {
         address owner;
         ProductStatus status;
+        bytes32 secretHash;
         bool exists;
     }
 
@@ -34,34 +35,60 @@ contract SupplementRegistry is AccessControl {
 
     error ProductDoesNotExist(ProductId productId);
     error InvalidBatchSize(uint256 count);
+    error InvalidSecretHash();
+    error InvalidSecret(ProductId productId);
+    error ProductAlreadyConsumed(ProductId productId);
+    error ProductNotConsumable(ProductId productId, ProductStatus status);
 
     constructor(address admin) {
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(MANUFACTURER_ROLE, admin);
     }
 
-    function registerUnit()
-        external
-        onlyRole(MANUFACTURER_ROLE)
-        returns (ProductId productId)
-    {
-        productId = _mintUnit(msg.sender);
+    function registerUnit(
+        bytes32 secretHash
+    ) external onlyRole(MANUFACTURER_ROLE) returns (ProductId productId) {
+        productId = _mintUnit(msg.sender, secretHash);
     }
 
     function registerBatch(
-        uint256 count
+        bytes32[] calldata secretHashes
     ) external onlyRole(MANUFACTURER_ROLE) returns (ProductId firstProductId) {
+        uint256 count = secretHashes.length;
         if (count == 0) {
             revert InvalidBatchSize(count);
         }
 
         firstProductId = ProductId.wrap(ProductId.unwrap(_nextProductId) + 1);
         for (uint256 i = 0; i < count; ) {
-            _mintUnit(msg.sender);
+            _mintUnit(msg.sender, secretHashes[i]);
             unchecked {
                 ++i;
             }
         }
+    }
+
+    function consume(ProductId productId, bytes32 secret) external {
+        Product storage product = _products[productId];
+        if (!product.exists) {
+            revert ProductDoesNotExist(productId);
+        }
+        if (product.status == ProductStatus.Consumed) {
+            revert ProductAlreadyConsumed(productId);
+        }
+        if (
+            product.status == ProductStatus.Invalid ||
+            product.status == ProductStatus.Transferred ||
+            product.status == ProductStatus.AtPointOfSale
+        ) {
+            revert ProductNotConsumable(productId, product.status);
+        }
+        if (keccak256(abi.encodePacked(secret)) != product.secretHash) {
+            revert InvalidSecret(productId);
+        }
+
+        product.status = ProductStatus.Consumed;
+        emit ProductConsumed(productId, msg.sender);
     }
 
     function getProduct(
@@ -78,13 +105,21 @@ contract SupplementRegistry is AccessControl {
         return _nextProductId;
     }
 
-    function _mintUnit(address owner) internal returns (ProductId productId) {
+    function _mintUnit(
+        address owner,
+        bytes32 secretHash
+    ) internal returns (ProductId productId) {
+        if (secretHash == bytes32(0)) {
+            revert InvalidSecretHash();
+        }
+
         uint256 next = ProductId.unwrap(_nextProductId) + 1;
         productId = ProductId.wrap(next);
         _nextProductId = productId;
         _products[productId] = Product({
             owner: owner,
             status: ProductStatus.Created,
+            secretHash: secretHash,
             exists: true
         });
         emit ProductRegistered(productId, owner, ProductStatus.Created);
