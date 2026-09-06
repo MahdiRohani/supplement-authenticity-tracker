@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="history_title">Ownership history</string>
+    <string name="history_product_id_label">Product ID</string>
+    <string name="history_load_action">Load timeline</string>
+    <string name="history_owner">Owner: %1$s</string>
+    <string name="history_event">%1$s → %2$s</string>
+    <string name="history_elapsed">Fetched in %1$d ms</string>
+</resources>
