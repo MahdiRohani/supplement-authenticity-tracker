@@ -19,6 +19,12 @@ export class IndexerService implements OnModuleInit, OnModuleDestroy {
   private contract?: Contract;
   private polling?: ReturnType<typeof setInterval>;
   private lastBlock = 0n;
+  private readonly productRegisteredTopic = id(
+    'ProductRegistered(uint256,address,uint8,string,bytes32)',
+  );
+  private readonly ownershipTransferredTopic = id(
+    'OwnershipTransferred(uint256,address,address)',
+  );
 
   constructor(
     private readonly config: ConfigService,
@@ -70,17 +76,41 @@ export class IndexerService implements OnModuleInit, OnModuleDestroy {
         return;
       }
 
-      const fromBlock = this.lastBlock + 1n;
-      const filter = {
-        address: await this.contract.getAddress(),
-        fromBlock: Number(fromBlock),
-        toBlock: Number(latest),
-        topics: [id('ProductRegistered(uint256,address,uint8,string,bytes32)')],
-      };
-      const logs = await this.provider.getLogs(filter);
-      for (const log of logs) {
-        await this.handleProductRegistered(log);
+      const fromBlock = Number(this.lastBlock + 1n);
+      const toBlock = Number(latest);
+      const address = await this.contract.getAddress();
+
+      const [registeredLogs, transferredLogs] = await Promise.all([
+        this.provider.getLogs({
+          address,
+          fromBlock,
+          toBlock,
+          topics: [this.productRegisteredTopic],
+        }),
+        this.provider.getLogs({
+          address,
+          fromBlock,
+          toBlock,
+          topics: [this.ownershipTransferredTopic],
+        }),
+      ]);
+
+      const ordered = [...registeredLogs, ...transferredLogs].sort((a, b) => {
+        if (a.blockNumber !== b.blockNumber) {
+          return a.blockNumber - b.blockNumber;
+        }
+        return a.index - b.index;
+      });
+
+      for (const log of ordered) {
+        const topic = log.topics[0];
+        if (topic === this.productRegisteredTopic) {
+          await this.handleProductRegistered(log);
+        } else if (topic === this.ownershipTransferredTopic) {
+          await this.handleOwnershipTransferred(log);
+        }
       }
+
       this.lastBlock = latest;
     } catch (error) {
       this.logger.error(`Indexer poll failed: ${String(error)}`);
@@ -124,6 +154,63 @@ export class IndexerService implements OnModuleInit, OnModuleDestroy {
     });
 
     this.logger.log(`Indexed ProductRegistered id=${productId}`);
+  }
+
+  private async handleOwnershipTransferred(log: Log) {
+    if (!this.contract) {
+      return;
+    }
+
+    const parsed = this.contract.interface.parseLog({
+      topics: [...log.topics],
+      data: log.data,
+    });
+    if (!parsed || parsed.name !== 'OwnershipTransferred') {
+      return;
+    }
+
+    const chainProductId = parsed.args.productId.toString();
+    const fromAddress = String(parsed.args.from).toLowerCase();
+    const toAddress = String(parsed.args.to).toLowerCase();
+    const txHash = log.transactionHash;
+
+    const alreadyIndexed = await this.prisma.ownershipEvent.findFirst({
+      where: { txHash, chainProductId },
+    });
+    if (alreadyIndexed) {
+      return;
+    }
+
+    const onChain = await this.contract.getProduct(parsed.args.productId);
+    const status = this.mapStatus(Number(onChain.status));
+
+    const product = await this.prisma.product.upsert({
+      where: { chainProductId },
+      create: {
+        chainProductId,
+        ownerAddress: toAddress,
+        status,
+      },
+      update: {
+        ownerAddress: toAddress,
+        status,
+      },
+    });
+
+    await this.prisma.ownershipEvent.create({
+      data: {
+        productId: product.id,
+        chainProductId,
+        fromAddress,
+        toAddress,
+        txHash,
+        blockNumber: BigInt(log.blockNumber),
+      },
+    });
+
+    this.logger.log(
+      `Indexed OwnershipTransferred id=${chainProductId} ${fromAddress} -> ${toAddress}`,
+    );
   }
 
   private mapStatus(value: number): ProductStatus {
