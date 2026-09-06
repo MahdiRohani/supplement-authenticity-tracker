@@ -25,3 +25,7 @@ dependencyResolutionManagement {
 rootProject.name = "SupplementAuthenticityTracker"
 include(":app")
 include(":core:designsystem")
+include(":core:model")
+include(":core:domain")
+include(":core:data")
+include(":feature:manufacturer-register")

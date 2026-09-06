@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="manufacturer_register_title">Register supplement unit</string>
+    <string name="product_name_label">Product name</string>
+    <string name="batch_label">Batch code</string>
+    <string name="register_action">Register</string>
+    <string name="result_id">ID: %1$s</string>
+    <string name="result_cid">CID: %1$s</string>
+    <string name="result_secret">Secret (show once): %1$s</string>
+</resources>
