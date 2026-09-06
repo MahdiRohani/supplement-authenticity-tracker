@@ -8,4 +8,5 @@ gasReporterOutput.json
 dist/
 .env
 .env.*
+!.env.example
 deployments/
