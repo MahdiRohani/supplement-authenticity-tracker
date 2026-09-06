@@ -10,6 +10,26 @@ Local deploy (writes address + ABI under `packages/abis/`):
 cd contracts && npm run deploy:local
 ```
 
+Gas report:
+
+```bash
+cd contracts && npm run test:gas
+```
+
+E2E supply-chain path (register → distributor → pharmacy):
+
+```bash
+cd contracts && npm run e2e:local
+```
+
+Sepolia deploy (set `SEPOLIA_RPC_URL` and `SEPOLIA_PRIVATE_KEY`):
+
+```bash
+cd contracts && cp .env.example .env
+# fill secrets, then:
+cd contracts && npm run deploy:sepolia
+```
+
 Persistent local node:
 
 ```bash
