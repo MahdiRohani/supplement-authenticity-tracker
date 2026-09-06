@@ -9,8 +9,10 @@ Requires Postgres matching `DATABASE_URL` in `.env`.
 Useful endpoints:
 
 - `GET /v1/health`
-- `POST /v1/products` with `{ "name": "...", "batch": "..." }` — pins metadata via IPFS adapter (stub CID if Kubo is down) and stores a DB row
+- `POST /v1/products` with `{ "name": "...", "batch": "..." }`
+- `POST /v1/products/:id/transfer` with `{ "toAddress": "0x..." }` (backend relayer)
 - `GET /v1/products/:chainProductId`
-- `GET /v1/products/:id/history` — ownership timeline from indexed `OwnershipEvent` rows (target SLA &lt; 3s)
+- `GET /v1/products/:id/history`
+- `GET /v1/roles`, `POST /v1/roles`, `GET /v1/roles/:address`, `DELETE /v1/roles/:address/:role`
 
-Indexer polls `RPC_URL` for `ProductRegistered` and `OwnershipTransferred` when `REGISTRY_ADDRESS` (or ABI file address) is set. Transfers are written to `OwnershipEvent` and product owner/status are updated.
+Indexer polls `RPC_URL` for `ProductRegistered` and `OwnershipTransferred`. Relayer keys come from `RELAYER_KEYS_JSON`.
