@@ -7,6 +7,9 @@
     "test": "hardhat test",
     "clean": "hardhat clean",
     "deploy:local": "hardhat run scripts/deploy.ts",
+    "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
+    "e2e:local": "hardhat run scripts/e2e-supply-chain.ts",
+    "test:gas": "REPORT_GAS=true hardhat test",
     "node": "hardhat node"
   },
   "devDependencies": {
