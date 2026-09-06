@@ -7,6 +7,10 @@ type RegisterProductBody = {
   manufacturerAddress?: string;
 };
 
+type TransferBody = {
+  toAddress: string;
+};
+
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
@@ -14,6 +18,11 @@ export class ProductsController {
   @Post()
   register(@Body() body: RegisterProductBody) {
     return this.productsService.registerProduct(body);
+  }
+
+  @Post(':id/transfer')
+  transfer(@Param('id') id: string, @Body() body: TransferBody) {
+    return this.productsService.transferProduct(id, body.toAddress);
   }
 
   @Get(':id/history')
