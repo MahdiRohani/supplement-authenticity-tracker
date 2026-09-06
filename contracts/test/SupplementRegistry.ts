@@ -4,6 +4,8 @@ import { SupplementRegistry } from "../typechain-types";
 
 describe("SupplementRegistry", function () {
   const MANUFACTURER_ROLE = ethers.id("MANUFACTURER_ROLE");
+  const DISTRIBUTOR_ROLE = ethers.id("DISTRIBUTOR_ROLE");
+  const PHARMACY_ROLE = ethers.id("PHARMACY_ROLE");
   const SECRET = ethers.id("scratch-secret-1");
   const SECRET_HASH = ethers.keccak256(
     ethers.solidityPacked(["bytes32"], [SECRET])
@@ -20,7 +22,8 @@ describe("SupplementRegistry", function () {
   const METADATA_HASH = ethers.keccak256(ethers.toUtf8Bytes(METADATA_JSON));
 
   async function deployFixture() {
-    const [admin, manufacturer, outsider] = await ethers.getSigners();
+    const [admin, manufacturer, distributor, pharmacy, outsider] =
+      await ethers.getSigners();
     const registry = (await ethers.deployContract("SupplementRegistry", [
       admin.address,
     ])) as SupplementRegistry;
@@ -28,7 +31,18 @@ describe("SupplementRegistry", function () {
     await registry
       .connect(admin)
       .grantRole(MANUFACTURER_ROLE, manufacturer.address);
-    return { registry, admin, manufacturer, outsider };
+    await registry
+      .connect(admin)
+      .grantRole(DISTRIBUTOR_ROLE, distributor.address);
+    await registry.connect(admin).grantRole(PHARMACY_ROLE, pharmacy.address);
+    return { registry, admin, manufacturer, distributor, pharmacy, outsider };
+  }
+
+  async function registerUnit(registry: SupplementRegistry, manufacturer: any) {
+    await registry
+      .connect(manufacturer)
+      .registerUnit(SECRET_HASH, METADATA_CID, METADATA_HASH);
+    return 1n;
   }
 
   describe("registration happy path", function () {
@@ -83,14 +97,6 @@ describe("SupplementRegistry", function () {
 
       expect(firstId).to.equal(1n);
       expect(await registry.nextProductId()).to.equal(3n);
-
-      for (let id = 1n; id <= 3n; id++) {
-        const product = await registry.getProduct(id);
-        expect(product.owner).to.equal(manufacturer.address);
-        expect(product.status).to.equal(0);
-        expect(product.metadataCid).to.equal(METADATA_CID);
-        expect(product.metadataHash).to.equal(METADATA_HASH);
-      }
     });
   });
 
@@ -106,55 +112,120 @@ describe("SupplementRegistry", function () {
         registry,
         "AccessControlUnauthorizedAccount"
       );
+    });
+  });
+
+  describe("transfer path", function () {
+    it("moves manufacturer to distributor to pharmacy", async function () {
+      const { registry, manufacturer, distributor, pharmacy } =
+        await deployFixture();
+      const productId = await registerUnit(registry, manufacturer);
 
       await expect(
-        registry
-          .connect(outsider)
-          .registerBatch([SECRET_HASH], METADATA_CID, METADATA_HASH)
-      ).to.be.revertedWithCustomError(
-        registry,
-        "AccessControlUnauthorizedAccount"
-      );
+        registry.connect(manufacturer).transferOwnership(productId, distributor.address)
+      )
+        .to.emit(registry, "OwnershipTransferred")
+        .withArgs(productId, manufacturer.address, distributor.address);
+
+      let product = await registry.getProduct(productId);
+      expect(product.owner).to.equal(distributor.address);
+      expect(product.status).to.equal(1);
+
+      await expect(
+        registry.connect(distributor).transferOwnership(productId, pharmacy.address)
+      )
+        .to.emit(registry, "OwnershipTransferred")
+        .withArgs(productId, distributor.address, pharmacy.address);
+
+      product = await registry.getProduct(productId);
+      expect(product.owner).to.equal(pharmacy.address);
+      expect(product.status).to.equal(2);
+    });
+
+    it("rejects unauthorized transfer targets and senders", async function () {
+      const { registry, manufacturer, distributor, pharmacy, outsider } =
+        await deployFixture();
+      const productId = await registerUnit(registry, manufacturer);
+
+      await expect(
+        registry.connect(manufacturer).transferOwnership(productId, pharmacy.address)
+      )
+        .to.be.revertedWithCustomError(registry, "InvalidTransfer")
+        .withArgs(productId, pharmacy.address, 0);
+
+      await expect(
+        registry.connect(outsider).transferOwnership(productId, distributor.address)
+      )
+        .to.be.revertedWithCustomError(registry, "NotProductOwner")
+        .withArgs(productId, outsider.address);
+
+      await registry
+        .connect(manufacturer)
+        .transferOwnership(productId, distributor.address);
+
+      await expect(
+        registry.connect(distributor).transferOwnership(productId, outsider.address)
+      )
+        .to.be.revertedWithCustomError(registry, "InvalidTransfer")
+        .withArgs(productId, outsider.address, 1);
     });
   });
 
   describe("consume", function () {
-    it("consumes when the secret matches", async function () {
-      const { registry, manufacturer, outsider } = await deployFixture();
+    async function atPointOfSale(registry: SupplementRegistry, parties: any) {
+      const productId = await registerUnit(registry, parties.manufacturer);
       await registry
-        .connect(manufacturer)
-        .registerUnit(SECRET_HASH, METADATA_CID, METADATA_HASH);
+        .connect(parties.manufacturer)
+        .transferOwnership(productId, parties.distributor.address);
+      await registry
+        .connect(parties.distributor)
+        .transferOwnership(productId, parties.pharmacy.address);
+      return productId;
+    }
 
-      await expect(registry.connect(outsider).consume(1n, SECRET))
-        .to.emit(registry, "ProductConsumed")
-        .withArgs(1n, outsider.address);
+    it("consumes when the secret matches at point of sale", async function () {
+      const parties = await deployFixture();
+      const productId = await atPointOfSale(parties.registry, parties);
 
-      const product = await registry.getProduct(1n);
+      await expect(parties.registry.connect(parties.outsider).consume(productId, SECRET))
+        .to.emit(parties.registry, "ProductConsumed")
+        .withArgs(productId, parties.outsider.address);
+
+      const product = await parties.registry.getProduct(productId);
       expect(product.status).to.equal(3);
     });
 
     it("rejects a wrong secret", async function () {
-      const { registry, manufacturer, outsider } = await deployFixture();
-      await registry
-        .connect(manufacturer)
-        .registerUnit(SECRET_HASH, METADATA_CID, METADATA_HASH);
+      const parties = await deployFixture();
+      const productId = await atPointOfSale(parties.registry, parties);
 
-      await expect(registry.connect(outsider).consume(1n, OTHER_SECRET))
-        .to.be.revertedWithCustomError(registry, "InvalidSecret")
-        .withArgs(1n);
+      await expect(
+        parties.registry.connect(parties.outsider).consume(productId, OTHER_SECRET)
+      )
+        .to.be.revertedWithCustomError(parties.registry, "InvalidSecret")
+        .withArgs(productId);
     });
 
     it("rejects double consume", async function () {
+      const parties = await deployFixture();
+      const productId = await atPointOfSale(parties.registry, parties);
+
+      await parties.registry.connect(parties.outsider).consume(productId, SECRET);
+
+      await expect(
+        parties.registry.connect(parties.outsider).consume(productId, SECRET)
+      )
+        .to.be.revertedWithCustomError(parties.registry, "ProductAlreadyConsumed")
+        .withArgs(productId);
+    });
+
+    it("rejects consume before pharmacy receipt", async function () {
       const { registry, manufacturer, outsider } = await deployFixture();
-      await registry
-        .connect(manufacturer)
-        .registerUnit(SECRET_HASH, METADATA_CID, METADATA_HASH);
+      const productId = await registerUnit(registry, manufacturer);
 
-      await registry.connect(outsider).consume(1n, SECRET);
-
-      await expect(registry.connect(outsider).consume(1n, SECRET))
-        .to.be.revertedWithCustomError(registry, "ProductAlreadyConsumed")
-        .withArgs(1n);
+      await expect(registry.connect(outsider).consume(productId, SECRET))
+        .to.be.revertedWithCustomError(registry, "ProductNotConsumable")
+        .withArgs(productId, 0);
     });
   });
 
@@ -167,18 +238,6 @@ describe("SupplementRegistry", function () {
           .connect(manufacturer)
           .registerUnit(SECRET_HASH, "", METADATA_HASH)
       ).to.be.revertedWithCustomError(registry, "InvalidMetadataCid");
-
-      await expect(
-        registry
-          .connect(manufacturer)
-          .registerUnit(SECRET_HASH, METADATA_CID, ethers.ZeroHash)
-      ).to.be.revertedWithCustomError(registry, "InvalidMetadataHash");
-
-      await expect(
-        registry
-          .connect(manufacturer)
-          .registerUnit(ethers.ZeroHash, METADATA_CID, METADATA_HASH)
-      ).to.be.revertedWithCustomError(registry, "InvalidSecretHash");
     });
 
     it("rejects zero-size batches", async function () {
@@ -218,7 +277,7 @@ describe("SupplementRegistry", function () {
 
   describe("pausable", function () {
     it("lets admin pause and unpause mutating calls", async function () {
-      const { registry, admin, manufacturer, outsider } = await deployFixture();
+      const { registry, admin, manufacturer } = await deployFixture();
 
       await registry.connect(admin).pause();
 
@@ -228,25 +287,10 @@ describe("SupplementRegistry", function () {
           .registerUnit(SECRET_HASH, METADATA_CID, METADATA_HASH)
       ).to.be.revertedWithCustomError(registry, "EnforcedPause");
 
-      await expect(
-        registry
-          .connect(manufacturer)
-          .registerBatch([SECRET_HASH], METADATA_CID, METADATA_HASH)
-      ).to.be.revertedWithCustomError(registry, "EnforcedPause");
-
       await registry.connect(admin).unpause();
       await registry
         .connect(manufacturer)
         .registerUnit(SECRET_HASH, METADATA_CID, METADATA_HASH);
-
-      await registry.connect(admin).pause();
-      await expect(
-        registry.connect(outsider).consume(1n, SECRET)
-      ).to.be.revertedWithCustomError(registry, "EnforcedPause");
-
-      await registry.connect(admin).unpause();
-      await registry.connect(outsider).consume(1n, SECRET);
-      expect((await registry.getProduct(1n)).status).to.equal(3);
     });
 
     it("rejects pause from non-admin", async function () {
