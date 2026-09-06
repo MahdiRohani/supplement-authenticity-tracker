@@ -2,9 +2,10 @@
 pragma solidity ^0.8.28;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {ProductId, ProductStatus} from "./domain/ProductTypes.sol";
 
-contract SupplementRegistry is AccessControl {
+contract SupplementRegistry is AccessControl, Pausable {
     bytes32 public constant MANUFACTURER_ROLE = keccak256("MANUFACTURER_ROLE");
 
     struct Product {
@@ -51,11 +52,24 @@ contract SupplementRegistry is AccessControl {
         _grantRole(MANUFACTURER_ROLE, admin);
     }
 
+    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unpause();
+    }
+
     function registerUnit(
         bytes32 secretHash,
         string calldata metadataCid,
         bytes32 metadataHash
-    ) external onlyRole(MANUFACTURER_ROLE) returns (ProductId productId) {
+    )
+        external
+        onlyRole(MANUFACTURER_ROLE)
+        whenNotPaused
+        returns (ProductId productId)
+    {
         productId = _mintUnit(msg.sender, secretHash, metadataCid, metadataHash);
     }
 
@@ -63,7 +77,12 @@ contract SupplementRegistry is AccessControl {
         bytes32[] calldata secretHashes,
         string calldata metadataCid,
         bytes32 metadataHash
-    ) external onlyRole(MANUFACTURER_ROLE) returns (ProductId firstProductId) {
+    )
+        external
+        onlyRole(MANUFACTURER_ROLE)
+        whenNotPaused
+        returns (ProductId firstProductId)
+    {
         uint256 count = secretHashes.length;
         if (count == 0) {
             revert InvalidBatchSize(count);
@@ -78,7 +97,10 @@ contract SupplementRegistry is AccessControl {
         }
     }
 
-    function consume(ProductId productId, bytes32 secret) external {
+    function consume(
+        ProductId productId,
+        bytes32 secret
+    ) external whenNotPaused {
         Product storage product = _products[productId];
         if (!product.exists) {
             revert ProductDoesNotExist(productId);
