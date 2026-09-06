@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Supplement Authenticity Tracker</string>
+    <string name="dev_login_title">Dev role login</string>
+    <string name="dev_login_address">Wallet address</string>
+    <string name="dev_login_selected">Selected role: %1$s</string>
+    <string name="dev_login_continue">Continue</string>
+    <string name="session_title">%1$s · %2$s…</string>
 </resources>
