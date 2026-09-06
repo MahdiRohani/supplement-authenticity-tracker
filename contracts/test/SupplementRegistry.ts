@@ -4,6 +4,14 @@ import { SupplementRegistry } from "../typechain-types";
 
 describe("SupplementRegistry v0", function () {
   const MANUFACTURER_ROLE = ethers.id("MANUFACTURER_ROLE");
+  const SECRET = ethers.id("scratch-secret-1");
+  const SECRET_HASH = ethers.keccak256(
+    ethers.solidityPacked(["bytes32"], [SECRET])
+  );
+  const OTHER_SECRET = ethers.id("scratch-secret-2");
+  const OTHER_SECRET_HASH = ethers.keccak256(
+    ethers.solidityPacked(["bytes32"], [OTHER_SECRET])
+  );
 
   async function deployFixture() {
     const [admin, manufacturer, outsider] = await ethers.getSigners();
@@ -22,9 +30,9 @@ describe("SupplementRegistry v0", function () {
 
     const productId = await registry
       .connect(manufacturer)
-      .registerUnit.staticCall();
+      .registerUnit.staticCall(SECRET_HASH);
 
-    await expect(registry.connect(manufacturer).registerUnit())
+    await expect(registry.connect(manufacturer).registerUnit(SECRET_HASH))
       .to.emit(registry, "ProductRegistered")
       .withArgs(productId, manufacturer.address, 0);
 
@@ -36,12 +44,13 @@ describe("SupplementRegistry v0", function () {
 
   it("lets a manufacturer register a batch of sequential ids", async function () {
     const { registry, manufacturer } = await deployFixture();
+    const hashes = [SECRET_HASH, OTHER_SECRET_HASH, SECRET_HASH];
 
     const firstId = await registry
       .connect(manufacturer)
-      .registerBatch.staticCall(3n);
+      .registerBatch.staticCall(hashes);
 
-    await expect(registry.connect(manufacturer).registerBatch(3n))
+    await expect(registry.connect(manufacturer).registerBatch(hashes))
       .to.emit(registry, "ProductRegistered")
       .withArgs(1n, manufacturer.address, 0)
       .and.to.emit(registry, "ProductRegistered")
@@ -57,6 +66,41 @@ describe("SupplementRegistry v0", function () {
       expect(product.owner).to.equal(manufacturer.address);
       expect(product.status).to.equal(0);
     }
+  });
+
+  it("consumes a product when the secret matches", async function () {
+    const { registry, manufacturer, outsider } = await deployFixture();
+    await registry.connect(manufacturer).registerUnit(SECRET_HASH);
+
+    await expect(registry.connect(outsider).consume(1n, SECRET))
+      .to.emit(registry, "ProductConsumed")
+      .withArgs(1n, outsider.address);
+
+    const product = await registry.getProduct(1n);
+    expect(product.status).to.equal(3);
+  });
+
+  it("rejects a wrong secret and double consume", async function () {
+    const { registry, manufacturer, outsider } = await deployFixture();
+    await registry.connect(manufacturer).registerUnit(SECRET_HASH);
+
+    await expect(registry.connect(outsider).consume(1n, OTHER_SECRET))
+      .to.be.revertedWithCustomError(registry, "InvalidSecret")
+      .withArgs(1n);
+
+    await registry.connect(outsider).consume(1n, SECRET);
+
+    await expect(registry.connect(outsider).consume(1n, SECRET))
+      .to.be.revertedWithCustomError(registry, "ProductAlreadyConsumed")
+      .withArgs(1n);
+  });
+
+  it("rejects empty secret hash on registration", async function () {
+    const { registry, manufacturer } = await deployFixture();
+
+    await expect(
+      registry.connect(manufacturer).registerUnit(ethers.ZeroHash)
+    ).to.be.revertedWithCustomError(registry, "InvalidSecretHash");
   });
 
   it("declares ownership, consume, and invalidate events in the ABI", async function () {
@@ -76,7 +120,7 @@ describe("SupplementRegistry v0", function () {
   it("rejects zero-size batches", async function () {
     const { registry, manufacturer } = await deployFixture();
 
-    await expect(registry.connect(manufacturer).registerBatch(0n))
+    await expect(registry.connect(manufacturer).registerBatch([]))
       .to.be.revertedWithCustomError(registry, "InvalidBatchSize")
       .withArgs(0n);
   });
@@ -85,14 +129,14 @@ describe("SupplementRegistry v0", function () {
     const { registry, outsider } = await deployFixture();
 
     await expect(
-      registry.connect(outsider).registerUnit()
+      registry.connect(outsider).registerUnit(SECRET_HASH)
     ).to.be.revertedWithCustomError(
       registry,
       "AccessControlUnauthorizedAccount"
     );
 
     await expect(
-      registry.connect(outsider).registerBatch(2n)
+      registry.connect(outsider).registerBatch([SECRET_HASH])
     ).to.be.revertedWithCustomError(
       registry,
       "AccessControlUnauthorizedAccount"
