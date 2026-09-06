@@ -7,6 +7,8 @@ import {ProductId, ProductStatus} from "./domain/ProductTypes.sol";
 
 contract SupplementRegistry is AccessControl, Pausable {
     bytes32 public constant MANUFACTURER_ROLE = keccak256("MANUFACTURER_ROLE");
+    bytes32 public constant DISTRIBUTOR_ROLE = keccak256("DISTRIBUTOR_ROLE");
+    bytes32 public constant PHARMACY_ROLE = keccak256("PHARMACY_ROLE");
 
     struct Product {
         address owner;
@@ -46,6 +48,8 @@ contract SupplementRegistry is AccessControl, Pausable {
     error InvalidSecret(ProductId productId);
     error ProductAlreadyConsumed(ProductId productId);
     error ProductNotConsumable(ProductId productId, ProductStatus status);
+    error NotProductOwner(ProductId productId, address account);
+    error InvalidTransfer(ProductId productId, address to, ProductStatus status);
 
     constructor(address admin) {
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
@@ -97,6 +101,40 @@ contract SupplementRegistry is AccessControl, Pausable {
         }
     }
 
+    function transferOwnership(
+        ProductId productId,
+        address to
+    ) external whenNotPaused {
+        Product storage product = _products[productId];
+        if (!product.exists) {
+            revert ProductDoesNotExist(productId);
+        }
+        if (product.owner != msg.sender) {
+            revert NotProductOwner(productId, msg.sender);
+        }
+        if (to == address(0) || to == product.owner) {
+            revert InvalidTransfer(productId, to, product.status);
+        }
+
+        if (product.status == ProductStatus.Created) {
+            if (!hasRole(DISTRIBUTOR_ROLE, to)) {
+                revert InvalidTransfer(productId, to, product.status);
+            }
+            product.status = ProductStatus.Transferred;
+        } else if (product.status == ProductStatus.Transferred) {
+            if (!hasRole(PHARMACY_ROLE, to)) {
+                revert InvalidTransfer(productId, to, product.status);
+            }
+            product.status = ProductStatus.AtPointOfSale;
+        } else {
+            revert InvalidTransfer(productId, to, product.status);
+        }
+
+        address from = product.owner;
+        product.owner = to;
+        emit OwnershipTransferred(productId, from, to);
+    }
+
     function consume(
         ProductId productId,
         bytes32 secret
@@ -108,11 +146,7 @@ contract SupplementRegistry is AccessControl, Pausable {
         if (product.status == ProductStatus.Consumed) {
             revert ProductAlreadyConsumed(productId);
         }
-        if (
-            product.status == ProductStatus.Invalid ||
-            product.status == ProductStatus.Transferred ||
-            product.status == ProductStatus.AtPointOfSale
-        ) {
+        if (product.status != ProductStatus.AtPointOfSale) {
             revert ProductNotConsumable(productId, product.status);
         }
         if (keccak256(abi.encodePacked(secret)) != product.secretHash) {
