@@ -1,3 +1,4 @@
+import hre from "hardhat";
 import { ethers } from "hardhat";
 import * as fs from "fs";
 import * as path from "path";
@@ -11,6 +12,10 @@ async function main() {
 
   const address = await registry.getAddress();
   const network = await ethers.provider.getNetwork();
+  const networkName = (hre.network.name || `chain-${network.chainId}`).replace(
+    /[^a-zA-Z0-9_-]/g,
+    "_"
+  );
 
   const artifactPath = path.join(
     __dirname,
@@ -26,6 +31,7 @@ async function main() {
         contractName: "SupplementRegistry",
         address,
         chainId: Number(network.chainId),
+        network: networkName,
         abi: artifact.abi,
       },
       null,
@@ -35,22 +41,21 @@ async function main() {
 
   const deploymentsDir = path.join(__dirname, "../deployments");
   fs.mkdirSync(deploymentsDir, { recursive: true });
+  const deployment = {
+    SupplementRegistry: address,
+    deployer: deployer.address,
+    chainId: Number(network.chainId),
+    network: networkName,
+  };
   fs.writeFileSync(
-    path.join(deploymentsDir, "localhost.json"),
-    JSON.stringify(
-      {
-        SupplementRegistry: address,
-        deployer: deployer.address,
-        chainId: Number(network.chainId),
-      },
-      null,
-      2
-    )
+    path.join(deploymentsDir, `${networkName}.json`),
+    JSON.stringify(deployment, null, 2)
   );
 
   console.log(`SupplementRegistry=${address}`);
   console.log(`deployer=${deployer.address}`);
   console.log(`chainId=${network.chainId}`);
+  console.log(`network=${networkName}`);
 }
 
 main().catch((error) => {
