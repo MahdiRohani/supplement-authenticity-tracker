@@ -58,3 +58,16 @@ model RoleBinding {
 
   @@unique([address, role])
 }
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  entityId  String?
+  actor     String?
+  detail    String?
+  createdAt DateTime @default(now())
+
+  @@index([action])
+  @@index([entityId])
+  @@index([createdAt])
+}
