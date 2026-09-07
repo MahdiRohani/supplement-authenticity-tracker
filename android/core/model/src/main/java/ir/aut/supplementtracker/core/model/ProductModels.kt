@@ -118,3 +118,51 @@ data class ConsumeResult(
     val txHash: String,
     val actor: String,
 )
+
+data class ProductSummary(
+    val id: String,
+    val chainProductId: String,
+    val ownerAddress: String,
+    val status: String,
+    val name: String? = null,
+    val batchCode: String? = null,
+    val metadataCid: String? = null,
+    val createdAt: String,
+)
+
+data class ProductListPage(
+    val page: Int,
+    val limit: Int,
+    val total: Int,
+    val totalPages: Int,
+    val items: List<ProductSummary>,
+)
+
+data class ProductListQuery(
+    val owner: String? = null,
+    val status: String? = null,
+    val q: String? = null,
+    val page: Int = 1,
+    val limit: Int = 20,
+)
+
+data class RegisterBatchRequest(
+    val name: String,
+    val batch: String,
+    val count: Int,
+    val manufacturerAddress: String? = null,
+)
+
+data class RegisterBatchItem(
+    val id: String,
+    val chainProductId: String,
+    val secret: String?,
+)
+
+data class RegisterBatchResult(
+    val count: Int,
+    val metadataCid: String?,
+    val mintedOnChain: Boolean,
+    val txHash: String?,
+    val items: List<RegisterBatchItem>,
+)
