@@ -3,6 +3,7 @@ package ir.aut.supplementtracker.feature.verify
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import ir.aut.supplementtracker.core.data.VerifyCacheStore
 import ir.aut.supplementtracker.core.designsystem.components.AuthenticityStatus
 import ir.aut.supplementtracker.core.domain.DomainError
 import ir.aut.supplementtracker.core.domain.ErrorMapper
@@ -19,6 +20,7 @@ import kotlinx.coroutines.launch
 
 class VerifyViewModel(
     private val verifyProduct: VerifyProductUseCase,
+    private val verifyCacheStore: VerifyCacheStore? = null,
 ) : ViewModel() {
     private val _state = MutableStateFlow(VerifyUiState())
     val state: StateFlow<VerifyUiState> = _state.asStateFlow()
@@ -49,6 +51,7 @@ class VerifyViewModel(
             _state.update { it.copy(isLoading = true, errorMessage = null, result = null) }
             runCatching { verifyProduct(productId) }
                 .onSuccess { result ->
+                    verifyCacheStore?.save(result)
                     val status = result.toAuthenticityStatus()
                     _state.update {
                         it.copy(
@@ -84,11 +87,14 @@ class VerifyViewModel(
     }
 
     companion object {
-        fun factory(verifyProduct: VerifyProductUseCase): ViewModelProvider.Factory =
+        fun factory(
+            verifyProduct: VerifyProductUseCase,
+            verifyCacheStore: VerifyCacheStore? = null,
+        ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return VerifyViewModel(verifyProduct) as T
+                    return VerifyViewModel(verifyProduct, verifyCacheStore) as T
                 }
             }
     }
