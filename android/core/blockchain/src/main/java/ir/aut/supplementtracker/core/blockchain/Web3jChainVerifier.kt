@@ -60,15 +60,21 @@ class Web3jChainVerifier(
                 val owner = (decoded[1] as Address).value
                 val metadataCid = (decoded[2] as Utf8String).value
                 val status = statusName(statusCode)
+                val authenticity = authenticityFor(status)
                 VerifyResult(
                     productId = productId,
                     chainProductId = productId,
                     status = status,
-                    authenticity = authenticityFor(status),
+                    authenticity = authenticity,
                     currentOwner = owner,
                     metadataCid = metadataCid.ifBlank { null },
                     metadata = null,
                     source = "chain",
+                    message = if (authenticity == "Consumed") {
+                        "Product already consumed; a second use or refill is not authentic"
+                    } else {
+                        null
+                    },
                 )
             } finally {
                 web3j.shutdown()

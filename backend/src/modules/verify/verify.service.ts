@@ -24,6 +24,7 @@ export type VerifyResult = {
   } | null;
   cached: boolean;
   source: 'db' | 'chain';
+  message?: string;
 };
 
 @Injectable()
@@ -52,6 +53,11 @@ export class VerifyService {
 
     if (result.metadataCid) {
       result.metadata = await this.ipfs.resolveJson(result.metadataCid);
+    }
+
+    if (result.authenticity === 'Consumed') {
+      result.message =
+        'Product already consumed; a second use or refill is not authentic';
     }
 
     const ttlMs = Number(this.config.get('VERIFY_CACHE_TTL_MS') ?? 15_000);
