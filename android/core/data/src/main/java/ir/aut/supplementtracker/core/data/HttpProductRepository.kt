@@ -3,10 +3,12 @@ package ir.aut.supplementtracker.core.data
 import ir.aut.supplementtracker.core.domain.ProductRepository
 import ir.aut.supplementtracker.core.model.OwnershipEvent
 import ir.aut.supplementtracker.core.model.OwnershipHistory
+import ir.aut.supplementtracker.core.model.ProductMetadata
 import ir.aut.supplementtracker.core.model.RegisterProductRequest
 import ir.aut.supplementtracker.core.model.RegisteredProduct
 import ir.aut.supplementtracker.core.model.TransferRequest
 import ir.aut.supplementtracker.core.model.TransferResult
+import ir.aut.supplementtracker.core.model.VerifyResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -77,6 +79,34 @@ class HttpProductRepository(
                 status = json.getString("status"),
                 elapsedMs = json.optLong("elapsedMs"),
                 events = json.optJSONArray("events").toOwnershipEvents(),
+            )
+        }
+
+    override suspend fun verify(productId: String): VerifyResult =
+        withContext(Dispatchers.IO) {
+            val json = executeJson(
+                Request.Builder()
+                    .url("${baseUrl}verify/$productId")
+                    .get()
+                    .build(),
+            )
+            val metadataJson = json.optJSONObject("metadata")
+            VerifyResult(
+                productId = json.optString("productId", productId),
+                chainProductId = json.optString("chainProductId", productId),
+                status = json.getString("status"),
+                authenticity = json.optString("authenticity", json.getString("status")),
+                currentOwner = json.optString("currentOwner"),
+                metadataCid = json.optString("metadataCid").ifBlank { null },
+                metadata = metadataJson?.let {
+                    ProductMetadata(
+                        name = it.optString("name").ifBlank { null },
+                        batch = it.optString("batch").ifBlank { null },
+                        expiresAt = it.optString("expiresAt").ifBlank { null },
+                        image = it.optString("image").ifBlank { null },
+                    )
+                },
+                source = json.optString("source", "db"),
             )
         }
 
