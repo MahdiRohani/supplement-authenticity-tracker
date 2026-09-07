@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dashboard_title">Manufacturer dashboard</string>
+    <string name="dashboard_search_label">Search name, batch, or id</string>
+    <string name="dashboard_refresh">Refresh list</string>
+    <string name="dashboard_filter_all">All</string>
+    <string name="dashboard_filter_created">Created</string>
+    <string name="dashboard_filter_transferred">Transferred</string>
+    <string name="dashboard_filter_pos">At point of sale</string>
+    <string name="dashboard_filter_consumed">Consumed</string>
+    <string name="dashboard_batch_section">Batch register</string>
+    <string name="dashboard_batch_name">Product name</string>
+    <string name="dashboard_batch_code">Batch code</string>
+    <string name="dashboard_batch_count">Count</string>
+    <string name="dashboard_batch_submit">Register batch</string>
+    <string name="dashboard_batch_progress">Registered %1$d of %2$d</string>
+    <string name="dashboard_empty">No products yet</string>
+    <string name="dashboard_item_line">%1$s · %2$s</string>
+</resources>

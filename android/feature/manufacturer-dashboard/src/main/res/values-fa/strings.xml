@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dashboard_title">داشبورد تولیدکننده</string>
+    <string name="dashboard_search_label">جستجوی نام، بچ یا شناسه</string>
+    <string name="dashboard_refresh">بروزرسانی فهرست</string>
+    <string name="dashboard_filter_all">همه</string>
+    <string name="dashboard_filter_created">ایجاد شده</string>
+    <string name="dashboard_filter_transferred">انتقال‌یافته</string>
+    <string name="dashboard_filter_pos">نقطه فروش</string>
+    <string name="dashboard_filter_consumed">مصرف‌شده</string>
+    <string name="dashboard_batch_section">ثبت دسته‌ای</string>
+    <string name="dashboard_batch_name">نام محصول</string>
+    <string name="dashboard_batch_code">کد بچ</string>
+    <string name="dashboard_batch_count">تعداد</string>
+    <string name="dashboard_batch_submit">ثبت دسته</string>
+    <string name="dashboard_batch_progress">ثبت‌شده %1$d از %2$d</string>
+    <string name="dashboard_empty">هنوز محصولی نیست</string>
+    <string name="dashboard_item_line">%1$s · %2$s</string>
+</resources>
