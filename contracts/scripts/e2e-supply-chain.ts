@@ -19,15 +19,21 @@ async function main() {
   const secretHash = ethers.keccak256(
     ethers.solidityPacked(["bytes32"], [secret])
   );
-  const metadataCid = "bafybeigse2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2";
+  const metadataCid = "bafybeigse2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2";
   const metadataHash = ethers.id("e2e-metadata");
+  const physicalId = ethers.id("e2e-physical-1");
 
   const productId = await registry
     .connect(manufacturer)
-    .registerUnit.staticCall(secretHash, metadataCid, metadataHash);
+    .registerUnit.staticCall(
+      secretHash,
+      metadataCid,
+      metadataHash,
+      physicalId
+    );
   await registry
     .connect(manufacturer)
-    .registerUnit(secretHash, metadataCid, metadataHash);
+    .registerUnit(secretHash, metadataCid, metadataHash, physicalId);
 
   await registry
     .connect(manufacturer)
@@ -36,13 +42,14 @@ async function main() {
     .connect(distributor)
     .transferOwnership(productId, pharmacy.address);
 
-  const product = await registry.getProduct(productId);
+  const statusView = await registry.getProductStatus(productId);
   console.log(
     JSON.stringify(
       {
         productId: productId.toString(),
-        owner: product.owner,
-        status: Number(product.status),
+        owner: statusView.currentOwner,
+        status: Number(statusView.status),
+        metadataCid: statusView.metadataCid,
         registry: await registry.getAddress(),
         path: "Manufacturer -> Distributor -> Pharmacy",
       },

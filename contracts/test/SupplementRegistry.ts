@@ -14,6 +14,9 @@ describe("SupplementRegistry", function () {
   const OTHER_SECRET_HASH = ethers.keccak256(
     ethers.solidityPacked(["bytes32"], [OTHER_SECRET])
   );
+  const PHYSICAL_ID = ethers.id("physical-unit-1");
+  const PHYSICAL_ID_2 = ethers.id("physical-unit-2");
+  const PHYSICAL_ID_3 = ethers.id("physical-unit-3");
   const METADATA_CID = "bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi";
   const METADATA_JSON = JSON.stringify({
     name: "Vitamin D3",
@@ -38,10 +41,14 @@ describe("SupplementRegistry", function () {
     return { registry, admin, manufacturer, distributor, pharmacy, outsider };
   }
 
-  async function registerUnit(registry: SupplementRegistry, manufacturer: any) {
+  async function registerUnit(
+    registry: SupplementRegistry,
+    manufacturer: any,
+    physicalId: string = PHYSICAL_ID
+  ) {
     await registry
       .connect(manufacturer)
-      .registerUnit(SECRET_HASH, METADATA_CID, METADATA_HASH);
+      .registerUnit(SECRET_HASH, METADATA_CID, METADATA_HASH, physicalId);
     return 1n;
   }
 
@@ -51,12 +58,17 @@ describe("SupplementRegistry", function () {
 
       const productId = await registry
         .connect(manufacturer)
-        .registerUnit.staticCall(SECRET_HASH, METADATA_CID, METADATA_HASH);
+        .registerUnit.staticCall(
+          SECRET_HASH,
+          METADATA_CID,
+          METADATA_HASH,
+          PHYSICAL_ID
+        );
 
       await expect(
         registry
           .connect(manufacturer)
-          .registerUnit(SECRET_HASH, METADATA_CID, METADATA_HASH)
+          .registerUnit(SECRET_HASH, METADATA_CID, METADATA_HASH, PHYSICAL_ID)
       )
         .to.emit(registry, "ProductRegistered")
         .withArgs(
@@ -73,20 +85,31 @@ describe("SupplementRegistry", function () {
       expect(product.status).to.equal(0);
       expect(product.metadataCid).to.equal(METADATA_CID);
       expect(product.metadataHash).to.equal(METADATA_HASH);
+
+      const statusView = await registry.getProductStatus(productId);
+      expect(statusView.status).to.equal(0);
+      expect(statusView.currentOwner).to.equal(manufacturer.address);
+      expect(statusView.metadataCid).to.equal(METADATA_CID);
     });
 
     it("registers a batch sharing one metadata cid", async function () {
       const { registry, manufacturer } = await deployFixture();
       const hashes = [SECRET_HASH, OTHER_SECRET_HASH, SECRET_HASH];
+      const physicalIds = [PHYSICAL_ID, PHYSICAL_ID_2, PHYSICAL_ID_3];
 
       const firstId = await registry
         .connect(manufacturer)
-        .registerBatch.staticCall(hashes, METADATA_CID, METADATA_HASH);
+        .registerBatch.staticCall(
+          hashes,
+          METADATA_CID,
+          METADATA_HASH,
+          physicalIds
+        );
 
       await expect(
         registry
           .connect(manufacturer)
-          .registerBatch(hashes, METADATA_CID, METADATA_HASH)
+          .registerBatch(hashes, METADATA_CID, METADATA_HASH, physicalIds)
       )
         .to.emit(registry, "ProductRegistered")
         .withArgs(1n, manufacturer.address, 0, METADATA_CID, METADATA_HASH)
@@ -98,6 +121,26 @@ describe("SupplementRegistry", function () {
       expect(firstId).to.equal(1n);
       expect(await registry.nextProductId()).to.equal(3n);
     });
+
+    it("rejects duplicate physical ids", async function () {
+      const { registry, manufacturer } = await deployFixture();
+      await registry
+        .connect(manufacturer)
+        .registerUnit(SECRET_HASH, METADATA_CID, METADATA_HASH, PHYSICAL_ID);
+
+      await expect(
+        registry
+          .connect(manufacturer)
+          .registerUnit(
+            OTHER_SECRET_HASH,
+            METADATA_CID,
+            METADATA_HASH,
+            PHYSICAL_ID
+          )
+      )
+        .to.be.revertedWithCustomError(registry, "PhysicalIdAlreadyRegistered")
+        .withArgs(PHYSICAL_ID);
+    });
   });
 
   describe("role checks", function () {
@@ -107,7 +150,7 @@ describe("SupplementRegistry", function () {
       await expect(
         registry
           .connect(outsider)
-          .registerUnit(SECRET_HASH, METADATA_CID, METADATA_HASH)
+          .registerUnit(SECRET_HASH, METADATA_CID, METADATA_HASH, PHYSICAL_ID)
       ).to.be.revertedWithCustomError(
         registry,
         "AccessControlUnauthorizedAccount"
@@ -122,7 +165,9 @@ describe("SupplementRegistry", function () {
       const productId = await registerUnit(registry, manufacturer);
 
       await expect(
-        registry.connect(manufacturer).transferOwnership(productId, distributor.address)
+        registry
+          .connect(manufacturer)
+          .transferOwnership(productId, distributor.address)
       )
         .to.emit(registry, "OwnershipTransferred")
         .withArgs(productId, manufacturer.address, distributor.address);
@@ -132,7 +177,9 @@ describe("SupplementRegistry", function () {
       expect(product.status).to.equal(1);
 
       await expect(
-        registry.connect(distributor).transferOwnership(productId, pharmacy.address)
+        registry
+          .connect(distributor)
+          .transferOwnership(productId, pharmacy.address)
       )
         .to.emit(registry, "OwnershipTransferred")
         .withArgs(productId, distributor.address, pharmacy.address);
@@ -148,13 +195,17 @@ describe("SupplementRegistry", function () {
       const productId = await registerUnit(registry, manufacturer);
 
       await expect(
-        registry.connect(manufacturer).transferOwnership(productId, pharmacy.address)
+        registry
+          .connect(manufacturer)
+          .transferOwnership(productId, pharmacy.address)
       )
         .to.be.revertedWithCustomError(registry, "InvalidTransfer")
         .withArgs(productId, pharmacy.address, 0);
 
       await expect(
-        registry.connect(outsider).transferOwnership(productId, distributor.address)
+        registry
+          .connect(outsider)
+          .transferOwnership(productId, distributor.address)
       )
         .to.be.revertedWithCustomError(registry, "NotProductOwner")
         .withArgs(productId, outsider.address);
@@ -164,7 +215,9 @@ describe("SupplementRegistry", function () {
         .transferOwnership(productId, distributor.address);
 
       await expect(
-        registry.connect(distributor).transferOwnership(productId, outsider.address)
+        registry
+          .connect(distributor)
+          .transferOwnership(productId, outsider.address)
       )
         .to.be.revertedWithCustomError(registry, "InvalidTransfer")
         .withArgs(productId, outsider.address, 1);
@@ -187,7 +240,9 @@ describe("SupplementRegistry", function () {
       const parties = await deployFixture();
       const productId = await atPointOfSale(parties.registry, parties);
 
-      await expect(parties.registry.connect(parties.outsider).consume(productId, SECRET))
+      await expect(
+        parties.registry.connect(parties.outsider).consume(productId, SECRET)
+      )
         .to.emit(parties.registry, "ProductConsumed")
         .withArgs(productId, parties.outsider.address);
 
@@ -200,7 +255,9 @@ describe("SupplementRegistry", function () {
       const productId = await atPointOfSale(parties.registry, parties);
 
       await expect(
-        parties.registry.connect(parties.outsider).consume(productId, OTHER_SECRET)
+        parties.registry
+          .connect(parties.outsider)
+          .consume(productId, OTHER_SECRET)
       )
         .to.be.revertedWithCustomError(parties.registry, "InvalidSecret")
         .withArgs(productId);
@@ -210,12 +267,17 @@ describe("SupplementRegistry", function () {
       const parties = await deployFixture();
       const productId = await atPointOfSale(parties.registry, parties);
 
-      await parties.registry.connect(parties.outsider).consume(productId, SECRET);
+      await parties.registry
+        .connect(parties.outsider)
+        .consume(productId, SECRET);
 
       await expect(
         parties.registry.connect(parties.outsider).consume(productId, SECRET)
       )
-        .to.be.revertedWithCustomError(parties.registry, "ProductAlreadyConsumed")
+        .to.be.revertedWithCustomError(
+          parties.registry,
+          "ProductAlreadyConsumed"
+        )
         .withArgs(productId);
     });
 
@@ -236,7 +298,7 @@ describe("SupplementRegistry", function () {
       await expect(
         registry
           .connect(manufacturer)
-          .registerUnit(SECRET_HASH, "", METADATA_HASH)
+          .registerUnit(SECRET_HASH, "", METADATA_HASH, PHYSICAL_ID)
       ).to.be.revertedWithCustomError(registry, "InvalidMetadataCid");
     });
 
@@ -246,7 +308,7 @@ describe("SupplementRegistry", function () {
       await expect(
         registry
           .connect(manufacturer)
-          .registerBatch([], METADATA_CID, METADATA_HASH)
+          .registerBatch([], METADATA_CID, METADATA_HASH, [])
       )
         .to.be.revertedWithCustomError(registry, "InvalidBatchSize")
         .withArgs(0n);
@@ -256,6 +318,10 @@ describe("SupplementRegistry", function () {
       const { registry } = await deployFixture();
 
       await expect(registry.getProduct(1n))
+        .to.be.revertedWithCustomError(registry, "ProductDoesNotExist")
+        .withArgs(1n);
+
+      await expect(registry.getProductStatus(1n))
         .to.be.revertedWithCustomError(registry, "ProductDoesNotExist")
         .withArgs(1n);
     });
@@ -284,13 +350,13 @@ describe("SupplementRegistry", function () {
       await expect(
         registry
           .connect(manufacturer)
-          .registerUnit(SECRET_HASH, METADATA_CID, METADATA_HASH)
+          .registerUnit(SECRET_HASH, METADATA_CID, METADATA_HASH, PHYSICAL_ID)
       ).to.be.revertedWithCustomError(registry, "EnforcedPause");
 
       await registry.connect(admin).unpause();
       await registry
         .connect(manufacturer)
-        .registerUnit(SECRET_HASH, METADATA_CID, METADATA_HASH);
+        .registerUnit(SECRET_HASH, METADATA_CID, METADATA_HASH, PHYSICAL_ID);
     });
 
     it("rejects pause from non-admin", async function () {

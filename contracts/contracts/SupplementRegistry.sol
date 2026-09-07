@@ -16,11 +16,13 @@ contract SupplementRegistry is AccessControl, Pausable {
         bytes32 secretHash;
         string metadataCid;
         bytes32 metadataHash;
+        bytes32 physicalId;
         bool exists;
     }
 
     ProductId private _nextProductId;
     mapping(ProductId => Product) private _products;
+    mapping(bytes32 => ProductId) private _physicalIdToProduct;
 
     event ProductRegistered(
         ProductId indexed productId,
@@ -45,6 +47,8 @@ contract SupplementRegistry is AccessControl, Pausable {
     error InvalidSecretHash();
     error InvalidMetadataCid();
     error InvalidMetadataHash();
+    error InvalidPhysicalId();
+    error PhysicalIdAlreadyRegistered(bytes32 physicalId);
     error InvalidSecret(ProductId productId);
     error ProductAlreadyConsumed(ProductId productId);
     error ProductNotConsumable(ProductId productId, ProductStatus status);
@@ -67,20 +71,28 @@ contract SupplementRegistry is AccessControl, Pausable {
     function registerUnit(
         bytes32 secretHash,
         string calldata metadataCid,
-        bytes32 metadataHash
+        bytes32 metadataHash,
+        bytes32 physicalId
     )
         external
         onlyRole(MANUFACTURER_ROLE)
         whenNotPaused
         returns (ProductId productId)
     {
-        productId = _mintUnit(msg.sender, secretHash, metadataCid, metadataHash);
+        productId = _mintUnit(
+            msg.sender,
+            secretHash,
+            metadataCid,
+            metadataHash,
+            physicalId
+        );
     }
 
     function registerBatch(
         bytes32[] calldata secretHashes,
         string calldata metadataCid,
-        bytes32 metadataHash
+        bytes32 metadataHash,
+        bytes32[] calldata physicalIds
     )
         external
         onlyRole(MANUFACTURER_ROLE)
@@ -88,13 +100,19 @@ contract SupplementRegistry is AccessControl, Pausable {
         returns (ProductId firstProductId)
     {
         uint256 count = secretHashes.length;
-        if (count == 0) {
+        if (count == 0 || count != physicalIds.length) {
             revert InvalidBatchSize(count);
         }
 
         firstProductId = ProductId.wrap(ProductId.unwrap(_nextProductId) + 1);
         for (uint256 i = 0; i < count; ) {
-            _mintUnit(msg.sender, secretHashes[i], metadataCid, metadataHash);
+            _mintUnit(
+                msg.sender,
+                secretHashes[i],
+                metadataCid,
+                metadataHash,
+                physicalIds[i]
+            );
             unchecked {
                 ++i;
             }
@@ -181,6 +199,30 @@ contract SupplementRegistry is AccessControl, Pausable {
         );
     }
 
+    function getProductStatus(
+        ProductId productId
+    )
+        external
+        view
+        returns (
+            ProductStatus status,
+            address currentOwner,
+            string memory metadataCid
+        )
+    {
+        Product storage product = _products[productId];
+        if (!product.exists) {
+            revert ProductDoesNotExist(productId);
+        }
+        return (product.status, product.owner, product.metadataCid);
+    }
+
+    function productIdByPhysicalId(
+        bytes32 physicalId
+    ) external view returns (ProductId) {
+        return _physicalIdToProduct[physicalId];
+    }
+
     function nextProductId() external view returns (ProductId) {
         return _nextProductId;
     }
@@ -189,7 +231,8 @@ contract SupplementRegistry is AccessControl, Pausable {
         address owner,
         bytes32 secretHash,
         string calldata metadataCid,
-        bytes32 metadataHash
+        bytes32 metadataHash,
+        bytes32 physicalId
     ) internal returns (ProductId productId) {
         if (secretHash == bytes32(0)) {
             revert InvalidSecretHash();
@@ -199,6 +242,12 @@ contract SupplementRegistry is AccessControl, Pausable {
         }
         if (metadataHash == bytes32(0)) {
             revert InvalidMetadataHash();
+        }
+        if (physicalId == bytes32(0)) {
+            revert InvalidPhysicalId();
+        }
+        if (ProductId.unwrap(_physicalIdToProduct[physicalId]) != 0) {
+            revert PhysicalIdAlreadyRegistered(physicalId);
         }
 
         uint256 next = ProductId.unwrap(_nextProductId) + 1;
@@ -210,8 +259,10 @@ contract SupplementRegistry is AccessControl, Pausable {
             secretHash: secretHash,
             metadataCid: metadataCid,
             metadataHash: metadataHash,
+            physicalId: physicalId,
             exists: true
         });
+        _physicalIdToProduct[physicalId] = productId;
         emit ProductRegistered(
             productId,
             owner,
