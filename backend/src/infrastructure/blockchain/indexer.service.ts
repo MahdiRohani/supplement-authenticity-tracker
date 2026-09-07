@@ -25,6 +25,9 @@ export class IndexerService implements OnModuleInit, OnModuleDestroy {
   private readonly ownershipTransferredTopic = id(
     'OwnershipTransferred(uint256,address,address)',
   );
+  private readonly productConsumedTopic = id(
+    'ProductConsumed(uint256,address)',
+  );
 
   constructor(
     private readonly config: ConfigService,
@@ -80,7 +83,7 @@ export class IndexerService implements OnModuleInit, OnModuleDestroy {
       const toBlock = Number(latest);
       const address = await this.contract.getAddress();
 
-      const [registeredLogs, transferredLogs] = await Promise.all([
+      const [registeredLogs, transferredLogs, consumedLogs] = await Promise.all([
         this.provider.getLogs({
           address,
           fromBlock,
@@ -93,9 +96,19 @@ export class IndexerService implements OnModuleInit, OnModuleDestroy {
           toBlock,
           topics: [this.ownershipTransferredTopic],
         }),
+        this.provider.getLogs({
+          address,
+          fromBlock,
+          toBlock,
+          topics: [this.productConsumedTopic],
+        }),
       ]);
 
-      const ordered = [...registeredLogs, ...transferredLogs].sort((a, b) => {
+      const ordered = [
+        ...registeredLogs,
+        ...transferredLogs,
+        ...consumedLogs,
+      ].sort((a, b) => {
         if (a.blockNumber !== b.blockNumber) {
           return a.blockNumber - b.blockNumber;
         }
@@ -108,6 +121,8 @@ export class IndexerService implements OnModuleInit, OnModuleDestroy {
           await this.handleProductRegistered(log);
         } else if (topic === this.ownershipTransferredTopic) {
           await this.handleOwnershipTransferred(log);
+        } else if (topic === this.productConsumedTopic) {
+          await this.handleProductConsumed(log);
         }
       }
 
@@ -211,6 +226,35 @@ export class IndexerService implements OnModuleInit, OnModuleDestroy {
     this.logger.log(
       `Indexed OwnershipTransferred id=${chainProductId} ${fromAddress} -> ${toAddress}`,
     );
+  }
+
+  private async handleProductConsumed(log: Log) {
+    if (!this.contract) {
+      return;
+    }
+
+    const parsed = this.contract.interface.parseLog({
+      topics: [...log.topics],
+      data: log.data,
+    });
+    if (!parsed || parsed.name !== 'ProductConsumed') {
+      return;
+    }
+
+    const chainProductId = parsed.args.productId.toString();
+    await this.prisma.product.upsert({
+      where: { chainProductId },
+      create: {
+        chainProductId,
+        ownerAddress: String(parsed.args.actor).toLowerCase(),
+        status: ProductStatus.Consumed,
+      },
+      update: {
+        status: ProductStatus.Consumed,
+      },
+    });
+
+    this.logger.log(`Indexed ProductConsumed id=${chainProductId}`);
   }
 
   private mapStatus(value: number): ProductStatus {
