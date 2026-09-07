@@ -7,7 +7,13 @@ import ir.aut.supplementtracker.core.model.ConsumeRequest
 import ir.aut.supplementtracker.core.model.ConsumeResult
 import ir.aut.supplementtracker.core.model.OwnershipEvent
 import ir.aut.supplementtracker.core.model.OwnershipHistory
+import ir.aut.supplementtracker.core.model.ProductListPage
+import ir.aut.supplementtracker.core.model.ProductListQuery
 import ir.aut.supplementtracker.core.model.ProductMetadata
+import ir.aut.supplementtracker.core.model.ProductSummary
+import ir.aut.supplementtracker.core.model.RegisterBatchItem
+import ir.aut.supplementtracker.core.model.RegisterBatchRequest
+import ir.aut.supplementtracker.core.model.RegisterBatchResult
 import ir.aut.supplementtracker.core.model.RegisterProductRequest
 import ir.aut.supplementtracker.core.model.RegisteredProduct
 import ir.aut.supplementtracker.core.model.TransferRequest
@@ -15,6 +21,7 @@ import ir.aut.supplementtracker.core.model.TransferResult
 import ir.aut.supplementtracker.core.model.VerifyResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -49,6 +56,55 @@ class HttpProductRepository(
                 metadataCid = json.optString("metadataCid").ifBlank { null },
                 secret = json.optString("secret").ifBlank { null },
                 status = json.optString("status", "Created"),
+            )
+        }
+
+    override suspend fun registerBatch(request: RegisterBatchRequest): RegisterBatchResult =
+        withContext(Dispatchers.IO) {
+            val payload =
+                JSONObject()
+                    .put("name", request.name)
+                    .put("batch", request.batch)
+                    .put("count", request.count)
+                    .apply {
+                        request.manufacturerAddress?.let { put("manufacturerAddress", it) }
+                    }
+                    .toString()
+            val json = executeJson(
+                Request.Builder()
+                    .url("${baseUrl}products/batch")
+                    .post(payload.toRequestBody(JSON_MEDIA))
+                    .build(),
+            )
+            RegisterBatchResult(
+                count = json.optInt("count"),
+                metadataCid = json.optString("metadataCid").ifBlank { null },
+                mintedOnChain = json.optBoolean("mintedOnChain"),
+                txHash = json.optString("txHash").ifBlank { null },
+                items = json.optJSONArray("items").toBatchItems(),
+            )
+        }
+
+    override suspend fun list(query: ProductListQuery): ProductListPage =
+        withContext(Dispatchers.IO) {
+            val urlBuilder = "${baseUrl}products".toHttpUrl().newBuilder()
+                .addQueryParameter("page", query.page.toString())
+                .addQueryParameter("limit", query.limit.toString())
+            query.owner?.takeIf { it.isNotBlank() }?.let { urlBuilder.addQueryParameter("owner", it) }
+            query.status?.takeIf { it.isNotBlank() }?.let { urlBuilder.addQueryParameter("status", it) }
+            query.q?.takeIf { it.isNotBlank() }?.let { urlBuilder.addQueryParameter("q", it) }
+            val json = executeJson(
+                Request.Builder()
+                    .url(urlBuilder.build())
+                    .get()
+                    .build(),
+            )
+            ProductListPage(
+                page = json.optInt("page", query.page),
+                limit = json.optInt("limit", query.limit),
+                total = json.optInt("total"),
+                totalPages = json.optInt("totalPages", 1),
+                items = json.optJSONArray("items").toProductSummaries(),
             )
         }
 
@@ -165,6 +221,43 @@ class HttpProductRepository(
                         txHash = item.getString("txHash"),
                         blockNumber = item.getString("blockNumber"),
                         createdAt = item.getString("createdAt"),
+                    ),
+                )
+            }
+        }
+    }
+
+    private fun JSONArray?.toProductSummaries(): List<ProductSummary> {
+        if (this == null) return emptyList()
+        return buildList {
+            for (index in 0 until length()) {
+                val item = getJSONObject(index)
+                add(
+                    ProductSummary(
+                        id = item.getString("id"),
+                        chainProductId = item.getString("chainProductId"),
+                        ownerAddress = item.getString("ownerAddress"),
+                        status = item.getString("status"),
+                        name = item.optString("name").ifBlank { null },
+                        batchCode = item.optString("batchCode").ifBlank { null },
+                        metadataCid = item.optString("metadataCid").ifBlank { null },
+                        createdAt = item.optString("createdAt"),
+                    ),
+                )
+            }
+        }
+    }
+
+    private fun JSONArray?.toBatchItems(): List<RegisterBatchItem> {
+        if (this == null) return emptyList()
+        return buildList {
+            for (index in 0 until length()) {
+                val item = getJSONObject(index)
+                add(
+                    RegisterBatchItem(
+                        id = item.getString("id"),
+                        chainProductId = item.getString("chainProductId"),
+                        secret = item.optString("secret").ifBlank { null },
                     ),
                 )
             }
