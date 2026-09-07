@@ -33,6 +33,16 @@ android {
     buildFeatures {
         compose = true
     }
+    packaging {
+        resources {
+            pickFirsts += "META-INF/**"
+            excludes += setOf(
+                "META-INF/*.SF",
+                "META-INF/*.DSA",
+                "META-INF/*.RSA",
+            )
+        }
+    }
 }
 
 dependencies {
@@ -40,6 +50,7 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:domain"))
     implementation(project(":core:data"))
+    implementation(project(":core:blockchain"))
     implementation(project(":feature:manufacturer-register"))
     implementation(project(":feature:transfer"))
     implementation(project(":feature:history"))
