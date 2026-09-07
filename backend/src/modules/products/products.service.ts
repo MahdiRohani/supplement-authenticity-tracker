@@ -1,6 +1,7 @@
 import {
   Injectable,
   Logger,
+  BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
 import { ProductStatus } from '@prisma/client';
@@ -61,6 +62,8 @@ export class ProductsService {
         chainProductId: placeholderId,
         ownerAddress: manufacturerAddress,
         status: ProductStatus.Created,
+        name: input.name,
+        batchCode: input.batch ?? null,
         metadataCid: pinned.cid,
         metadataHash: pinned.contentHash,
       },
@@ -110,8 +113,175 @@ export class ProductsService {
       secretHash,
       physicalId,
       status: product.status,
+      name: product.name,
+      batchCode: product.batchCode,
       secretRevealOnce: true,
       mintedOnChain,
+    };
+  }
+
+  async registerBatch(input: {
+    name: string;
+    batch?: string;
+    count: number;
+    manufacturerAddress?: string;
+  }) {
+    const count = Math.floor(input.count);
+    if (!Number.isFinite(count) || count < 1 || count > 100) {
+      throw new BadRequestException('count must be between 1 and 100');
+    }
+    const manufacturerAddress = (
+      input.manufacturerAddress ??
+      '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+    ).toLowerCase();
+
+    const secrets: string[] = [];
+    const secretHashes: string[] = [];
+    const physicalIds: string[] = [];
+    for (let i = 0; i < count; i += 1) {
+      const secret = ethers.hexlify(ethers.randomBytes(32));
+      secrets.push(secret);
+      secretHashes.push(
+        ethers.keccak256(ethers.solidityPacked(['bytes32'], [secret])),
+      );
+      physicalIds.push(
+        ethers.keccak256(
+          ethers.toUtf8Bytes(
+            `${input.name}:${input.batch ?? ''}:${Date.now()}:${i}:${secret}`,
+          ),
+        ),
+      );
+    }
+
+    const metadata = {
+      name: input.name,
+      batch: input.batch ?? null,
+      schemaVersion: 1,
+      count,
+    };
+    const pinned = await this.ipfs.pinJson(metadata);
+
+    let mintedOnChain = false;
+    let firstChainId: string | null = null;
+    let txHash: string | null = null;
+    try {
+      const minted = await this.relayer.registerBatch({
+        manufacturerAddress,
+        secretHashes,
+        metadataCid: pinned.cid,
+        metadataHash: pinned.contentHash,
+        physicalIds,
+      });
+      mintedOnChain = true;
+      firstChainId = minted.firstChainProductId;
+      txHash = minted.txHash;
+    } catch (error) {
+      this.logger.warn(`On-chain batch register skipped: ${String(error)}`);
+    }
+
+    const created = [];
+    for (let i = 0; i < count; i += 1) {
+      const chainProductId =
+        mintedOnChain && firstChainId
+          ? String(BigInt(firstChainId) + BigInt(i))
+          : `pending-batch-${Date.now()}-${i}`;
+      const product = await this.prisma.product.create({
+        data: {
+          chainProductId,
+          ownerAddress: manufacturerAddress,
+          status: ProductStatus.Created,
+          name: input.name,
+          batchCode: input.batch ?? null,
+          metadataCid: pinned.cid,
+          metadataHash: pinned.contentHash,
+        },
+      });
+      created.push({
+        id: product.id,
+        chainProductId: product.chainProductId,
+        secret: secrets[i],
+        secretHash: secretHashes[i],
+        physicalId: physicalIds[i],
+      });
+    }
+
+    await this.audit.record({
+      action: 'product.register_batch',
+      actor: manufacturerAddress,
+      detail: {
+        count,
+        mintedOnChain,
+        txHash,
+        firstChainProductId: firstChainId,
+      },
+    });
+
+    return {
+      count: created.length,
+      metadataCid: pinned.cid,
+      metadataHash: pinned.contentHash,
+      mintedOnChain,
+      txHash,
+      secretRevealOnce: true,
+      items: created,
+    };
+  }
+
+  async listProducts(query: {
+    owner?: string;
+    status?: string;
+    q?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const page = Math.max(1, Number(query.page ?? 1));
+    const limit = Math.min(100, Math.max(1, Number(query.limit ?? 20)));
+    const where: Record<string, unknown> = {};
+    if (query.owner) {
+      where.ownerAddress = query.owner.toLowerCase();
+    }
+    if (query.status && Object.values(ProductStatus).includes(query.status as ProductStatus)) {
+      where.status = query.status as ProductStatus;
+    }
+    if (query.q?.trim()) {
+      const q = query.q.trim();
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { batchCode: { contains: q, mode: 'insensitive' } },
+        { chainProductId: { contains: q } },
+        { id: { contains: q } },
+      ];
+    }
+
+    const [total, items] = await Promise.all([
+      this.prisma.product.count({ where }),
+      this.prisma.product.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          id: true,
+          chainProductId: true,
+          ownerAddress: true,
+          status: true,
+          name: true,
+          batchCode: true,
+          metadataCid: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+
+    return {
+      page,
+      limit,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+      items: items.map((item) => ({
+        ...item,
+        createdAt: item.createdAt.toISOString(),
+      })),
     };
   }
 

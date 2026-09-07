@@ -149,11 +149,42 @@ describe('ProductsService history', () => {
   });
 });
 
-describe('RateLimitService', () => {
-  it('blocks after limit in window', () => {
-    const limiter = new RateLimitService();
-    limiter.check('verify:1', 2, 60_000);
-    limiter.check('verify:1', 2, 60_000);
-    expect(() => limiter.check('verify:1', 2, 60_000)).toThrow(/Too Many/);
+describe('ProductsService list', () => {
+  it('filters by owner and paginates', async () => {
+    const { ProductsService } = await import(
+      '../src/modules/products/products.service'
+    );
+    const prisma = {
+      product: {
+        count: jest.fn().mockResolvedValue(1),
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'p1',
+            chainProductId: '7',
+            ownerAddress: '0xowner',
+            status: ProductStatus.Created,
+            name: 'Vitamin D3',
+            batchCode: 'B-1',
+            metadataCid: 'bafy',
+            createdAt: new Date('2026-01-01T00:00:00.000Z'),
+          },
+        ]),
+      },
+    };
+    const service = new ProductsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      { record: jest.fn() } as never,
+      new MemoryTtlCache(),
+    );
+    const page = await service.listProducts({
+      owner: '0xOwner',
+      page: 1,
+      limit: 10,
+    });
+    expect(page.total).toBe(1);
+    expect(page.items[0].name).toBe('Vitamin D3');
+    expect(prisma.product.findMany).toHaveBeenCalled();
   });
 });

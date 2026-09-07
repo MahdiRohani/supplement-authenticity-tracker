@@ -27,11 +27,18 @@ model Product {
   chainProductId String             @unique
   ownerAddress   String
   status         ProductStatus
+  name           String?
+  batchCode      String?
   metadataCid    String?
   metadataHash   String?
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
   ownershipEvents OwnershipEvent[]
+
+  @@index([ownerAddress])
+  @@index([status])
+  @@index([name])
+  @@index([batchCode])
 }
 
 model OwnershipEvent {
