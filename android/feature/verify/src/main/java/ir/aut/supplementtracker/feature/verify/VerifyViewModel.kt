@@ -86,16 +86,3 @@ class VerifyViewModel(
             }
     }
 }
-
-fun ir.aut.supplementtracker.core.model.VerifyResult.toAuthenticityStatus(): AuthenticityStatus =
-    when (authenticity) {
-        "Authentic" -> AuthenticityStatus.Authentic
-        "Consumed" -> AuthenticityStatus.Consumed
-        "Invalid" -> AuthenticityStatus.Invalid
-        else -> when (status) {
-            "Created", "Transferred", "AtPointOfSale" -> AuthenticityStatus.Authentic
-            "Consumed" -> AuthenticityStatus.Consumed
-            "Invalid" -> AuthenticityStatus.Invalid
-            else -> AuthenticityStatus.NotFound
-        }
-    }
