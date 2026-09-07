@@ -55,3 +55,52 @@ data class OwnershipHistory(
     val elapsedMs: Long,
     val events: List<OwnershipEvent>,
 )
+
+data class QrPayload(
+    val schemaVersion: Int,
+    val productId: String,
+    val chainId: Long,
+) {
+    fun encode(): String =
+        """{"v":$schemaVersion,"productId":"$productId","chainId":$chainId}"""
+
+    companion object {
+        const val CURRENT_VERSION = 1
+
+        fun parse(raw: String): QrPayload? {
+            val trimmed = raw.trim()
+            if (trimmed.toLongOrNull() != null) {
+                return QrPayload(CURRENT_VERSION, trimmed, 31337L)
+            }
+            return runCatching {
+                val v = Regex("\"v\"\\s*:\\s*(\\d+)").find(trimmed)?.groupValues?.get(1)?.toInt()
+                    ?: return null
+                val productId =
+                    Regex("\"productId\"\\s*:\\s*\"([^\"]+)\"").find(trimmed)?.groupValues?.get(1)
+                        ?: return null
+                val chainId =
+                    Regex("\"chainId\"\\s*:\\s*(\\d+)").find(trimmed)?.groupValues?.get(1)?.toLong()
+                        ?: return null
+                QrPayload(v, productId, chainId)
+            }.getOrNull()
+        }
+    }
+}
+
+data class ProductMetadata(
+    val name: String? = null,
+    val batch: String? = null,
+    val expiresAt: String? = null,
+    val image: String? = null,
+)
+
+data class VerifyResult(
+    val productId: String,
+    val chainProductId: String,
+    val status: String,
+    val authenticity: String,
+    val currentOwner: String,
+    val metadataCid: String?,
+    val metadata: ProductMetadata?,
+    val source: String,
+)
