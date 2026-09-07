@@ -1,6 +1,10 @@
 package ir.aut.supplementtracker.core.data
 
+import ir.aut.supplementtracker.core.domain.DomainError
+import ir.aut.supplementtracker.core.domain.ErrorMapper
 import ir.aut.supplementtracker.core.domain.ProductRepository
+import ir.aut.supplementtracker.core.model.ConsumeRequest
+import ir.aut.supplementtracker.core.model.ConsumeResult
 import ir.aut.supplementtracker.core.model.OwnershipEvent
 import ir.aut.supplementtracker.core.model.OwnershipHistory
 import ir.aut.supplementtracker.core.model.ProductMetadata
@@ -17,6 +21,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.IOException
 
 class HttpProductRepository(
     private val client: OkHttpClient = OkHttpClient(),
@@ -64,6 +69,24 @@ class HttpProductRepository(
             )
         }
 
+    override suspend fun consume(request: ConsumeRequest): ConsumeResult =
+        withContext(Dispatchers.IO) {
+            val payload = JSONObject().put("secret", request.secret).toString()
+            val json = executeJson(
+                Request.Builder()
+                    .url("${baseUrl}products/${request.productId}/consume")
+                    .post(payload.toRequestBody(JSON_MEDIA))
+                    .build(),
+            )
+            ConsumeResult(
+                productId = json.optString("productId", request.productId),
+                chainProductId = json.getString("chainProductId"),
+                status = json.optString("status", "Consumed"),
+                txHash = json.getString("txHash"),
+                actor = json.optString("actor"),
+            )
+        }
+
     override suspend fun history(productId: String): OwnershipHistory =
         withContext(Dispatchers.IO) {
             val json = executeJson(
@@ -107,16 +130,25 @@ class HttpProductRepository(
                     )
                 },
                 source = json.optString("source", "db"),
+                message = json.optString("message").ifBlank { null },
             )
         }
 
     private fun executeJson(request: Request): JSONObject {
-        client.newCall(request).execute().use { response ->
-            val body = response.body?.string().orEmpty()
-            if (!response.isSuccessful) {
-                error("API failed: HTTP ${response.code} $body")
+        try {
+            client.newCall(request).execute().use { response ->
+                val body = response.body?.string().orEmpty()
+                if (!response.isSuccessful) {
+                    throw ErrorMapper.fromHttp(response.code, body)
+                }
+                return JSONObject(body)
             }
-            return JSONObject(body)
+        } catch (error: DomainError) {
+            throw error
+        } catch (error: IOException) {
+            throw DomainError.Network("Unable to resolve host or connect", error)
+        } catch (error: Throwable) {
+            throw DomainError.Unknown(error.message ?: "Request failed", error)
         }
     }
 

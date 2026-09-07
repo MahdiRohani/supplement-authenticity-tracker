@@ -3,6 +3,7 @@ package ir.aut.supplementtracker.feature.transfer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import ir.aut.supplementtracker.core.domain.ErrorMapper
 import ir.aut.supplementtracker.core.domain.TransferProductUseCase
 import ir.aut.supplementtracker.core.model.TransferRequest
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -49,12 +50,14 @@ class TransferViewModel(
                 _state.update { it.copy(isSubmitting = false, result = result) }
                 _effects.emit(TransferUiEffect.ShowMessage("Transferred ${result.txHash}"))
             }.onFailure { error ->
+                val message = ErrorMapper.toUserMessage(error)
                 _state.update {
                     it.copy(
                         isSubmitting = false,
-                        errorMessage = error.message ?: "Transfer failed",
+                        errorMessage = message,
                     )
                 }
+                _effects.emit(TransferUiEffect.ShowMessage(message))
             }
         }
     }
