@@ -29,21 +29,40 @@ cd supplement-authenticity-tracker
 
 1. Open the `android/` directory in Android Studio (not the monorepo root).
 2. Let Gradle sync finish. If prompted, set the Android SDK path (creates `android/local.properties` locally; it is gitignored).
-3. Select a device or emulator, then run the `:app` configuration.
+3. Select product flavor **`local`** (emulator → `10.0.2.2`) or **`sepolia`**, then run `:app`.
 
 From the command line:
 
 ```bash
 cd android
-./gradlew :app:assembleDebug
+./gradlew :app:assembleLocalDebug
 ```
 
-APK output: `android/app/build/outputs/apk/debug/`.
+APK output: `android/app/build/outputs/apk/local/debug/`.
+
+Deep link example: `supplementtracker://verify/1`
+
+## One-click demo
+
+```bash
+./scripts/demo.sh
+```
+
+Starts contract e2e, Docker Compose (Postgres + IPFS + Backend), and a sample register/list HTTP call.
+
+## Docker Compose
+
+```bash
+docker compose up -d --build
+```
+
+Services: `postgres`, `ipfs` (Kubo), `backend` on port `3000`.
 
 ## Contracts and backend
 
 - Contracts: `cd contracts && npm install && npm test && npm run deploy:local`
-- Backend: see `backend/README.md` (`GET /v1/health`, `POST /v1/products`, ProductRegistered indexer)
+- Backend: see `backend/README.md` (`GET /v1/health`, `GET /v1/products`, `POST /v1/products`, `POST /v1/products/batch`, ProductRegistered indexer)
+- Env is validated with Zod at startup (see `backend/.env.example`; never commit real secrets)
 
 ## Branch and commits
 
