@@ -7,4 +7,5 @@
     <string name="result_id">ID: %1$s</string>
     <string name="result_cid">CID: %1$s</string>
     <string name="result_secret">Secret (show once): %1$s</string>
+    <string name="hide_secret_action">Hide secret (printed)</string>
 </resources>
