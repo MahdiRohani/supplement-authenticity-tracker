@@ -19,6 +19,28 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    flavorDimensions += "env"
+    productFlavors {
+        create("local") {
+            dimension = "env"
+            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3000/v1/\"")
+            buildConfigField("String", "RPC_URL", "\"http://10.0.2.2:8545\"")
+            buildConfigField(
+                "String",
+                "REGISTRY_ADDRESS",
+                "\"0x5FbDB2315678afecb367f032d93F642f64180aa3\"",
+            )
+            buildConfigField("String", "SIGNING_MODE", "\"managed\"")
+        }
+        create("sepolia") {
+            dimension = "env"
+            buildConfigField("String", "API_BASE_URL", "\"https://api.sepolia.placeholder/v1/\"")
+            buildConfigField("String", "RPC_URL", "\"https://sepolia.placeholder.rpc\"")
+            buildConfigField("String", "REGISTRY_ADDRESS", "\"0x0000000000000000000000000000000000000000\"")
+            buildConfigField("String", "SIGNING_MODE", "\"relayer\"")
+        }
+    }
+
     buildTypes {
         release {
             optimization {
@@ -32,6 +54,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources {
@@ -52,10 +75,12 @@ dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:blockchain"))
     implementation(project(":feature:manufacturer-register"))
+    implementation(project(":feature:manufacturer-dashboard"))
     implementation(project(":feature:transfer"))
     implementation(project(":feature:history"))
     implementation(project(":feature:verify"))
     implementation(project(":feature:consume"))
+    implementation(project(":feature:stock"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
@@ -66,6 +91,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.navigation.compose)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

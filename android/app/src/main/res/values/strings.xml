@@ -5,4 +5,12 @@
     <string name="dev_login_selected">Selected role: %1$s</string>
     <string name="dev_login_continue">Continue</string>
     <string name="session_title">%1$s · %2$s…</string>
+    <string name="nav_verify">Verify</string>
+    <string name="nav_login">Login</string>
+    <string name="nav_register">Register</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_transfer">Transfer</string>
+    <string name="nav_consume">Consume</string>
+    <string name="nav_history">History</string>
+    <string name="nav_stock">Stock</string>
 </resources>
