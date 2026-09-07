@@ -1,6 +1,7 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException } from '@nestjs/common';
 import { ProductStatus } from '@prisma/client';
 import { MemoryTtlCache } from '../src/infrastructure/cache/memory-ttl.cache';
+import { RateLimitService } from '../src/infrastructure/rate-limit/rate-limit.service';
 import { VerifyService } from '../src/modules/verify/verify.service';
 
 describe('VerifyService', () => {
@@ -59,11 +60,51 @@ describe('VerifyService', () => {
     expect(prisma.product.findFirst).toHaveBeenCalledTimes(1);
   });
 
-  it('throws NotFound when product is missing', async () => {
-    prisma.product.findFirst.mockResolvedValue(null);
-    await expect(service.verify('missing')).rejects.toBeInstanceOf(
-      NotFoundException,
+  it('marks consumed products with anti-refill message', async () => {
+    prisma.product.findFirst.mockResolvedValue({
+      ...product,
+      status: ProductStatus.Consumed,
+    });
+
+    const result = await service.verify('42');
+    expect(result.authenticity).toBe('Consumed');
+    expect(result.message).toMatch(/already consumed/i);
+  });
+});
+
+describe('ProductsService consume anti-refill', () => {
+  it('rejects a second consume through relayer conflict', async () => {
+    const { ProductsService } = await import(
+      '../src/modules/products/products.service'
     );
+    const prisma = {
+      product: {
+        update: jest.fn(),
+      },
+    };
+    const relayer = {
+      consume: jest
+        .fn()
+        .mockRejectedValueOnce(
+          new ConflictException(
+            'Product already consumed; refill is not allowed',
+          ),
+        ),
+    };
+    const audit = { record: jest.fn() };
+    const cache = new MemoryTtlCache();
+    const service = new ProductsService(
+      prisma as never,
+      {} as never,
+      relayer as never,
+      audit as never,
+      cache,
+    );
+
+    await expect(
+      service.consumeProduct('7', '0x' + '11'.repeat(32)),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(audit.record).not.toHaveBeenCalled();
   });
 });
 
@@ -98,10 +139,21 @@ describe('ProductsService history', () => {
       prisma as never,
       {} as never,
       {} as never,
+      { record: jest.fn() } as never,
+      new MemoryTtlCache(),
     );
     const history = await service.getOwnershipHistory('7');
     expect(history.events).toHaveLength(1);
     expect(history.events[0].blockNumber).toBe('10');
     expect(history.elapsedMs).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('RateLimitService', () => {
+  it('blocks after limit in window', () => {
+    const limiter = new RateLimitService();
+    limiter.check('verify:1', 2, 60_000);
+    limiter.check('verify:1', 2, 60_000);
+    expect(() => limiter.check('verify:1', 2, 60_000)).toThrow(/Too Many/);
   });
 });
