@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ردیاب اصالت مکمل</string>
+    <string name="dev_login_title">ورود نقش توسعه</string>
+    <string name="dev_login_address">آدرس کیف پول</string>
+    <string name="dev_login_selected">نقش انتخاب‌شده: %1$s</string>
+    <string name="dev_login_continue">ادامه</string>
+    <string name="session_title">%1$s · %2$s…</string>
+    <string name="nav_verify">استعلام</string>
+    <string name="nav_login">ورود</string>
+    <string name="nav_register">ثبت</string>
+    <string name="nav_dashboard">داشبورد</string>
+    <string name="nav_transfer">انتقال</string>
+    <string name="nav_consume">مصرف</string>
+    <string name="nav_history">تاریخچه</string>
+    <string name="nav_stock">موجودی</string>
+</resources>

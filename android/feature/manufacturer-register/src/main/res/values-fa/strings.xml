@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="manufacturer_register_title">ثبت واحد مکمل</string>
+    <string name="product_name_label">نام محصول</string>
+    <string name="batch_label">کد بچ</string>
+    <string name="register_action">ثبت</string>
+    <string name="result_id">شناسه: %1$s</string>
+    <string name="result_cid">CID: %1$s</string>
+    <string name="result_secret">رمز (فقط یک‌بار): %1$s</string>
+    <string name="hide_secret_action">پنهان کردن رمز (چاپ شد)</string>
+</resources>
