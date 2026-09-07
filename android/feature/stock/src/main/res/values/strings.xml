@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stock_title_distributor">Distributor inbox</string>
+    <string name="stock_title_pharmacy">Pharmacy stock</string>
+    <string name="stock_refresh">Refresh</string>
+    <string name="stock_empty">No units in stock</string>
+    <string name="stock_item_line">%1$s · %2$s</string>
+    <string name="stock_owner_missing">Owner address required</string>
+</resources>
