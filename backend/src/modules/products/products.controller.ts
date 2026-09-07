@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ProductsService } from './products.service';
 
 type RegisterProductBody = {
@@ -6,6 +14,13 @@ type RegisterProductBody = {
   batch?: string;
   manufacturerAddress?: string;
   physicalId?: string;
+};
+
+type RegisterBatchBody = {
+  name: string;
+  batch?: string;
+  count: number;
+  manufacturerAddress?: string;
 };
 
 type TransferBody = {
@@ -20,9 +35,34 @@ type ConsumeBody = {
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
+  @Get()
+  list(
+    @Query('owner') owner?: string,
+    @Query('status') status?: string,
+    @Query('q') q?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.productsService.listProducts({
+      owner,
+      status,
+      q,
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    });
+  }
+
   @Post()
   register(@Body() body: RegisterProductBody) {
     return this.productsService.registerProduct(body);
+  }
+
+  @Post('batch')
+  registerBatch(@Body() body: RegisterBatchBody) {
+    if (!body?.name || body.count == null) {
+      throw new BadRequestException('name and count are required');
+    }
+    return this.productsService.registerBatch(body);
   }
 
   @Post(':id/transfer')
