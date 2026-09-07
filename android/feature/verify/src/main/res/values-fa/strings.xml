@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="verify_title">استعلام اصالت</string>
+    <string name="verify_input_label">شناسه محصول یا محتوای QR</string>
+    <string name="verify_action">استعلام</string>
+    <string name="verify_owner">مالک: %1$s</string>
+    <string name="verify_name">نام: %1$s</string>
+    <string name="verify_batch">بچ: %1$s</string>
+    <string name="verify_expires">انقضا: %1$s</string>
+    <string name="verify_source">منبع: %1$s</string>
+    <string name="verify_guest_hint">استعلام مهمان — بدون ورود</string>
+</resources>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="transfer_title">انتقال مالکیت</string>
+    <string name="product_id_label">شناسه محصول</string>
+    <string name="recipient_label">آدرس گیرنده</string>
+    <string name="transfer_action">انتقال از طریق رله</string>
+    <string name="transfer_result">تراکنش: %1$s</string>
+</resources>
