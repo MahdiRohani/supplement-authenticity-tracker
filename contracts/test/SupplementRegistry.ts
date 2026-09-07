@@ -52,6 +52,17 @@ describe("SupplementRegistry", function () {
     return 1n;
   }
 
+  async function atPointOfSale(registry: SupplementRegistry, parties: any) {
+    const productId = await registerUnit(registry, parties.manufacturer);
+    await registry
+      .connect(parties.manufacturer)
+      .transferOwnership(productId, parties.distributor.address);
+    await registry
+      .connect(parties.distributor)
+      .transferOwnership(productId, parties.pharmacy.address);
+    return productId;
+  }
+
   describe("registration happy path", function () {
     it("registers a unit with metadata pointers", async function () {
       const { registry, manufacturer } = await deployFixture();
@@ -225,17 +236,6 @@ describe("SupplementRegistry", function () {
   });
 
   describe("consume", function () {
-    async function atPointOfSale(registry: SupplementRegistry, parties: any) {
-      const productId = await registerUnit(registry, parties.manufacturer);
-      await registry
-        .connect(parties.manufacturer)
-        .transferOwnership(productId, parties.distributor.address);
-      await registry
-        .connect(parties.distributor)
-        .transferOwnership(productId, parties.pharmacy.address);
-      return productId;
-    }
-
     it("consumes when the secret matches at point of sale", async function () {
       const parties = await deployFixture();
       const productId = await atPointOfSale(parties.registry, parties);
@@ -368,6 +368,51 @@ describe("SupplementRegistry", function () {
         registry,
         "AccessControlUnauthorizedAccount"
       );
+    });
+
+    it("rejects consume while paused", async function () {
+      const parties = await deployFixture();
+      const productId = await atPointOfSale(parties.registry, parties);
+
+      await parties.registry.connect(parties.admin).pause();
+
+      await expect(
+        parties.registry.connect(parties.outsider).consume(productId, SECRET)
+      ).to.be.revertedWithCustomError(parties.registry, "EnforcedPause");
+    });
+  });
+
+  describe("role revoke and empty secret", function () {
+    it("rejects registration after manufacturer role revoke", async function () {
+      const { registry, admin, manufacturer } = await deployFixture();
+
+      await registry
+        .connect(admin)
+        .revokeRole(MANUFACTURER_ROLE, manufacturer.address);
+
+      await expect(
+        registry
+          .connect(manufacturer)
+          .registerUnit(SECRET_HASH, METADATA_CID, METADATA_HASH, PHYSICAL_ID)
+      ).to.be.revertedWithCustomError(
+        registry,
+        "AccessControlUnauthorizedAccount"
+      );
+    });
+
+    it("rejects empty secret hash on registration", async function () {
+      const { registry, manufacturer } = await deployFixture();
+
+      await expect(
+        registry
+          .connect(manufacturer)
+          .registerUnit(
+            ethers.ZeroHash,
+            METADATA_CID,
+            METADATA_HASH,
+            PHYSICAL_ID
+          )
+      ).to.be.revertedWithCustomError(registry, "InvalidSecretHash");
     });
   });
 });
