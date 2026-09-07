@@ -16,6 +16,8 @@ Gas report:
 cd contracts && npm run test:gas
 ```
 
+Registration requires a non-zero `physicalId`; the same id cannot be minted twice (`PhysicalIdAlreadyRegistered`).
+
 E2E supply-chain path (register → distributor → pharmacy):
 
 ```bash
