@@ -5,10 +5,15 @@ type RegisterProductBody = {
   name: string;
   batch?: string;
   manufacturerAddress?: string;
+  physicalId?: string;
 };
 
 type TransferBody = {
   toAddress: string;
+};
+
+type ConsumeBody = {
+  secret: string;
 };
 
 @Controller('products')
@@ -23,6 +28,11 @@ export class ProductsController {
   @Post(':id/transfer')
   transfer(@Param('id') id: string, @Body() body: TransferBody) {
     return this.productsService.transferProduct(id, body.toAddress);
+  }
+
+  @Post(':id/consume')
+  consume(@Param('id') id: string, @Body() body: ConsumeBody) {
+    return this.productsService.consumeProduct(id, body.secret);
   }
 
   @Get(':id/history')
