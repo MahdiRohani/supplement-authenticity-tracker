@@ -1,7 +1,8 @@
 import { ethers } from "hardhat";
 
 async function main() {
-  const [admin, manufacturer, distributor, pharmacy] = await ethers.getSigners();
+  const [admin, manufacturer, distributor, pharmacy, consumer] =
+    await ethers.getSigners();
   const registry = await ethers.deployContract("SupplementRegistry", [
     admin.address,
   ]);
@@ -42,6 +43,15 @@ async function main() {
     .connect(distributor)
     .transferOwnership(productId, pharmacy.address);
 
+  await registry.connect(consumer).consume(productId, secret);
+
+  let refillBlocked = false;
+  try {
+    await registry.connect(consumer).consume(productId, secret);
+  } catch {
+    refillBlocked = true;
+  }
+
   const statusView = await registry.getProductStatus(productId);
   console.log(
     JSON.stringify(
@@ -51,12 +61,17 @@ async function main() {
         status: Number(statusView.status),
         metadataCid: statusView.metadataCid,
         registry: await registry.getAddress(),
-        path: "Manufacturer -> Distributor -> Pharmacy",
+        path: "Manufacturer -> Distributor -> Pharmacy -> Consumed",
+        antiRefillBlocked: refillBlocked,
       },
       null,
       2
     )
   );
+
+  if (Number(statusView.status) !== 3 || !refillBlocked) {
+    throw new Error("Anti-refill e2e failed");
+  }
 
   const backendUrl = process.env.BACKEND_URL;
   if (backendUrl) {
