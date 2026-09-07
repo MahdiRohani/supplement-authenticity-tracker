@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import ir.aut.supplementtracker.core.designsystem.components.AuthenticityStatus
+import ir.aut.supplementtracker.core.domain.DomainError
+import ir.aut.supplementtracker.core.domain.ErrorMapper
 import ir.aut.supplementtracker.core.domain.VerifyProductUseCase
 import ir.aut.supplementtracker.core.model.QrPayload
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -53,25 +55,30 @@ class VerifyViewModel(
                             isLoading = false,
                             result = result,
                             authenticityStatus = status,
+                            errorMessage = result.message,
                         )
                     }
-                    _effects.emit(VerifyUiEffect.ShowMessage(status.name))
+                    _effects.emit(
+                        VerifyUiEffect.ShowMessage(
+                            result.message ?: status.name,
+                        ),
+                    )
                 }
                 .onFailure { error ->
-                    val network = error.message?.contains("Unable to resolve", true) == true ||
-                        error.message?.contains("failed to connect", true) == true ||
-                        error.message?.contains("API failed", true) == true
+                    val message = ErrorMapper.toUserMessage(error)
+                    val status = when (error) {
+                        is DomainError.Network, is DomainError.RateLimited ->
+                            AuthenticityStatus.NetworkError
+                        else -> AuthenticityStatus.NotFound
+                    }
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            authenticityStatus = if (network) {
-                                AuthenticityStatus.NetworkError
-                            } else {
-                                AuthenticityStatus.NotFound
-                            },
-                            errorMessage = error.message ?: "Verify failed",
+                            authenticityStatus = status,
+                            errorMessage = message,
                         )
                     }
+                    _effects.emit(VerifyUiEffect.ShowMessage(message))
                 }
         }
     }

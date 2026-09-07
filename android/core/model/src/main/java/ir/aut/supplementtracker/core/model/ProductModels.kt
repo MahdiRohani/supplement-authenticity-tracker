@@ -103,4 +103,18 @@ data class VerifyResult(
     val metadataCid: String?,
     val metadata: ProductMetadata?,
     val source: String,
+    val message: String? = null,
+)
+
+data class ConsumeRequest(
+    val productId: String,
+    val secret: String,
+)
+
+data class ConsumeResult(
+    val productId: String,
+    val chainProductId: String,
+    val status: String,
+    val txHash: String,
+    val actor: String,
 )
