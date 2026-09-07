@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="consume_title">Consume unit (scratch secret)</string>
+    <string name="consume_product_id_label">Product ID</string>
+    <string name="consume_secret_label">Scratch / seal secret</string>
+    <string name="consume_action">Confirm consume</string>
+    <string name="consume_result_status">Status: %1$s</string>
+    <string name="consume_result_tx">Tx: %1$s</string>
+</resources>
