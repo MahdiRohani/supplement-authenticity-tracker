@@ -56,6 +56,49 @@ export class RelayerService {
     };
   }
 
+  async registerBatch(input: {
+    manufacturerAddress: string;
+    secretHashes: string[];
+    metadataCid: string;
+    metadataHash: string;
+    physicalIds: string[];
+  }) {
+    const manufacturer = input.manufacturerAddress.toLowerCase();
+    const keyMap = this.loadKeyMap();
+    const manufacturerKey = keyMap[manufacturer];
+    if (!manufacturerKey) {
+      throw new BadRequestException(
+        `No relayer key configured for manufacturer ${manufacturer}`,
+      );
+    }
+    if (input.secretHashes.length === 0) {
+      throw new BadRequestException('secretHashes required');
+    }
+    if (input.secretHashes.length !== input.physicalIds.length) {
+      throw new BadRequestException('secretHashes and physicalIds length mismatch');
+    }
+
+    const { contract, wallet } = this.connectWallet(manufacturerKey);
+    const tx = await contract.registerBatch(
+      input.secretHashes,
+      input.metadataCid,
+      input.metadataHash,
+      input.physicalIds,
+    );
+    const receipt = await tx.wait();
+    const firstChainProductId = await this.readRegisteredProductId(
+      contract,
+      receipt,
+    );
+    return {
+      firstChainProductId,
+      count: input.secretHashes.length,
+      ownerAddress: wallet.address.toLowerCase(),
+      txHash: receipt.hash,
+      blockNumber: receipt.blockNumber,
+    };
+  }
+
   async transferOwnership(chainProductId: string, toAddress: string) {
     if (!toAddress?.startsWith('0x')) {
       throw new BadRequestException('toAddress must be a hex address');
