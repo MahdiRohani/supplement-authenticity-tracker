@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="verify_title">Verify authenticity</string>
+    <string name="verify_input_label">Product ID or QR payload</string>
+    <string name="verify_action">Verify</string>
+    <string name="verify_owner">Owner: %1$s</string>
+    <string name="verify_name">Name: %1$s</string>
+    <string name="verify_batch">Batch: %1$s</string>
+    <string name="verify_expires">Expires: %1$s</string>
+    <string name="verify_source">Source: %1$s</string>
+    <string name="verify_guest_hint">Guest verify — no login required</string>
+</resources>

@@ -5,6 +5,7 @@ import ir.aut.supplementtracker.core.model.RegisterProductRequest
 import ir.aut.supplementtracker.core.model.RegisteredProduct
 import ir.aut.supplementtracker.core.model.TransferRequest
 import ir.aut.supplementtracker.core.model.TransferResult
+import ir.aut.supplementtracker.core.model.VerifyResult
 
 interface ProductRepository {
     suspend fun register(request: RegisterProductRequest): RegisteredProduct
@@ -12,4 +13,6 @@ interface ProductRepository {
     suspend fun transfer(request: TransferRequest): TransferResult
 
     suspend fun history(productId: String): OwnershipHistory
+
+    suspend fun verify(productId: String): VerifyResult
 }

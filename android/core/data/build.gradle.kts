@@ -25,4 +25,5 @@ dependencies {
     implementation(project(":core:domain"))
     implementation(libs.okhttp)
     implementation(libs.kotlinx.coroutines.android)
+    testImplementation(libs.junit)
 }

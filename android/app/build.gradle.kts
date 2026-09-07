@@ -54,6 +54,7 @@ dependencies {
     implementation(project(":feature:manufacturer-register"))
     implementation(project(":feature:transfer"))
     implementation(project(":feature:history"))
+    implementation(project(":feature:verify"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
