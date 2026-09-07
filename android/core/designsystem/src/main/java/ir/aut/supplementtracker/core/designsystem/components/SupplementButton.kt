@@ -9,6 +9,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import ir.aut.supplementtracker.core.designsystem.SupplementSpacing
 
@@ -18,13 +20,15 @@ fun SupplementButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    contentDescription: String = text,
 ) {
     Button(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = 48.dp),
+            .heightIn(min = 48.dp)
+            .semantics { this.contentDescription = contentDescription },
         shape = MaterialTheme.shapes.medium,
         contentPadding = PaddingValues(
             horizontal = SupplementSpacing.Md,
