@@ -188,3 +188,12 @@ describe('ProductsService list', () => {
     expect(prisma.product.findMany).toHaveBeenCalled();
   });
 });
+
+describe('RateLimitService', () => {
+  it('blocks after limit in window', () => {
+    const limiter = new RateLimitService();
+    limiter.check('verify:1', 2, 60_000);
+    limiter.check('verify:1', 2, 60_000);
+    expect(() => limiter.check('verify:1', 2, 60_000)).toThrow(/Too Many/);
+  });
+});
