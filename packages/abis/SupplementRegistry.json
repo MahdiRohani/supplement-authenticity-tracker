@@ -2,6 +2,7 @@
   "contractName": "SupplementRegistry",
   "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
   "chainId": 31337,
+  "network": "hardhat",
   "abi": [
     {
       "inputs": [
@@ -67,6 +68,11 @@
       "type": "error"
     },
     {
+      "inputs": [],
+      "name": "InvalidPhysicalId",
+      "type": "error"
+    },
+    {
       "inputs": [
         {
           "internalType": "ProductId",
@@ -117,6 +123,17 @@
         }
       ],
       "name": "NotProductOwner",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "physicalId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "PhysicalIdAlreadyRegistered",
       "type": "error"
     },
     {
@@ -465,6 +482,35 @@
     {
       "inputs": [
         {
+          "internalType": "ProductId",
+          "name": "productId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getProductStatus",
+      "outputs": [
+        {
+          "internalType": "enum ProductStatus",
+          "name": "status",
+          "type": "uint8"
+        },
+        {
+          "internalType": "address",
+          "name": "currentOwner",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "metadataCid",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "bytes32",
           "name": "role",
           "type": "bytes32"
@@ -559,6 +605,25 @@
     {
       "inputs": [
         {
+          "internalType": "bytes32",
+          "name": "physicalId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "productIdByPhysicalId",
+      "outputs": [
+        {
+          "internalType": "ProductId",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "bytes32[]",
           "name": "secretHashes",
           "type": "bytes32[]"
@@ -572,6 +637,11 @@
           "internalType": "bytes32",
           "name": "metadataHash",
           "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32[]",
+          "name": "physicalIds",
+          "type": "bytes32[]"
         }
       ],
       "name": "registerBatch",
@@ -600,6 +670,11 @@
         {
           "internalType": "bytes32",
           "name": "metadataHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "physicalId",
           "type": "bytes32"
         }
       ],
