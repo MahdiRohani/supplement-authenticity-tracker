@@ -26,12 +26,16 @@ import ir.aut.supplementtracker.core.data.HttpProductRepository
 import ir.aut.supplementtracker.core.data.SessionStore
 import ir.aut.supplementtracker.core.designsystem.SupplementTheme
 import ir.aut.supplementtracker.core.designsystem.components.SupplementTopBar
+import ir.aut.supplementtracker.core.domain.ConsumeProductUseCase
 import ir.aut.supplementtracker.core.domain.GetOwnershipHistoryUseCase
 import ir.aut.supplementtracker.core.domain.RegisterProductUseCase
 import ir.aut.supplementtracker.core.domain.TransferProductUseCase
 import ir.aut.supplementtracker.core.domain.VerifyProductUseCase
 import ir.aut.supplementtracker.core.model.SupplyRole
 import ir.aut.supplementtracker.core.model.UserSession
+import ir.aut.supplementtracker.feature.consume.ConsumeScreen
+import ir.aut.supplementtracker.feature.consume.ConsumeUiEffect
+import ir.aut.supplementtracker.feature.consume.ConsumeViewModel
 import ir.aut.supplementtracker.feature.history.HistoryScreen
 import ir.aut.supplementtracker.feature.history.HistoryUiEffect
 import ir.aut.supplementtracker.feature.history.HistoryViewModel
@@ -50,6 +54,7 @@ private enum class AppDestination {
     Verify,
     Register,
     Transfer,
+    Consume,
     History,
     Login,
 }
@@ -63,6 +68,7 @@ class MainActivity : ComponentActivity() {
         val chainVerifier = Web3jChainVerifier()
         val registerProduct = RegisterProductUseCase(repository)
         val transferProduct = TransferProductUseCase(repository)
+        val consumeProduct = ConsumeProductUseCase(repository)
         val getHistory = GetOwnershipHistoryUseCase(repository)
         val verifyProduct = VerifyProductUseCase(repository, chainVerifier)
 
@@ -100,6 +106,7 @@ class MainActivity : ComponentActivity() {
                             AppDestination.Verify,
                             AppDestination.Register,
                             AppDestination.Transfer,
+                            AppDestination.Consume,
                             AppDestination.History,
                         )
                     }
@@ -190,6 +197,23 @@ class MainActivity : ComponentActivity() {
                             TransferScreen(
                                 state = transferState,
                                 onEvent = transferVm::onEvent,
+                                modifier = Modifier.padding(innerPadding),
+                            )
+                        }
+                        AppDestination.Consume -> {
+                            val consumeVm: ConsumeViewModel =
+                                viewModel(factory = ConsumeViewModel.factory(consumeProduct))
+                            val consumeState by consumeVm.state.collectAsStateWithLifecycle()
+                            LaunchedEffect(consumeVm) {
+                                consumeVm.effects.collectLatest { effect ->
+                                    if (effect is ConsumeUiEffect.ShowMessage) {
+                                        snackbarHostState.showSnackbar(effect.message)
+                                    }
+                                }
+                            }
+                            ConsumeScreen(
+                                state = consumeState,
+                                onEvent = consumeVm::onEvent,
                                 modifier = Modifier.padding(innerPadding),
                             )
                         }

@@ -55,6 +55,7 @@ dependencies {
     implementation(project(":feature:transfer"))
     implementation(project(":feature:history"))
     implementation(project(":feature:verify"))
+    implementation(project(":feature:consume"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
