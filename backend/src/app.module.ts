@@ -1,5 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { validateEnv } from './config/env.validation';
 import { AuditModule } from './infrastructure/audit/audit.module';
 import { IndexerModule } from './infrastructure/blockchain/indexer.module';
 import { CacheModule } from './infrastructure/cache/cache.module';
@@ -14,7 +15,7 @@ import { HealthController } from './health.controller';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     PrismaModule,
     CacheModule,
     AuditModule,
