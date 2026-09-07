@@ -52,6 +52,10 @@ fun ManufacturerRegisterScreen(
             }
             product.secret?.let { secret ->
                 Text(text = stringResource(R.string.result_secret, secret))
+                SupplementButton(
+                    text = stringResource(R.string.hide_secret_action),
+                    onClick = { onEvent(ManufacturerRegisterUiEvent.ClearResult) },
+                )
             }
         }
     }

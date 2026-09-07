@@ -3,6 +3,7 @@ package ir.aut.supplementtracker.feature.manufacturerregister
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import ir.aut.supplementtracker.core.domain.ErrorMapper
 import ir.aut.supplementtracker.core.domain.RegisterProductUseCase
 import ir.aut.supplementtracker.core.model.RegisterProductRequest
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -30,7 +31,9 @@ class ManufacturerRegisterViewModel(
             is ManufacturerRegisterUiEvent.BatchChanged ->
                 _state.update { it.copy(batch = event.value, errorMessage = null) }
             ManufacturerRegisterUiEvent.ClearResult ->
-                _state.update { it.copy(result = null) }
+                _state.update {
+                    it.copy(result = it.result?.copy(secret = null))
+                }
             ManufacturerRegisterUiEvent.Submit -> submit()
         }
     }
@@ -57,12 +60,14 @@ class ManufacturerRegisterViewModel(
                     ),
                 )
             }.onFailure { error ->
+                val message = ErrorMapper.toUserMessage(error)
                 _state.update {
                     it.copy(
                         isSubmitting = false,
-                        errorMessage = error.message ?: "Registration failed",
+                        errorMessage = message,
                     )
                 }
+                _effects.emit(ManufacturerRegisterUiEffect.ShowMessage(message))
             }
         }
     }
