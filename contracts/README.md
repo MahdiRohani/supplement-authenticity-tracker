@@ -18,6 +18,8 @@ cd contracts && npm run test:gas
 
 Registration requires a non-zero `physicalId`; the same id cannot be minted twice (`PhysicalIdAlreadyRegistered`).
 
+`consume` is allowed only when status is `AtPointOfSale`, requires the scratch secret, and emits `ProductConsumed`. A second consume reverts with `ProductAlreadyConsumed`.
+
 E2E supply-chain path (register → distributor → pharmacy):
 
 ```bash
