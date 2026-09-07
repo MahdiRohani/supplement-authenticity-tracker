@@ -32,6 +32,12 @@ cd contracts && cp .env.example .env
 cd contracts && npm run deploy:sepolia
 ```
 
+Slither (Critical/High fail the run):
+
+```bash
+cd contracts && npm run slither
+```
+
 Persistent local node:
 
 ```bash
