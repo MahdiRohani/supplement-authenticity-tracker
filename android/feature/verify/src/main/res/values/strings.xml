@@ -10,4 +10,7 @@
     <string name="verify_source">Source: %1$s</string>
     <string name="verify_metadata_link">Metadata: %1$s</string>
     <string name="verify_guest_hint">Guest verify — no login required</string>
+    <string name="verify_scan_qr">Scan QR</string>
+    <string name="verify_report_counterfeit">Report counterfeit</string>
+    <string name="verify_report_submitted">Report submitted</string>
 </resources>
