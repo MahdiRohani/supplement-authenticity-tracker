@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="scan_title">اسکن QR</string>
+    <string name="scan_permission_required">برای اسکن به دسترسی دوربین نیاز است</string>
+    <string name="scan_grant_permission">اجازه دسترسی به دوربین</string>
+    <string name="scan_close">بستن</string>
+</resources>

@@ -81,6 +81,7 @@ dependencies {
     implementation(project(":feature:verify"))
     implementation(project(":feature:consume"))
     implementation(project(":feature:stock"))
+    implementation(project(":feature:scan"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
