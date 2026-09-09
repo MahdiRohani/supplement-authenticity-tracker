@@ -109,6 +109,8 @@ export class ProductsService {
       chainProductId: product.chainProductId,
       metadataCid: product.metadataCid,
       metadataHash: product.metadataHash,
+      metadataGatewayUrl: pinned.gatewayUrl,
+      ipfsPinned: pinned.pinned,
       secret,
       secretHash,
       physicalId,

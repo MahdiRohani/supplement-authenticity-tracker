@@ -66,6 +66,9 @@ fun VerifyScreen(
             result.metadata?.expiresAt?.let {
                 Text(text = stringResource(R.string.verify_expires, it))
             }
+            result.metadataGatewayUrl?.let {
+                Text(text = stringResource(R.string.verify_metadata_link, it))
+            }
             Text(text = stringResource(R.string.verify_source, result.source))
         }
     }

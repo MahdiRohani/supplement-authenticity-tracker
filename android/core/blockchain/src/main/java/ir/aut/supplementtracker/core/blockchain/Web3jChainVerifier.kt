@@ -68,6 +68,9 @@ class Web3jChainVerifier(
                     authenticity = authenticity,
                     currentOwner = owner,
                     metadataCid = metadataCid.ifBlank { null },
+                    metadataGatewayUrl = metadataCid.takeIf { it.isNotBlank() }?.let {
+                        "https://ipfs.io/ipfs/$it"
+                    },
                     metadata = null,
                     source = "chain",
                     message = if (authenticity == "Consumed") {
