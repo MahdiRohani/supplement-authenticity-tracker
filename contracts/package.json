@@ -1,6 +1,6 @@
 {
   "name": "supplement-authenticity-contracts",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "compile": "hardhat compile",
@@ -10,12 +10,15 @@
     "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
     "e2e:local": "hardhat run scripts/e2e-supply-chain.ts",
     "test:gas": "REPORT_GAS=true hardhat test",
+    "test:coverage": "hardhat coverage",
     "slither": "bash scripts/slither.sh",
     "node": "hardhat node"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "fast-check": "^4.9.0",
     "hardhat": "^2.22.18",
+    "solidity-coverage": "^0.8.17",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
   },
