@@ -16,9 +16,19 @@ Gas report:
 cd contracts && npm run test:gas
 ```
 
+Coverage:
+
+```bash
+cd contracts && npm run test:coverage
+```
+
+Gas packing note: `Product` stores `owner` + `status` + `exists` contiguously before `bytes32` fields and keeps dynamic `metadataCid` last to reduce storage slots on register/consume paths.
+
 Registration requires a non-zero `physicalId`; the same id cannot be minted twice (`PhysicalIdAlreadyRegistered`).
 
 `consume` is allowed only when status is `AtPointOfSale`, requires the scratch secret, and emits `ProductConsumed`. A second consume reverts with `ProductAlreadyConsumed`.
+
+Admin `invalidate` marks an active product `Invalid` and emits `ProductInvalidated`.
 
 E2E supply-chain path (register → distributor → pharmacy):
 

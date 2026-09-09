@@ -414,5 +414,49 @@ describe("SupplementRegistry", function () {
           )
       ).to.be.revertedWithCustomError(registry, "InvalidSecretHash");
     });
+  })
+
+  describe("invalidate", function () {
+    it("lets admin invalidate an active product", async function () {
+      const { registry, admin, manufacturer } = await deployFixture();
+      const productId = await registerUnit(registry, manufacturer);
+
+      await expect(registry.connect(admin).invalidate(productId))
+        .to.emit(registry, "ProductInvalidated")
+        .withArgs(productId, admin.address);
+
+      const product = await registry.getProduct(productId);
+      expect(product.status).to.equal(4);
+    });
+
+    it("rejects invalidate from non-admin", async function () {
+      const { registry, manufacturer } = await deployFixture();
+      const productId = await registerUnit(registry, manufacturer);
+
+      await expect(
+        registry.connect(manufacturer).invalidate(productId)
+      ).to.be.revertedWithCustomError(
+        registry,
+        "AccessControlUnauthorizedAccount"
+      );
+    });
+
+    it("rejects invalidate after consume", async function () {
+      const parties = await deployFixture();
+      const productId = await atPointOfSale(parties.registry, parties);
+      await parties.registry
+        .connect(parties.outsider)
+        .consume(productId, SECRET);
+
+      await expect(
+        parties.registry.connect(parties.admin).invalidate(productId)
+      )
+        .to.be.revertedWithCustomError(
+          parties.registry,
+          "ProductNotInvalidatable"
+        )
+        .withArgs(productId, 3);
+    });
   });
+
 });
