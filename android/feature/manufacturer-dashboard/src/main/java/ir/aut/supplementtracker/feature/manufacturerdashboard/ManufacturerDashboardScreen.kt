@@ -96,6 +96,15 @@ fun ManufacturerDashboardScreen(
                 state.batchName.isNotBlank() &&
                 (state.batchCount.toIntOrNull() ?: 0) in 1..100,
         )
+        if (state.labelsPdfEnabled) {
+            SupplementButton(
+                text = stringResource(R.string.dashboard_export_labels),
+                onClick = { onEvent(ManufacturerDashboardUiEvent.ExportLabelsPdf) },
+                enabled = !state.isExporting &&
+                    !state.isSubmitting &&
+                    state.batchCode.isNotBlank(),
+            )
+        }
         if (state.isSubmitting || state.completedCount > 0) {
             Text(
                 text = stringResource(
@@ -105,7 +114,7 @@ fun ManufacturerDashboardScreen(
                 ),
             )
         }
-        if (state.isLoading || state.isSubmitting) {
+        if (state.isLoading || state.isSubmitting || state.isExporting) {
             CircularProgressIndicator()
         }
         state.errorMessage?.let { Text(text = it) }

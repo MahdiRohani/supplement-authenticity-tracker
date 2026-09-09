@@ -370,4 +370,67 @@ export class ProductsService {
       })),
     };
   }
+
+  async buildBatchLabelsPdf(batchCode: string): Promise<Buffer> {
+    const products = await this.prisma.product.findMany({
+      where: { batchCode },
+      orderBy: { createdAt: 'asc' },
+      take: 500,
+      select: {
+        chainProductId: true,
+        name: true,
+        batchCode: true,
+        status: true,
+      },
+    });
+    if (products.length === 0) {
+      throw new NotFoundException(`No products for batch ${batchCode}`);
+    }
+
+    const lines = [
+      'Supplement batch labels',
+      `Batch: ${batchCode}`,
+      `Units: ${products.length}`,
+      '',
+      ...products.map((product) => {
+        const qr = JSON.stringify({
+          v: 1,
+          productId: product.chainProductId,
+          chainId: 31337,
+        });
+        return `${product.name ?? 'Product'} | id=${product.chainProductId} | status=${product.status} | ${qr}`;
+      }),
+    ];
+    return this.renderSimplePdf(lines);
+  }
+
+  private renderSimplePdf(lines: string[]): Buffer {
+    const escaped = lines
+      .map((line) =>
+        line.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)'),
+      )
+      .join('\n');
+    const content = `BT /F1 11 Tf 50 780 Td 14 TL (${escaped.replace(/\n/g, ') Tj T* (')}) Tj ET`;
+    const objects = [
+      '1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj\n',
+      '2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1 >>endobj\n',
+      '3 0 obj<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources<< /Font<< /F1 5 0 R >> >> >>endobj\n',
+      `4 0 obj<< /Length ${Buffer.byteLength(content)} >>stream\n${content}\nendstream\nendobj\n`,
+      '5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>endobj\n',
+    ];
+    let pdf = '%PDF-1.4\n';
+    const offsets = [0];
+    for (const object of objects) {
+      offsets.push(Buffer.byteLength(pdf));
+      pdf += object;
+    }
+    const xrefStart = Buffer.byteLength(pdf);
+    pdf += `xref\n0 ${objects.length + 1}\n`;
+    pdf += '0000000000 65535 f \n';
+    for (let i = 1; i < offsets.length; i += 1) {
+      pdf += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+    }
+    pdf += `trailer<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
+    return Buffer.from(pdf);
+  }
 }
