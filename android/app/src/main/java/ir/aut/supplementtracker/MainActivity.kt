@@ -1,5 +1,6 @@
 package ir.aut.supplementtracker
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -19,9 +20,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -35,18 +38,23 @@ import androidx.navigation.navDeepLink
 import ir.aut.supplementtracker.core.blockchain.BuildConfig as BlockchainBuildConfig
 import ir.aut.supplementtracker.core.blockchain.ManagedKeyChainWriter
 import ir.aut.supplementtracker.core.blockchain.Web3jChainVerifier
+import ir.aut.supplementtracker.core.data.AnalyticsStore
 import ir.aut.supplementtracker.core.data.HttpProductRepository
 import ir.aut.supplementtracker.core.data.SessionStore
 import ir.aut.supplementtracker.core.data.VerifyCacheStore
 import ir.aut.supplementtracker.core.designsystem.SupplementTheme
 import ir.aut.supplementtracker.core.designsystem.components.SupplementTopBar
 import ir.aut.supplementtracker.core.domain.ConsumeProductUseCase
+import ir.aut.supplementtracker.core.domain.DownloadBatchLabelsPdfUseCase
+import ir.aut.supplementtracker.core.domain.GetFeatureFlagsUseCase
 import ir.aut.supplementtracker.core.domain.GetOwnershipHistoryUseCase
 import ir.aut.supplementtracker.core.domain.ListProductsUseCase
 import ir.aut.supplementtracker.core.domain.RegisterBatchUseCase
 import ir.aut.supplementtracker.core.domain.RegisterProductUseCase
+import ir.aut.supplementtracker.core.domain.ReportCounterfeitUseCase
 import ir.aut.supplementtracker.core.domain.TransferProductUseCase
 import ir.aut.supplementtracker.core.domain.VerifyProductUseCase
+import ir.aut.supplementtracker.core.model.FeatureFlags
 import ir.aut.supplementtracker.core.model.SupplyRole
 import ir.aut.supplementtracker.core.model.UserSession
 import ir.aut.supplementtracker.feature.consume.ConsumeScreen
@@ -61,6 +69,7 @@ import ir.aut.supplementtracker.feature.manufacturerdashboard.ManufacturerDashbo
 import ir.aut.supplementtracker.feature.manufacturerregister.ManufacturerRegisterScreen
 import ir.aut.supplementtracker.feature.manufacturerregister.ManufacturerRegisterUiEffect
 import ir.aut.supplementtracker.feature.manufacturerregister.ManufacturerRegisterViewModel
+import ir.aut.supplementtracker.feature.scan.ScanScreen
 import ir.aut.supplementtracker.feature.stock.StockMode
 import ir.aut.supplementtracker.feature.stock.StockScreen
 import ir.aut.supplementtracker.feature.stock.StockUiEffect
@@ -72,11 +81,13 @@ import ir.aut.supplementtracker.feature.verify.VerifyScreen
 import ir.aut.supplementtracker.feature.verify.VerifyUiEffect
 import ir.aut.supplementtracker.feature.verify.VerifyUiEvent
 import ir.aut.supplementtracker.feature.verify.VerifyViewModel
+import java.io.File
 import kotlinx.coroutines.flow.collectLatest
 
 object AppRoutes {
     const val VERIFY = "verify"
     const val VERIFY_WITH_ID = "verify/{productId}"
+    const val SCAN = "scan"
     const val LOGIN = "login"
     const val REGISTER = "register"
     const val DASHBOARD = "batchDashboard"
@@ -97,6 +108,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val sessionStore = SessionStore(applicationContext)
         val verifyCacheStore = VerifyCacheStore(applicationContext)
+        val analyticsStore = AnalyticsStore(applicationContext)
         val repository = HttpProductRepository()
         val chainVerifier = Web3jChainVerifier()
         val chainWriter =
@@ -114,11 +126,15 @@ class MainActivity : ComponentActivity() {
         val consumeProduct = ConsumeProductUseCase(repository, chainWriter)
         val getHistory = GetOwnershipHistoryUseCase(repository)
         val verifyProduct = VerifyProductUseCase(repository, chainVerifier)
+        val getFeatureFlags = GetFeatureFlagsUseCase(repository)
+        val reportCounterfeit = ReportCounterfeitUseCase(repository)
+        val downloadBatchLabelsPdf = DownloadBatchLabelsPdfUseCase(repository)
 
         setContent {
             SupplementTheme {
                 val snackbarHostState = remember { SnackbarHostState() }
                 var session by remember { mutableStateOf(sessionStore.read()) }
+                var featureFlags by remember { mutableStateOf(FeatureFlags()) }
                 var draftRole by remember {
                     mutableStateOf(session?.role ?: SupplyRole.Manufacturer)
                 }
@@ -130,6 +146,10 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
+
+                LaunchedEffect(Unit) {
+                    featureFlags = runCatching { getFeatureFlags() }.getOrElse { FeatureFlags() }
+                }
 
                 val destinations = remember(session) { destinationsFor(session) }
 
@@ -183,12 +203,25 @@ class MainActivity : ComponentActivity() {
                         startDestination = AppRoutes.VERIFY,
                         modifier = Modifier.padding(innerPadding),
                     ) {
-                        composable(AppRoutes.VERIFY) {
+                        composable(AppRoutes.VERIFY) { entry ->
+                            val scannedProductId by entry.savedStateHandle
+                                .getStateFlow<String?>("scannedProductId", null)
+                                .collectAsStateWithLifecycle()
                             VerifyRoute(
                                 verifyProduct = verifyProduct,
                                 verifyCacheStore = verifyCacheStore,
+                                reportCounterfeit = reportCounterfeit,
+                                analyticsStore = analyticsStore,
+                                featureFlags = featureFlags,
                                 snackbarHostState = snackbarHostState,
                                 productId = null,
+                                onNavigateToScan = {
+                                    navController.navigate(AppRoutes.SCAN)
+                                },
+                                scannedProductId = scannedProductId,
+                                onScannedConsumed = {
+                                    entry.savedStateHandle.remove<String>("scannedProductId")
+                                },
                             )
                         }
                         composable(
@@ -209,8 +242,30 @@ class MainActivity : ComponentActivity() {
                             VerifyRoute(
                                 verifyProduct = verifyProduct,
                                 verifyCacheStore = verifyCacheStore,
+                                reportCounterfeit = reportCounterfeit,
+                                analyticsStore = analyticsStore,
+                                featureFlags = featureFlags,
                                 snackbarHostState = snackbarHostState,
                                 productId = entry.arguments?.getString("productId"),
+                                onNavigateToScan = {
+                                    navController.navigate(AppRoutes.SCAN)
+                                },
+                                scannedProductId = null,
+                                onScannedConsumed = {},
+                            )
+                        }
+                        composable(AppRoutes.SCAN) {
+                            ScanScreen(
+                                onDetected = { productId ->
+                                    if (featureFlags.analyticsEnabled) {
+                                        analyticsStore.incrementScan()
+                                    }
+                                    navController.previousBackStackEntry
+                                        ?.savedStateHandle
+                                        ?.set("scannedProductId", productId)
+                                    navController.popBackStack()
+                                },
+                                onClose = { navController.popBackStack() },
                             )
                         }
                         composable(AppRoutes.LOGIN) {
@@ -253,19 +308,47 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable(AppRoutes.DASHBOARD) {
+                            val context = LocalContext.current
                             val dashboardVm: ManufacturerDashboardViewModel =
                                 viewModel(
+                                    key = "dashboard-${featureFlags.labelsPdfEnabled}",
                                     factory = ManufacturerDashboardViewModel.factory(
                                         listProducts = listProducts,
                                         registerBatch = registerBatch,
+                                        downloadBatchLabelsPdf = downloadBatchLabelsPdf,
                                         ownerAddress = session?.address,
+                                        labelsPdfEnabled = featureFlags.labelsPdfEnabled,
                                     ),
                                 )
                             val dashboardState by dashboardVm.state.collectAsStateWithLifecycle()
                             LaunchedEffect(dashboardVm) {
                                 dashboardVm.effects.collectLatest { effect ->
-                                    if (effect is ManufacturerDashboardUiEffect.ShowMessage) {
-                                        snackbarHostState.showSnackbar(effect.message)
+                                    when (effect) {
+                                        is ManufacturerDashboardUiEffect.ShowMessage ->
+                                            snackbarHostState.showSnackbar(effect.message)
+                                        is ManufacturerDashboardUiEffect.SharePdf -> {
+                                            val file =
+                                                File(
+                                                    context.cacheDir,
+                                                    "labels-${effect.batchCode}.pdf",
+                                                )
+                                            file.writeBytes(effect.bytes)
+                                            val uri =
+                                                FileProvider.getUriForFile(
+                                                    context,
+                                                    "${context.packageName}.fileprovider",
+                                                    file,
+                                                )
+                                            val share =
+                                                Intent(Intent.ACTION_SEND).apply {
+                                                    type = "application/pdf"
+                                                    putExtra(Intent.EXTRA_STREAM, uri)
+                                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                }
+                                            context.startActivity(
+                                                Intent.createChooser(share, null),
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -360,21 +443,50 @@ class MainActivity : ComponentActivity() {
 private fun VerifyRoute(
     verifyProduct: VerifyProductUseCase,
     verifyCacheStore: VerifyCacheStore,
+    reportCounterfeit: ReportCounterfeitUseCase,
+    analyticsStore: AnalyticsStore,
+    featureFlags: FeatureFlags,
     snackbarHostState: SnackbarHostState,
     productId: String?,
+    onNavigateToScan: () -> Unit,
+    scannedProductId: String?,
+    onScannedConsumed: () -> Unit,
 ) {
+    val context = LocalContext.current
     val verifyVm: VerifyViewModel =
-        viewModel(factory = VerifyViewModel.factory(verifyProduct, verifyCacheStore))
+        viewModel(
+            key = "verify-${featureFlags.reportsEnabled}-${featureFlags.scanEnabled}-${featureFlags.analyticsEnabled}",
+            factory = VerifyViewModel.factory(
+                verifyProduct = verifyProduct,
+                verifyCacheStore = verifyCacheStore,
+                reportCounterfeit = reportCounterfeit,
+                analyticsStore = analyticsStore,
+                analyticsEnabled = featureFlags.analyticsEnabled,
+                reportsEnabled = featureFlags.reportsEnabled,
+                scanEnabled = featureFlags.scanEnabled,
+            ),
+        )
     val verifyState by verifyVm.state.collectAsStateWithLifecycle()
     LaunchedEffect(productId) {
         if (!productId.isNullOrBlank()) {
             verifyVm.onEvent(VerifyUiEvent.InputChanged(productId))
         }
     }
+    LaunchedEffect(scannedProductId) {
+        if (!scannedProductId.isNullOrBlank()) {
+            verifyVm.onEvent(VerifyUiEvent.InputChanged(scannedProductId))
+            onScannedConsumed()
+        }
+    }
     LaunchedEffect(verifyVm) {
         verifyVm.effects.collectLatest { effect ->
-            if (effect is VerifyUiEffect.ShowMessage) {
-                snackbarHostState.showSnackbar(effect.message)
+            when (effect) {
+                is VerifyUiEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message)
+                VerifyUiEffect.ReportSubmitted ->
+                    snackbarHostState.showSnackbar(
+                        context.getString(ir.aut.supplementtracker.feature.verify.R.string.verify_report_submitted),
+                    )
+                VerifyUiEffect.NavigateToScan -> onNavigateToScan()
             }
         }
     }

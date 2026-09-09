@@ -24,6 +24,25 @@ jobs:
         env:
           REPORT_GAS: "true"
 
+  slither:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: contracts/package-lock.json
+      - run: npm ci
+      - run: pip install slither-analyzer==0.10.4
+      - run: npm run slither
+
   backend:
     runs-on: ubuntu-latest
     defaults:
@@ -80,6 +99,7 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/supplement_tracker?schema=public
           RPC_URL: http://127.0.0.1:8545
           REGISTRY_ABI_PATH: ../packages/abis/SupplementRegistry.json
+          CHAIN_ID: "31337"
           ALLOW_IPFS_STUB: "true"
           NODE_ENV: test
           PORT: "3000"
@@ -97,10 +117,15 @@ jobs:
             sleep 2
           done
           curl -fsS http://127.0.0.1:3000/v1/health
+          curl -fsS http://127.0.0.1:3000/v1/flags
+          curl -fsS http://127.0.0.1:3000/v1/chains
           REGISTER=$(curl -fsS -X POST http://127.0.0.1:3000/v1/products -H 'content-type: application/json' -d '{"name":"CI Vitamin","batch":"CI-1"}')
           echo "$REGISTER"
           ID=$(node -e "const j=JSON.parse(process.argv[1]); process.stdout.write(String(j.chainProductId))" "$REGISTER")
           curl -fsS "http://127.0.0.1:3000/v1/verify/$ID"
+          curl -fsS -X POST http://127.0.0.1:3000/v1/reports/counterfeit -H 'content-type: application/json' -d "{\"chainProductId\":\"$ID\",\"note\":\"ci\"}"
+          curl -fsS -o /tmp/labels.pdf "http://127.0.0.1:3000/v1/products/labels.pdf?batch=CI-1"
+          test -s /tmp/labels.pdf
           PRODUCT_ID="$ID" BASE_URL=http://127.0.0.1:3000/v1 CONCURRENCY=10 THRESHOLD_MS=3000 bash ../scripts/load-verify.sh
 
   android:
@@ -114,5 +139,5 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - name: Assemble localDebug
-        run: ./gradlew :app:assembleLocalDebug :core:designsystem:assembleDebug --no-daemon
+      - name: Assemble and lint localDebug
+        run: ./gradlew :app:assembleLocalDebug :app:lintLocalDebug :core:designsystem:assembleDebug --no-daemon

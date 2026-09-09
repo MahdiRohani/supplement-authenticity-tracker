@@ -5,6 +5,7 @@ import ir.aut.supplementtracker.core.domain.ErrorMapper
 import ir.aut.supplementtracker.core.domain.ProductRepository
 import ir.aut.supplementtracker.core.model.ConsumeRequest
 import ir.aut.supplementtracker.core.model.ConsumeResult
+import ir.aut.supplementtracker.core.model.FeatureFlags
 import ir.aut.supplementtracker.core.model.OwnershipEvent
 import ir.aut.supplementtracker.core.model.OwnershipHistory
 import ir.aut.supplementtracker.core.model.ProductListPage
@@ -191,6 +192,54 @@ class HttpProductRepository(
             )
         }
 
+    override suspend fun getFeatureFlags(): FeatureFlags =
+        withContext(Dispatchers.IO) {
+            val json = executeJson(
+                Request.Builder()
+                    .url("${baseUrl}flags")
+                    .get()
+                    .build(),
+            )
+            FeatureFlags(
+                reportsEnabled = json.optBoolean("reportsEnabled", true),
+                scanEnabled = json.optBoolean("scanEnabled", true),
+                labelsPdfEnabled = json.optBoolean("labelsPdfEnabled", true),
+                analyticsEnabled = json.optBoolean("analyticsEnabled", true),
+            )
+        }
+
+    override suspend fun reportCounterfeit(productId: String, note: String?) =
+        withContext(Dispatchers.IO) {
+            val payload =
+                JSONObject()
+                    .put("chainProductId", productId)
+                    .apply {
+                        note?.takeIf { it.isNotBlank() }?.let { put("note", it) }
+                    }
+                    .toString()
+            executeJson(
+                Request.Builder()
+                    .url("${baseUrl}reports/counterfeit")
+                    .post(payload.toRequestBody(JSON_MEDIA))
+                    .build(),
+            )
+            Unit
+        }
+
+    override suspend fun downloadBatchLabelsPdf(batchCode: String): ByteArray =
+        withContext(Dispatchers.IO) {
+            val url =
+                "${baseUrl}products/labels.pdf".toHttpUrl().newBuilder()
+                    .addQueryParameter("batch", batchCode)
+                    .build()
+            executeBytes(
+                Request.Builder()
+                    .url(url)
+                    .get()
+                    .build(),
+            )
+        }
+
     private fun executeJson(request: Request): JSONObject {
         try {
             client.newCall(request).execute().use { response ->
@@ -198,7 +247,28 @@ class HttpProductRepository(
                 if (!response.isSuccessful) {
                     throw ErrorMapper.fromHttp(response.code, body)
                 }
-                return JSONObject(body)
+                return if (body.isBlank()) JSONObject() else JSONObject(body)
+            }
+        } catch (error: DomainError) {
+            throw error
+        } catch (error: IOException) {
+            throw DomainError.Network("Unable to resolve host or connect", error)
+        } catch (error: Throwable) {
+            throw DomainError.Unknown(error.message ?: "Request failed", error)
+        }
+    }
+
+    private fun executeBytes(request: Request): ByteArray {
+        try {
+            client.newCall(request).execute().use { response ->
+                val body = response.body?.bytes() ?: ByteArray(0)
+                if (!response.isSuccessful) {
+                    throw ErrorMapper.fromHttp(
+                        response.code,
+                        body.toString(Charsets.UTF_8),
+                    )
+                }
+                return body
             }
         } catch (error: DomainError) {
             throw error
