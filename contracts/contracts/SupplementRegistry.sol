@@ -13,11 +13,11 @@ contract SupplementRegistry is AccessControl, Pausable {
     struct Product {
         address owner;
         ProductStatus status;
+        bool exists;
         bytes32 secretHash;
-        string metadataCid;
         bytes32 metadataHash;
         bytes32 physicalId;
-        bool exists;
+        string metadataCid;
     }
 
     ProductId private _nextProductId;
@@ -54,6 +54,7 @@ contract SupplementRegistry is AccessControl, Pausable {
     error ProductNotConsumable(ProductId productId, ProductStatus status);
     error NotProductOwner(ProductId productId, address account);
     error InvalidTransfer(ProductId productId, address to, ProductStatus status);
+    error ProductNotInvalidatable(ProductId productId, ProductStatus status);
 
     constructor(address admin) {
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
@@ -175,6 +176,24 @@ contract SupplementRegistry is AccessControl, Pausable {
         emit ProductConsumed(productId, msg.sender);
     }
 
+    function invalidate(
+        ProductId productId
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
+        Product storage product = _products[productId];
+        if (!product.exists) {
+            revert ProductDoesNotExist(productId);
+        }
+        if (
+            product.status == ProductStatus.Consumed ||
+            product.status == ProductStatus.Invalid
+        ) {
+            revert ProductNotInvalidatable(productId, product.status);
+        }
+
+        product.status = ProductStatus.Invalid;
+        emit ProductInvalidated(productId, msg.sender);
+    }
+
     function getProduct(
         ProductId productId
     )
@@ -256,11 +275,11 @@ contract SupplementRegistry is AccessControl, Pausable {
         _products[productId] = Product({
             owner: owner,
             status: ProductStatus.Created,
+            exists: true,
             secretHash: secretHash,
-            metadataCid: metadataCid,
             metadataHash: metadataHash,
             physicalId: physicalId,
-            exists: true
+            metadataCid: metadataCid
         });
         _physicalIdToProduct[physicalId] = productId;
         emit ProductRegistered(
