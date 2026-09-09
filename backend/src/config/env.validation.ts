@@ -6,12 +6,16 @@ const optionalUrl = z
   .transform((value) => value?.trim() || undefined)
   .pipe(z.string().url().optional());
 
+const boolish = z.string().optional();
+
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   PORT: z.coerce.number().int().positive().default(3000),
   RPC_URL: optionalUrl,
   REGISTRY_ADDRESS: z.string().optional().default(''),
   REGISTRY_ABI_PATH: z.string().optional(),
+  DEPLOYMENTS_PATH: z.string().optional(),
+  CHAIN_ID: z.coerce.number().int().positive().optional(),
   IPFS_API_URL: z.string().optional(),
   IPFS_GATEWAY_URL: z.string().optional(),
   VERIFY_CACHE_TTL_MS: z.coerce.number().int().positive().default(15_000),
@@ -26,6 +30,13 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'test', 'production'])
     .default('development'),
+  FF_REPORTS: boolish,
+  FF_SCAN: boolish,
+  FF_LABELS_PDF: boolish,
+  FF_ANALYTICS: boolish,
+  FF_EIP712_METADATA: boolish,
+  FF_META_TX_CONSUME: boolish,
+  FF_SUBGRAPH: boolish,
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

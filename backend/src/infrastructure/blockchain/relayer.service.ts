@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { Contract, JsonRpcProvider, Wallet } from 'ethers';
 import * as fs from 'fs';
 import * as path from 'path';
+import { ChainConfigService } from '../../config/chain-config.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RelayerKeyStore } from './relayer-key.store';
 
@@ -23,6 +24,7 @@ export class RelayerService {
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
     private readonly keys: RelayerKeyStore,
+    private readonly chain: ChainConfigService,
   ) {}
 
   async registerUnit(input: {
@@ -191,7 +193,9 @@ export class RelayerService {
     }
     const artifact = this.loadArtifact();
     const address =
-      this.config.get<string>('REGISTRY_ADDRESS') || artifact.address;
+      this.config.get<string>('REGISTRY_ADDRESS') ||
+      this.chain.resolveRegistryAddress() ||
+      artifact.address;
     if (!address) {
       throw new BadRequestException('REGISTRY_ADDRESS is not configured');
     }

@@ -5,6 +5,7 @@ import { ProductStatus } from '@prisma/client';
 import { Contract, JsonRpcProvider, Log, id } from 'ethers';
 import * as fs from 'fs';
 import * as path from 'path';
+import { ChainConfigService } from '../../config/chain-config.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 type RegistryArtifact = {
@@ -28,16 +29,21 @@ export class IndexerService implements OnModuleInit, OnModuleDestroy {
   private readonly productConsumedTopic = id(
     'ProductConsumed(uint256,address)',
   );
+  private readonly productInvalidatedTopic = id(
+    'ProductInvalidated(uint256,address)',
+  );
 
   constructor(
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly chain: ChainConfigService,
   ) {}
 
   async onModuleInit() {
     const rpcUrl = this.config.get<string>('RPC_URL');
     const address =
       this.config.get<string>('REGISTRY_ADDRESS') ||
+      this.chain.resolveRegistryAddress() ||
       this.loadArtifact().address;
     if (!rpcUrl || !address) {
       this.logger.warn('Indexer disabled: RPC_URL or REGISTRY_ADDRESS missing');
@@ -83,31 +89,39 @@ export class IndexerService implements OnModuleInit, OnModuleDestroy {
       const toBlock = Number(latest);
       const address = await this.contract.getAddress();
 
-      const [registeredLogs, transferredLogs, consumedLogs] = await Promise.all([
-        this.provider.getLogs({
-          address,
-          fromBlock,
-          toBlock,
-          topics: [this.productRegisteredTopic],
-        }),
-        this.provider.getLogs({
-          address,
-          fromBlock,
-          toBlock,
-          topics: [this.ownershipTransferredTopic],
-        }),
-        this.provider.getLogs({
-          address,
-          fromBlock,
-          toBlock,
-          topics: [this.productConsumedTopic],
-        }),
-      ]);
+      const [registeredLogs, transferredLogs, consumedLogs, invalidatedLogs] =
+        await Promise.all([
+          this.provider.getLogs({
+            address,
+            fromBlock,
+            toBlock,
+            topics: [this.productRegisteredTopic],
+          }),
+          this.provider.getLogs({
+            address,
+            fromBlock,
+            toBlock,
+            topics: [this.ownershipTransferredTopic],
+          }),
+          this.provider.getLogs({
+            address,
+            fromBlock,
+            toBlock,
+            topics: [this.productConsumedTopic],
+          }),
+          this.provider.getLogs({
+            address,
+            fromBlock,
+            toBlock,
+            topics: [this.productInvalidatedTopic],
+          }),
+        ]);
 
       const ordered = [
         ...registeredLogs,
         ...transferredLogs,
         ...consumedLogs,
+        ...invalidatedLogs,
       ].sort((a, b) => {
         if (a.blockNumber !== b.blockNumber) {
           return a.blockNumber - b.blockNumber;
@@ -123,6 +137,8 @@ export class IndexerService implements OnModuleInit, OnModuleDestroy {
           await this.handleOwnershipTransferred(log);
         } else if (topic === this.productConsumedTopic) {
           await this.handleProductConsumed(log);
+        } else if (topic === this.productInvalidatedTopic) {
+          await this.handleProductInvalidated(log);
         }
       }
 
@@ -255,6 +271,35 @@ export class IndexerService implements OnModuleInit, OnModuleDestroy {
     });
 
     this.logger.log(`Indexed ProductConsumed id=${chainProductId}`);
+  }
+
+  private async handleProductInvalidated(log: Log) {
+    if (!this.contract) {
+      return;
+    }
+
+    const parsed = this.contract.interface.parseLog({
+      topics: [...log.topics],
+      data: log.data,
+    });
+    if (!parsed || parsed.name !== 'ProductInvalidated') {
+      return;
+    }
+
+    const chainProductId = parsed.args.productId.toString();
+    await this.prisma.product.upsert({
+      where: { chainProductId },
+      create: {
+        chainProductId,
+        ownerAddress: String(parsed.args.actor).toLowerCase(),
+        status: ProductStatus.Invalid,
+      },
+      update: {
+        status: ProductStatus.Invalid,
+      },
+    });
+
+    this.logger.log(`Indexed ProductInvalidated id=${chainProductId}`);
   }
 
   private mapStatus(value: number): ProductStatus {
