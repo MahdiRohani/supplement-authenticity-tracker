@@ -9,7 +9,10 @@ Blockchain-based supplement authenticity tracking: smart contracts, IPFS metadat
 | `android/` | Multi-module Android app (Compose), package `ir.aut.supplementtracker` |
 | `contracts/` | Hardhat + Solidity (`SupplementRegistry`) |
 | `backend/` | NestJS indexer/API + Prisma + IPFS adapter |
-| `packages/abis/` | Shared `SupplementRegistry` ABI |
+| `packages/abis/` | Shared ABI + `deployments.json` multi-chain map |
+| `subgraph/` | Optional The Graph scaffold (Nest indexer remains primary) |
+| `admin-web/` | Minimal static ops panel |
+| `docs/meta-transactions.md` | Relayer meta-tx / EIP-712 consume path |
 
 ## Prerequisites
 
@@ -72,13 +75,16 @@ Services: `postgres`, `ipfs` (Kubo), `backend` on port `3000`.
 4. **Relayer key rotate:** update `RELAYER_KEYS_JSON`, keep retiring keys in `RELAYER_KEYS_PREVIOUS_JSON`, then `POST /v1/admin/relayer-keys/reload` with the write key.
 5. **ABI sync:** after contract changes run deploy/export, bump `abiVersion` in `packages/abis/SupplementRegistry.json`, restart backend.
 6. **Load check:** with backend up, `PRODUCT_ID=1 ./scripts/load-verify.sh` (max request &lt; 3s).
-7. **CI:** GitHub Actions runs contracts, backend, Hardhat+Postgres integration smoke, and Android `assembleLocalDebug`.
+7. **CI:** GitHub Actions runs contracts, Slither, backend, Hardhat+Postgres integration (flags/reports/labels PDF), and Android `assembleLocalDebug` + `lintLocalDebug`.
 8. **Common failures:** pending `chainProductId` means mint skipped (check RPC/keys); IPFS stub only when `ALLOW_IPFS_STUB=true` or non-production.
+9. **Admin web:** `cd admin-web && python3 -m http.server 8080` against `http://127.0.0.1:3000/v1`.
+10. **Gasless consume:** see `docs/meta-transactions.md` (`POST /v1/meta/consume`).
 
 ## Versioning
 
-- HTTP API prefix: `/v1` (package `1.0.0`)
-- Shared ABI: `abiVersion` in `packages/abis/SupplementRegistry.json`
+- HTTP API prefix: `/v1` (package `1.1.0`)
+- Shared ABI: `abiVersion` `1.3.0` in `packages/abis/SupplementRegistry.json` and `deployments.json`
+- Release tag: `v1.1.0`
 
 ## Branch and commits
 
