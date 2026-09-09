@@ -9,4 +9,8 @@
     <string name="verify_expires">انقضا: %1$s</string>
     <string name="verify_source">منبع: %1$s</string>
     <string name="verify_guest_hint">استعلام مهمان — بدون ورود</string>
+    <string name="verify_metadata_link">فراداده: %1$s</string>
+    <string name="verify_scan_qr">اسکن QR</string>
+    <string name="verify_report_counterfeit">گزارش تقلبی</string>
+    <string name="verify_report_submitted">گزارش ثبت شد</string>
 </resources>

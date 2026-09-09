@@ -43,6 +43,14 @@ fun VerifyScreen(
             enabled = !state.isLoading && state.input.isNotBlank(),
             modifier = Modifier.testTag("verify_submit"),
         )
+        if (state.scanEnabled) {
+            SupplementButton(
+                text = stringResource(R.string.verify_scan_qr),
+                onClick = { onEvent(VerifyUiEvent.ScanQr) },
+                enabled = !state.isLoading,
+                modifier = Modifier.testTag("verify_scan"),
+            )
+        }
         if (state.isLoading) {
             CircularProgressIndicator(modifier = Modifier.testTag("verify_loading"))
         }
@@ -70,6 +78,14 @@ fun VerifyScreen(
                 Text(text = stringResource(R.string.verify_metadata_link, it))
             }
             Text(text = stringResource(R.string.verify_source, result.source))
+            if (state.reportsEnabled) {
+                SupplementButton(
+                    text = stringResource(R.string.verify_report_counterfeit),
+                    onClick = { onEvent(VerifyUiEvent.ReportCounterfeit) },
+                    enabled = !state.isReporting && !state.isLoading,
+                    modifier = Modifier.testTag("verify_report"),
+                )
+            }
         }
     }
 }

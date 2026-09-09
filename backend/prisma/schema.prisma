@@ -78,3 +78,21 @@ model AuditLog {
   @@index([entityId])
   @@index([createdAt])
 }
+
+model CounterfeitReport {
+  id             String   @id @default(cuid())
+  chainProductId String
+  note           String?
+  reporter       String?
+  createdAt      DateTime @default(now())
+
+  @@index([chainProductId])
+  @@index([createdAt])
+}
+
+model AnalyticsCounter {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  value     BigInt   @default(0)
+  updatedAt DateTime @updatedAt
+}
