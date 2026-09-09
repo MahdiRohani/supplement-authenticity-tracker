@@ -1,0 +1,17 @@
+type Product @entity {
+  id: ID!
+  owner: Bytes!
+  status: Int!
+  metadataCid: String
+  metadataHash: Bytes
+  updatedAtBlock: BigInt!
+}
+
+type OwnershipTransfer @entity {
+  id: ID!
+  product: Product!
+  from: Bytes!
+  to: Bytes!
+  txHash: Bytes!
+  blockNumber: BigInt!
+}

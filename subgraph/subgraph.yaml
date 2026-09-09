@@ -1,0 +1,31 @@
+specVersion: 1.0.0
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: SupplementRegistry
+    network: hardhat
+    source:
+      address: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+      abi: SupplementRegistry
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Product
+        - OwnershipTransfer
+      abis:
+        - name: SupplementRegistry
+          file: ../packages/abis/SupplementRegistry.json
+      eventHandlers:
+        - event: ProductRegistered(uint256,address,uint8,string,bytes32)
+          handler: handleProductRegistered
+        - event: OwnershipTransferred(uint256,address,address)
+          handler: handleOwnershipTransferred
+        - event: ProductConsumed(uint256,address)
+          handler: handleProductConsumed
+        - event: ProductInvalidated(uint256,address)
+          handler: handleProductInvalidated
+      file: ./src/mapping.ts
