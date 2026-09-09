@@ -13,6 +13,7 @@
     <string name="dashboard_batch_code">Batch code</string>
     <string name="dashboard_batch_count">Count</string>
     <string name="dashboard_batch_submit">Register batch</string>
+    <string name="dashboard_export_labels">Export labels PDF</string>
     <string name="dashboard_batch_progress">Registered %1$d of %2$d</string>
     <string name="dashboard_empty">No products yet</string>
     <string name="dashboard_item_line">%1$s · %2$s</string>

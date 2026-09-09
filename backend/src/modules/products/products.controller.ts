@@ -1,22 +1,30 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   Param,
   Post,
   Query,
+  Res,
+  ServiceUnavailableException,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import {
   ConsumeDto,
   RegisterBatchDto,
   RegisterProductDto,
   TransferDto,
 } from './dto/products.dto';
+import { FeatureFlagsService } from '../../config/feature-flags.service';
 import { ProductsService } from './products.service';
 
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly flags: FeatureFlagsService,
+  ) {}
 
   @Get()
   list(
@@ -33,6 +41,23 @@ export class ProductsController {
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
     });
+  }
+
+  @Get('labels.pdf')
+  async labelsPdf(@Query('batch') batch: string, @Res() res: Response) {
+    if (!this.flags.getFlags().labelsPdfEnabled) {
+      throw new ServiceUnavailableException('Labels PDF export is disabled');
+    }
+    if (!batch?.trim()) {
+      throw new BadRequestException('batch query parameter is required');
+    }
+    const pdf = await this.productsService.buildBatchLabelsPdf(batch.trim());
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="labels-${batch.trim()}.pdf"`,
+    );
+    res.send(pdf);
   }
 
   @Post()

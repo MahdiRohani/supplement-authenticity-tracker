@@ -3,6 +3,7 @@ package ir.aut.supplementtracker.feature.manufacturerdashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import ir.aut.supplementtracker.core.domain.DownloadBatchLabelsPdfUseCase
 import ir.aut.supplementtracker.core.domain.ErrorMapper
 import ir.aut.supplementtracker.core.domain.ListProductsUseCase
 import ir.aut.supplementtracker.core.domain.RegisterBatchUseCase
@@ -20,9 +21,12 @@ import kotlinx.coroutines.launch
 class ManufacturerDashboardViewModel(
     private val listProducts: ListProductsUseCase,
     private val registerBatch: RegisterBatchUseCase,
+    private val downloadBatchLabelsPdf: DownloadBatchLabelsPdfUseCase? = null,
     private val ownerAddress: String? = null,
+    labelsPdfEnabled: Boolean = true,
 ) : ViewModel() {
-    private val _state = MutableStateFlow(ManufacturerDashboardUiState())
+    private val _state =
+        MutableStateFlow(ManufacturerDashboardUiState(labelsPdfEnabled = labelsPdfEnabled))
     val state: StateFlow<ManufacturerDashboardUiState> = _state.asStateFlow()
 
     private val _effects = MutableSharedFlow<ManufacturerDashboardUiEffect>()
@@ -48,6 +52,7 @@ class ManufacturerDashboardViewModel(
             is ManufacturerDashboardUiEvent.BatchCountChanged ->
                 _state.update { it.copy(batchCount = event.value, errorMessage = null) }
             ManufacturerDashboardUiEvent.SubmitBatch -> submitBatch()
+            ManufacturerDashboardUiEvent.ExportLabelsPdf -> exportLabelsPdf()
         }
     }
 
@@ -123,19 +128,44 @@ class ManufacturerDashboardViewModel(
         }
     }
 
+    private fun exportLabelsPdf() {
+        val current = _state.value
+        val useCase = downloadBatchLabelsPdf ?: return
+        if (!current.labelsPdfEnabled || current.isExporting) return
+        val batchCode = current.batchCode.trim()
+        if (batchCode.isBlank()) return
+        viewModelScope.launch {
+            _state.update { it.copy(isExporting = true, errorMessage = null) }
+            runCatching { useCase(batchCode) }
+                .onSuccess { bytes ->
+                    _state.update { it.copy(isExporting = false) }
+                    _effects.emit(ManufacturerDashboardUiEffect.SharePdf(bytes, batchCode))
+                }
+                .onFailure { error ->
+                    val message = ErrorMapper.toUserMessage(error)
+                    _state.update { it.copy(isExporting = false, errorMessage = message) }
+                    _effects.emit(ManufacturerDashboardUiEffect.ShowMessage(message))
+                }
+        }
+    }
+
     companion object {
         fun factory(
             listProducts: ListProductsUseCase,
             registerBatch: RegisterBatchUseCase,
+            downloadBatchLabelsPdf: DownloadBatchLabelsPdfUseCase? = null,
             ownerAddress: String? = null,
+            labelsPdfEnabled: Boolean = true,
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     return ManufacturerDashboardViewModel(
-                        listProducts,
-                        registerBatch,
-                        ownerAddress,
+                        listProducts = listProducts,
+                        registerBatch = registerBatch,
+                        downloadBatchLabelsPdf = downloadBatchLabelsPdf,
+                        ownerAddress = ownerAddress,
+                        labelsPdfEnabled = labelsPdfEnabled,
                     ) as T
                 }
             }
