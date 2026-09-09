@@ -1,5 +1,6 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import "solidity-coverage";
 
 const sepoliaRpc = process.env.SEPOLIA_RPC_URL ?? "";
 const sepoliaKey = process.env.SEPOLIA_PRIVATE_KEY ?? "";

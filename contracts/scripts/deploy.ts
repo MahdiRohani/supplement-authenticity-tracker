@@ -29,7 +29,7 @@ async function main() {
     JSON.stringify(
       {
         contractName: "SupplementRegistry",
-        abiVersion: "1.1.0",
+        abiVersion: "1.2.0",
         address,
         chainId: Number(network.chainId),
         network: networkName,
