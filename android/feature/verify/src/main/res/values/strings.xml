@@ -8,5 +8,6 @@
     <string name="verify_batch">Batch: %1$s</string>
     <string name="verify_expires">Expires: %1$s</string>
     <string name="verify_source">Source: %1$s</string>
+    <string name="verify_metadata_link">Metadata: %1$s</string>
     <string name="verify_guest_hint">Guest verify — no login required</string>
 </resources>

@@ -16,6 +16,7 @@ export type VerifyResult = {
   currentOwner: string;
   metadataCid: string | null;
   metadataHash: string | null;
+  metadataGatewayUrl: string | null;
   metadata: {
     name?: string;
     batch?: string;
@@ -53,6 +54,7 @@ export class VerifyService {
 
     if (result.metadataCid) {
       result.metadata = await this.ipfs.resolveJson(result.metadataCid);
+      result.metadataGatewayUrl = this.ipfs.gatewayUrl(result.metadataCid);
     }
 
     if (result.authenticity === 'Consumed') {
@@ -82,6 +84,9 @@ export class VerifyService {
       currentOwner: product.ownerAddress,
       metadataCid: product.metadataCid,
       metadataHash: product.metadataHash,
+      metadataGatewayUrl: product.metadataCid
+        ? this.ipfs.gatewayUrl(product.metadataCid)
+        : null,
       metadata: null,
       cached: false,
       source: 'db',
@@ -110,6 +115,9 @@ export class VerifyService {
         currentOwner: String(view.currentOwner).toLowerCase(),
         metadataCid: String(view.metadataCid),
         metadataHash: null,
+        metadataGatewayUrl: view.metadataCid
+          ? this.ipfs.gatewayUrl(String(view.metadataCid))
+          : null,
         metadata: null,
         cached: false,
         source: 'chain',

@@ -177,6 +177,7 @@ class HttpProductRepository(
                 authenticity = json.optString("authenticity", json.getString("status")),
                 currentOwner = json.optString("currentOwner"),
                 metadataCid = json.optString("metadataCid").ifBlank { null },
+                metadataGatewayUrl = json.optString("metadataGatewayUrl").ifBlank { null },
                 metadata = metadataJson?.let {
                     ProductMetadata(
                         name = it.optString("name").ifBlank { null },

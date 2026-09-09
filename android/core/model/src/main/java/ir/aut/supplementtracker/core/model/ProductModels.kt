@@ -101,6 +101,7 @@ data class VerifyResult(
     val authenticity: String,
     val currentOwner: String,
     val metadataCid: String?,
+    val metadataGatewayUrl: String? = null,
     val metadata: ProductMetadata?,
     val source: String,
     val message: String? = null,

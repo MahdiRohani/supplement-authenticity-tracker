@@ -27,6 +27,7 @@ describe('VerifyService', () => {
       expiresAt: '2027-01-01',
       image: 'ipfs://img',
     }),
+    gatewayUrl: jest.fn((cid: string) => `https://ipfs.io/ipfs/${cid}`),
   };
   const config = {
     get: jest.fn((key: string) => {
