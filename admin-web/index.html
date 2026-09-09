@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Supplement Tracker Admin</title>
+    <style>
+      :root {
+        --bg: #f3f6f4;
+        --ink: #14231a;
+        --accent: #1f6b4a;
+        --panel: #ffffff;
+        --line: #d5e0d9;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Source Sans 3", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, #d9ebe1, transparent 40%),
+          linear-gradient(180deg, #eef5f0, var(--bg));
+        min-height: 100vh;
+      }
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 2rem 1.25rem 3rem;
+      }
+      h1 { font-family: "Source Serif 4", Georgia, serif; margin: 0 0 0.35rem; }
+      p.lead { margin-top: 0; opacity: 0.8; }
+      label { display: block; font-size: 0.9rem; margin-bottom: 0.35rem; }
+      input, button, textarea {
+        width: 100%;
+        padding: 0.7rem 0.8rem;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        font: inherit;
+      }
+      button {
+        background: var(--accent);
+        color: white;
+        border: none;
+        cursor: pointer;
+        margin-top: 0.75rem;
+      }
+      section {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 1rem;
+        margin: 1rem 0;
+      }
+      pre {
+        background: #0f1a14;
+        color: #d7f5e5;
+        padding: 0.9rem;
+        border-radius: 8px;
+        overflow: auto;
+        min-height: 8rem;
+      }
+      .row { display: grid; gap: 0.75rem; grid-template-columns: 1fr 1fr; }
+      @media (max-width: 720px) { .row { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Supplement Tracker Admin</h1>
+      <p class="lead">Minimal ops panel for health, flags, reports, and analytics snapshot.</p>
+
+      <section>
+        <div class="row">
+          <div>
+            <label for="baseUrl">API base URL</label>
+            <input id="baseUrl" value="http://127.0.0.1:3000/v1" />
+          </div>
+          <div>
+            <label for="apiKey">Write API key (optional)</label>
+            <input id="apiKey" placeholder="x-api-key" />
+          </div>
+        </div>
+        <button id="refreshBtn" type="button">Refresh overview</button>
+      </section>
+
+      <section>
+        <h2>Overview</h2>
+        <pre id="out">Click refresh.</pre>
+      </section>
+    </main>
+    <script>
+      const out = document.getElementById("out");
+      const refreshBtn = document.getElementById("refreshBtn");
+
+      async function getJson(path) {
+        const base = document.getElementById("baseUrl").value.replace(/\/$/, "");
+        const headers = {};
+        const key = document.getElementById("apiKey").value.trim();
+        if (key) headers["x-api-key"] = key;
+        const res = await fetch(base + path, { headers });
+        const text = await res.text();
+        let body;
+        try { body = JSON.parse(text); } catch { body = text; }
+        if (!res.ok) throw new Error(typeof body === "string" ? body : JSON.stringify(body));
+        return body;
+      }
+
+      refreshBtn.addEventListener("click", async () => {
+        out.textContent = "Loading…";
+        try {
+          const [health, flags, chains, reports, analytics] = await Promise.all([
+            getJson("/health"),
+            getJson("/flags"),
+            getJson("/chains"),
+            getJson("/reports/counterfeit?limit=20"),
+            getJson("/analytics/snapshot"),
+          ]);
+          out.textContent = JSON.stringify(
+            { health, flags, chains, reports, analytics },
+            null,
+            2
+          );
+        } catch (error) {
+          out.textContent = String(error);
+        }
+      });
+    </script>
+  </body>
+</html>
