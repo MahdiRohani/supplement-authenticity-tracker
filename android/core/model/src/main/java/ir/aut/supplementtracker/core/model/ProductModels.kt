@@ -167,3 +167,10 @@ data class RegisterBatchResult(
     val txHash: String?,
     val items: List<RegisterBatchItem>,
 )
+
+data class FeatureFlags(
+    val reportsEnabled: Boolean = true,
+    val scanEnabled: Boolean = true,
+    val labelsPdfEnabled: Boolean = true,
+    val analyticsEnabled: Boolean = true,
+)
