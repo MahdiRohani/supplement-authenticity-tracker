@@ -1,0 +1,118 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: contracts/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run test:gas
+        env:
+          REPORT_GAS: "true"
+
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm test
+      - run: npm run build
+
+  integration-chain:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: supplement_tracker
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install contracts
+        working-directory: contracts
+        run: npm ci
+      - name: Start Hardhat node
+        working-directory: contracts
+        run: npx hardhat node > /tmp/hh.log 2>&1 &
+      - name: Deploy registry
+        working-directory: contracts
+        run: |
+          sleep 3
+          npx hardhat run scripts/deploy.ts --network localhost | tee /tmp/deploy.log
+          echo "REGISTRY_ADDRESS=$(grep -o 'SupplementRegistry=0x[0-9a-fA-F]*' /tmp/deploy.log | cut -d= -f2)" >> "$GITHUB_ENV"
+      - name: Install and start backend
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/supplement_tracker?schema=public
+          RPC_URL: http://127.0.0.1:8545
+          REGISTRY_ABI_PATH: ../packages/abis/SupplementRegistry.json
+          ALLOW_IPFS_STUB: "true"
+          NODE_ENV: test
+          PORT: "3000"
+          RELAYER_KEYS_JSON: '{"0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266":"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80","0x70997970c51812dc3a010c7d01b50e0d17dc79c8":"0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d","0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc":"0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"}'
+        run: |
+          npm ci
+          npx prisma generate
+          npx prisma db push
+          npm run build
+          node dist/main.js > /tmp/backend.log 2>&1 &
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:3000/v1/health >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:3000/v1/health
+          REGISTER=$(curl -fsS -X POST http://127.0.0.1:3000/v1/products -H 'content-type: application/json' -d '{"name":"CI Vitamin","batch":"CI-1"}')
+          echo "$REGISTER"
+          ID=$(node -e "const j=JSON.parse(process.argv[1]); process.stdout.write(String(j.chainProductId))" "$REGISTER")
+          curl -fsS "http://127.0.0.1:3000/v1/verify/$ID"
+          PRODUCT_ID="$ID" BASE_URL=http://127.0.0.1:3000/v1 CONCURRENCY=10 THRESHOLD_MS=3000 bash ../scripts/load-verify.sh
+
+  android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Assemble localDebug
+        run: ./gradlew :app:assembleLocalDebug :core:designsystem:assembleDebug --no-daemon
