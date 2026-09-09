@@ -9,6 +9,7 @@ import { Contract, JsonRpcProvider, Wallet } from 'ethers';
 import * as fs from 'fs';
 import * as path from 'path';
 import { PrismaService } from '../prisma/prisma.service';
+import { RelayerKeyStore } from './relayer-key.store';
 
 type RegistryArtifact = {
   address?: string;
@@ -21,6 +22,7 @@ export class RelayerService {
   constructor(
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly keys: RelayerKeyStore,
   ) {}
 
   async registerUnit(input: {
@@ -31,8 +33,7 @@ export class RelayerService {
     physicalId: string;
   }) {
     const manufacturer = input.manufacturerAddress.toLowerCase();
-    const keyMap = this.loadKeyMap();
-    const manufacturerKey = keyMap[manufacturer];
+    const manufacturerKey = this.keys.resolveKey(manufacturer);
     if (!manufacturerKey) {
       throw new BadRequestException(
         `No relayer key configured for manufacturer ${manufacturer}`,
@@ -64,8 +65,7 @@ export class RelayerService {
     physicalIds: string[];
   }) {
     const manufacturer = input.manufacturerAddress.toLowerCase();
-    const keyMap = this.loadKeyMap();
-    const manufacturerKey = keyMap[manufacturer];
+    const manufacturerKey = this.keys.resolveKey(manufacturer);
     if (!manufacturerKey) {
       throw new BadRequestException(
         `No relayer key configured for manufacturer ${manufacturer}`,
@@ -105,8 +105,7 @@ export class RelayerService {
     }
 
     const product = await this.findProduct(chainProductId);
-    const keyMap = this.loadKeyMap();
-    const ownerKey = keyMap[product.ownerAddress.toLowerCase()];
+    const ownerKey = this.keys.resolveKey(product.ownerAddress);
     if (!ownerKey) {
       throw new BadRequestException(
         `No relayer key configured for owner ${product.ownerAddress}`,
@@ -144,10 +143,9 @@ export class RelayerService {
       );
     }
 
-    const keyMap = this.loadKeyMap();
     const actorKey =
-      keyMap[product.ownerAddress.toLowerCase()] ||
-      Object.values(keyMap)[0];
+      this.keys.resolveKey(product.ownerAddress) ||
+      Object.values(this.keys.getActiveMap())[0];
     if (!actorKey) {
       throw new BadRequestException('No relayer key configured for consume');
     }
@@ -243,17 +241,6 @@ export class RelayerService {
       throw new BadRequestException('Registry is paused');
     }
     throw error;
-  }
-
-  private loadKeyMap(): Record<string, string> {
-    const raw = this.config.get<string>('RELAYER_KEYS_JSON') ?? '{}';
-    const parsed = JSON.parse(raw) as Record<string, string>;
-    return Object.fromEntries(
-      Object.entries(parsed).map(([address, key]) => [
-        address.toLowerCase(),
-        key,
-      ]),
-    );
   }
 
   private loadArtifact(): RegistryArtifact {
