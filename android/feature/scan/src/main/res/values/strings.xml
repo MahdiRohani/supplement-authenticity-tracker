@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="scan_title">Scan QR</string>
+    <string name="scan_permission_required">Camera permission is required to scan</string>
+    <string name="scan_grant_permission">Grant camera access</string>
+    <string name="scan_close">Close</string>
+</resources>
