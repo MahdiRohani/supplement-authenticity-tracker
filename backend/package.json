@@ -1,6 +1,6 @@
 {
   "name": "supplement-authenticity-backend",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "build": "nest build",
@@ -31,7 +31,13 @@
     "@nestjs/core": "^11.0.11",
     "@nestjs/platform-express": "^11.0.11",
     "@prisma/client": "^6.5.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
     "ethers": "^6.13.5",
+    "fast-check": "^4.9.0",
+    "helmet": "^8.3.0",
+    "nestjs-pino": "^4.6.1",
+    "pino-http": "^11.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "zod": "^4.5.4"

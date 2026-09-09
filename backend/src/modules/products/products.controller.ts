@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
@@ -7,29 +6,13 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import {
+  ConsumeDto,
+  RegisterBatchDto,
+  RegisterProductDto,
+  TransferDto,
+} from './dto/products.dto';
 import { ProductsService } from './products.service';
-
-type RegisterProductBody = {
-  name: string;
-  batch?: string;
-  manufacturerAddress?: string;
-  physicalId?: string;
-};
-
-type RegisterBatchBody = {
-  name: string;
-  batch?: string;
-  count: number;
-  manufacturerAddress?: string;
-};
-
-type TransferBody = {
-  toAddress: string;
-};
-
-type ConsumeBody = {
-  secret: string;
-};
 
 @Controller('products')
 export class ProductsController {
@@ -53,25 +36,22 @@ export class ProductsController {
   }
 
   @Post()
-  register(@Body() body: RegisterProductBody) {
+  register(@Body() body: RegisterProductDto) {
     return this.productsService.registerProduct(body);
   }
 
   @Post('batch')
-  registerBatch(@Body() body: RegisterBatchBody) {
-    if (!body?.name || body.count == null) {
-      throw new BadRequestException('name and count are required');
-    }
+  registerBatch(@Body() body: RegisterBatchDto) {
     return this.productsService.registerBatch(body);
   }
 
   @Post(':id/transfer')
-  transfer(@Param('id') id: string, @Body() body: TransferBody) {
+  transfer(@Param('id') id: string, @Body() body: TransferDto) {
     return this.productsService.transferProduct(id, body.toAddress);
   }
 
   @Post(':id/consume')
-  consume(@Param('id') id: string, @Body() body: ConsumeBody) {
+  consume(@Param('id') id: string, @Body() body: ConsumeDto) {
     return this.productsService.consumeProduct(id, body.secret);
   }
 
