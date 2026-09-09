@@ -64,6 +64,22 @@ Services: `postgres`, `ipfs` (Kubo), `backend` on port `3000`.
 - Backend: see `backend/README.md` (`GET /v1/health`, `GET /v1/products`, `POST /v1/products`, `POST /v1/products/batch`, ProductRegistered indexer)
 - Env is validated with Zod at startup (see `backend/.env.example`; never commit real secrets)
 
+## Operational runbook
+
+1. **Local stack:** `./scripts/demo.sh` or `docker compose up -d --build` plus `cd contracts && npm run node` and deploy.
+2. **Health:** `curl http://127.0.0.1:3000/v1/health` (expects `status=ok|degraded`) and `/v1/health/ready`.
+3. **Write auth:** set `API_WRITE_KEY` and send `x-api-key` on POST/PUT/DELETE (GET verify stays public). Empty key is allowed only outside production.
+4. **Relayer key rotate:** update `RELAYER_KEYS_JSON`, keep retiring keys in `RELAYER_KEYS_PREVIOUS_JSON`, then `POST /v1/admin/relayer-keys/reload` with the write key.
+5. **ABI sync:** after contract changes run deploy/export, bump `abiVersion` in `packages/abis/SupplementRegistry.json`, restart backend.
+6. **Load check:** with backend up, `PRODUCT_ID=1 ./scripts/load-verify.sh` (max request &lt; 3s).
+7. **CI:** GitHub Actions runs contracts, backend, Hardhat+Postgres integration smoke, and Android `assembleLocalDebug`.
+8. **Common failures:** pending `chainProductId` means mint skipped (check RPC/keys); IPFS stub only when `ALLOW_IPFS_STUB=true` or non-production.
+
+## Versioning
+
+- HTTP API prefix: `/v1` (package `1.0.0`)
+- Shared ABI: `abiVersion` in `packages/abis/SupplementRegistry.json`
+
 ## Branch and commits
 
 - Default branch: `master`. Feature work lands here as sequential phase commits (or short-lived topic branches merged into `master`).
