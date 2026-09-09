@@ -19,6 +19,10 @@ const envSchema = z.object({
   CONSUME_RATE_LIMIT: z.coerce.number().int().positive().default(20),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
   RELAYER_KEYS_JSON: z.string().default('{}'),
+  RELAYER_KEYS_PREVIOUS_JSON: z.string().optional(),
+  API_WRITE_KEY: z.string().optional(),
+  ALLOW_IPFS_STUB: z.string().optional(),
+  LOG_LEVEL: z.string().optional(),
   NODE_ENV: z
     .enum(['development', 'test', 'production'])
     .default('development'),
