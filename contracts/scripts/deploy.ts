@@ -3,6 +3,8 @@ import { ethers } from "hardhat";
 import * as fs from "fs";
 import * as path from "path";
 
+const ABI_VERSION = "1.3.0";
+
 async function main() {
   const [deployer] = await ethers.getSigners();
   const registry = await ethers.deployContract("SupplementRegistry", [
@@ -12,7 +14,8 @@ async function main() {
 
   const address = await registry.getAddress();
   const network = await ethers.provider.getNetwork();
-  const networkName = (hre.network.name || `chain-${network.chainId}`).replace(
+  const chainId = Number(network.chainId);
+  const networkName = (hre.network.name || `chain-${chainId}`).replace(
     /[^a-zA-Z0-9_-]/g,
     "_"
   );
@@ -29,9 +32,9 @@ async function main() {
     JSON.stringify(
       {
         contractName: "SupplementRegistry",
-        abiVersion: "1.2.0",
+        abiVersion: ABI_VERSION,
         address,
-        chainId: Number(network.chainId),
+        chainId,
         network: networkName,
         abi: artifact.abi,
       },
@@ -40,13 +43,27 @@ async function main() {
     )
   );
 
+  const deploymentsPath = path.join(abisDir, "deployments.json");
+  let deployments: Record<string, unknown> = {};
+  if (fs.existsSync(deploymentsPath)) {
+    deployments = JSON.parse(fs.readFileSync(deploymentsPath, "utf8"));
+  }
+  deployments[String(chainId)] = {
+    network: networkName,
+    contractName: "SupplementRegistry",
+    abiVersion: ABI_VERSION,
+    address,
+  };
+  fs.writeFileSync(deploymentsPath, JSON.stringify(deployments, null, 2));
+
   const deploymentsDir = path.join(__dirname, "../deployments");
   fs.mkdirSync(deploymentsDir, { recursive: true });
   const deployment = {
     SupplementRegistry: address,
     deployer: deployer.address,
-    chainId: Number(network.chainId),
+    chainId,
     network: networkName,
+    abiVersion: ABI_VERSION,
   };
   fs.writeFileSync(
     path.join(deploymentsDir, `${networkName}.json`),
@@ -55,8 +72,9 @@ async function main() {
 
   console.log(`SupplementRegistry=${address}`);
   console.log(`deployer=${deployer.address}`);
-  console.log(`chainId=${network.chainId}`);
+  console.log(`chainId=${chainId}`);
   console.log(`network=${networkName}`);
+  console.log(`abiVersion=${ABI_VERSION}`);
 }
 
 main().catch((error) => {

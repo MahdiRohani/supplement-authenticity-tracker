@@ -6,6 +6,8 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {ProductId, ProductStatus} from "./domain/ProductTypes.sol";
 
 contract SupplementRegistry is AccessControl, Pausable {
+    bool public constant UPGRADEABLE = false;
+
     bytes32 public constant MANUFACTURER_ROLE = keccak256("MANUFACTURER_ROLE");
     bytes32 public constant DISTRIBUTOR_ROLE = keccak256("DISTRIBUTOR_ROLE");
     bytes32 public constant PHARMACY_ROLE = keccak256("PHARMACY_ROLE");

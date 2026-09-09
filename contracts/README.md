@@ -1,5 +1,7 @@
 # Contracts
 
+`SupplementRegistry` is **intentionally non-upgradeable** (`UPGRADEABLE = false`). There is no UUPS/transparent proxy. Protocol fixes require a new deployment, ABI bump (`abiVersion`), and address cutover in `packages/abis/deployments.json`.
+
 ```bash
 cd contracts && npm install && npx hardhat test
 ```
