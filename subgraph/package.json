@@ -1,0 +1,14 @@
+{
+  "name": "supplement-registry-subgraph",
+  "version": "1.1.0",
+  "private": true,
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy:local": "graph deploy --node http://127.0.0.1:8020/ --ipfs http://127.0.0.1:5001 supplement-registry"
+  },
+  "devDependencies": {
+    "@graphprotocol/graph-cli": "^0.97.1",
+    "@graphprotocol/graph-ts": "^0.37.0"
+  }
+}
