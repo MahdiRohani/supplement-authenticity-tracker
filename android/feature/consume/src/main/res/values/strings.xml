@@ -6,4 +6,5 @@
     <string name="consume_action">Confirm consume</string>
     <string name="consume_result_status">Status: %1$s</string>
     <string name="consume_result_tx">Tx: %1$s</string>
+    <string name="consume_success">Consumed · %1$s</string>
 </resources>

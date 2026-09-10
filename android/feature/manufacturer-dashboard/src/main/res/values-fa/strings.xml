@@ -17,4 +17,8 @@
     <string name="dashboard_batch_progress">ثبت‌شده %1$d از %2$d</string>
     <string name="dashboard_empty">هنوز محصولی نیست</string>
     <string name="dashboard_item_line">%1$s · %2$s</string>
+    <string name="dashboard_batch_registered">دسته ثبت شد (%1$d واحد)</string>
+    <string name="dashboard_analytics_title">تحلیل محلی</string>
+    <string name="dashboard_analytics_verify">استعلام‌ها: %1$d</string>
+    <string name="dashboard_analytics_scan">اسکن‌ها: %1$d</string>
 </resources>

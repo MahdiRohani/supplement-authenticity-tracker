@@ -2,6 +2,19 @@ plugins {
     alias(libs.plugins.android.library)
 }
 
+import java.util.Properties
+
+val localProps =
+    Properties().apply {
+        val file = rootProject.file("local.properties")
+        if (file.exists()) {
+            file.inputStream().use { load(it) }
+        }
+    }
+
+fun localProp(key: String, default: String): String =
+    localProps.getProperty(key)?.trim()?.takeIf { it.isNotEmpty() } ?: default
+
 android {
     namespace = "ir.aut.supplementtracker.core.blockchain"
     compileSdk {
@@ -30,8 +43,16 @@ android {
         }
         create("sepolia") {
             dimension = "env"
-            buildConfigField("String", "RPC_URL", "\"https://sepolia.placeholder.rpc\"")
-            buildConfigField("String", "REGISTRY_ADDRESS", "\"0x0000000000000000000000000000000000000000\"")
+            buildConfigField(
+                "String",
+                "RPC_URL",
+                "\"${localProp("SEPOLIA_RPC_URL", "https://rpc.sepolia.example.invalid")}\"",
+            )
+            buildConfigField(
+                "String",
+                "REGISTRY_ADDRESS",
+                "\"${localProp("SEPOLIA_REGISTRY_ADDRESS", "0x0000000000000000000000000000000000000000")}\"",
+            )
             buildConfigField("String", "CHAIN_ID", "\"11155111\"")
             buildConfigField("String", "SIGNING_MODE", "\"relayer\"")
             buildConfigField("String", "MANAGED_PRIVATE_KEY", "\"\"")

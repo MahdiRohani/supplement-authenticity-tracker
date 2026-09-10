@@ -38,15 +38,13 @@ class HistoryViewModel(
             runCatching { getHistory(current.productId.trim()) }
                 .onSuccess { history ->
                     _state.update { it.copy(isLoading = false, history = history) }
-                    _effects.emit(
-                        HistoryUiEffect.ShowMessage("Loaded in ${history.elapsedMs} ms"),
-                    )
+                    _effects.emit(HistoryUiEffect.Loaded(history.elapsedMs))
                 }
                 .onFailure { error ->
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = error.message ?: "History failed",
+                            errorMessage = error.message ?: "HISTORY_FAILED",
                         )
                     }
                 }

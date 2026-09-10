@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_invalid_input">Invalid input</string>
+    <string name="error_not_found">Not found</string>
+    <string name="error_conflict">Conflict</string>
+    <string name="error_rate_limited">Too many requests. Try again shortly.</string>
+    <string name="error_network">Network error</string>
+    <string name="error_request_failed">Request failed</string>
+    <string name="error_unexpected">Unexpected error</string>
+    <string name="error_already_consumed">Product already consumed; refill is not allowed</string>
+    <string name="error_owner_required">Owner address required</string>
+    <string name="error_history_failed">Could not load history</string>
+    <string name="cd_logout">Log out</string>
+</resources>

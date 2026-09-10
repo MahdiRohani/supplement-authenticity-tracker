@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_invalid_input">ورودی نامعتبر</string>
+    <string name="error_not_found">یافت نشد</string>
+    <string name="error_conflict">تداخل</string>
+    <string name="error_rate_limited">تعداد درخواست زیاد است. کمی بعد دوباره تلاش کنید.</string>
+    <string name="error_network">خطای شبکه</string>
+    <string name="error_request_failed">درخواست ناموفق بود</string>
+    <string name="error_unexpected">خطای غیرمنتظره</string>
+    <string name="error_already_consumed">محصول قبلاً مصرف شده؛ پر کردن مجدد مجاز نیست</string>
+    <string name="error_owner_required">آدرس مالک لازم است</string>
+    <string name="error_history_failed">بارگذاری تاریخچه ممکن نشد</string>
+    <string name="cd_logout">خروج</string>
+</resources>

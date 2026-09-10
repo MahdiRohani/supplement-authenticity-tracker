@@ -46,7 +46,7 @@ class StockViewModel(
         val current = _state.value
         if (current.ownerAddress.isBlank()) {
             _state.update {
-                it.copy(errorMessage = "Owner address required", isLoading = false)
+                it.copy(errorMessage = "OWNER_ADDRESS_REQUIRED", isLoading = false)
             }
             return
         }

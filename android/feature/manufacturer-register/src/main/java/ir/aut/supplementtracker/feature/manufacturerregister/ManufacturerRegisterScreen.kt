@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import ir.aut.supplementtracker.core.designsystem.SupplementSpacing
+import ir.aut.supplementtracker.core.designsystem.localizedErrorMessage
 import ir.aut.supplementtracker.core.designsystem.components.SupplementButton
 import ir.aut.supplementtracker.core.designsystem.components.SupplementTextField
 
@@ -44,7 +45,9 @@ fun ManufacturerRegisterScreen(
         if (state.isSubmitting) {
             CircularProgressIndicator()
         }
-        state.errorMessage?.let { Text(text = it) }
+        state.errorMessage?.let { raw ->
+            localizedErrorMessage(raw)?.let { Text(text = it) }
+        }
         state.result?.let { product ->
             Text(text = stringResource(R.string.result_id, product.chainProductId))
             product.metadataCid?.let { cid ->

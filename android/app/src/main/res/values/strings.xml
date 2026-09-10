@@ -13,4 +13,5 @@
     <string name="nav_consume">Consume</string>
     <string name="nav_history">History</string>
     <string name="nav_stock">Stock</string>
+    <string name="action_logout">Log out</string>
 </resources>

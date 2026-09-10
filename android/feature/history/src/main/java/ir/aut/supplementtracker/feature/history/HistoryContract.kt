@@ -16,4 +16,5 @@ sealed interface HistoryUiEvent {
 
 sealed interface HistoryUiEffect {
     data class ShowMessage(val message: String) : HistoryUiEffect
+    data class Loaded(val elapsedMs: Long) : HistoryUiEffect
 }

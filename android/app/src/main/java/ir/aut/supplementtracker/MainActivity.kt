@@ -7,6 +7,18 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.LocalPharmacy
+import androidx.compose.material.icons.filled.Login
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.Verified
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -20,6 +32,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -44,6 +57,7 @@ import ir.aut.supplementtracker.core.data.SessionStore
 import ir.aut.supplementtracker.core.data.VerifyCacheStore
 import ir.aut.supplementtracker.core.designsystem.SupplementTheme
 import ir.aut.supplementtracker.core.designsystem.components.SupplementTopBar
+import ir.aut.supplementtracker.core.designsystem.localizeErrorMessage
 import ir.aut.supplementtracker.core.domain.ConsumeProductUseCase
 import ir.aut.supplementtracker.core.domain.DownloadBatchLabelsPdfUseCase
 import ir.aut.supplementtracker.core.domain.GetFeatureFlagsUseCase
@@ -100,6 +114,7 @@ object AppRoutes {
 data class NavDestination(
     val route: String,
     val labelRes: Int,
+    val icon: ImageVector,
 )
 
 class MainActivity : ComponentActivity() {
@@ -166,6 +181,34 @@ class MainActivity : ComponentActivity() {
                                     session!!.address.take(10),
                                 )
                             },
+                            actions = {
+                                if (session != null) {
+                                    val logoutCd = stringResource(R.string.action_logout)
+                                    IconButton(
+                                        onClick = {
+                                            sessionStore.clear()
+                                            session = null
+                                            draftRole = SupplyRole.Manufacturer
+                                            draftAddress =
+                                                defaultSessionFor(SupplyRole.Manufacturer).address
+                                            navController.navigate(AppRoutes.VERIFY) {
+                                                popUpTo(navController.graph.findStartDestination().id) {
+                                                    inclusive = true
+                                                }
+                                                launchSingleTop = true
+                                            }
+                                        },
+                                        modifier = Modifier.semantics {
+                                            contentDescription = logoutCd
+                                        },
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.Logout,
+                                            contentDescription = logoutCd,
+                                        )
+                                    }
+                                }
+                            },
                         )
                     },
                     bottomBar = {
@@ -187,7 +230,12 @@ class MainActivity : ComponentActivity() {
                                             restoreState = true
                                         }
                                     },
-                                    icon = { Text(label.take(1)) },
+                                    icon = {
+                                        Icon(
+                                            imageVector = item.icon,
+                                            contentDescription = label,
+                                        )
+                                    },
                                     label = { Text(label) },
                                     modifier = Modifier.semantics {
                                         contentDescription = label
@@ -290,6 +338,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable(AppRoutes.REGISTER) {
+                            val context = LocalContext.current
                             val registerVm: ManufacturerRegisterViewModel =
                                 viewModel(
                                     factory = ManufacturerRegisterViewModel.factory(registerProduct),
@@ -297,8 +346,19 @@ class MainActivity : ComponentActivity() {
                             val registerState by registerVm.state.collectAsStateWithLifecycle()
                             LaunchedEffect(registerVm) {
                                 registerVm.effects.collectLatest { effect ->
-                                    if (effect is ManufacturerRegisterUiEffect.ShowMessage) {
-                                        snackbarHostState.showSnackbar(effect.message)
+                                    when (effect) {
+                                        is ManufacturerRegisterUiEffect.Registered ->
+                                            snackbarHostState.showSnackbar(
+                                                context.getString(
+                                                    ir.aut.supplementtracker.feature.manufacturerregister.R.string.register_success,
+                                                    effect.chainProductId,
+                                                ),
+                                            )
+                                        is ManufacturerRegisterUiEffect.ShowMessage ->
+                                            snackbarHostState.showSnackbar(
+                                                localizeErrorMessage(context, effect.message)
+                                                    ?: effect.message,
+                                            )
                                     }
                                 }
                             }
@@ -311,13 +371,16 @@ class MainActivity : ComponentActivity() {
                             val context = LocalContext.current
                             val dashboardVm: ManufacturerDashboardViewModel =
                                 viewModel(
-                                    key = "dashboard-${featureFlags.labelsPdfEnabled}",
+                                    key = "dashboard-${featureFlags.labelsPdfEnabled}-${featureFlags.analyticsEnabled}-${analyticsStore.verifyCount()}-${analyticsStore.scanCount()}",
                                     factory = ManufacturerDashboardViewModel.factory(
                                         listProducts = listProducts,
                                         registerBatch = registerBatch,
                                         downloadBatchLabelsPdf = downloadBatchLabelsPdf,
                                         ownerAddress = session?.address,
                                         labelsPdfEnabled = featureFlags.labelsPdfEnabled,
+                                        analyticsEnabled = featureFlags.analyticsEnabled,
+                                        analyticsVerifyCount = analyticsStore.verifyCount(),
+                                        analyticsScanCount = analyticsStore.scanCount(),
                                     ),
                                 )
                             val dashboardState by dashboardVm.state.collectAsStateWithLifecycle()
@@ -325,7 +388,17 @@ class MainActivity : ComponentActivity() {
                                 dashboardVm.effects.collectLatest { effect ->
                                     when (effect) {
                                         is ManufacturerDashboardUiEffect.ShowMessage ->
-                                            snackbarHostState.showSnackbar(effect.message)
+                                            snackbarHostState.showSnackbar(
+                                                localizeErrorMessage(context, effect.message)
+                                                    ?: effect.message,
+                                            )
+                                        is ManufacturerDashboardUiEffect.BatchRegistered ->
+                                            snackbarHostState.showSnackbar(
+                                                context.getString(
+                                                    ir.aut.supplementtracker.feature.manufacturerdashboard.R.string.dashboard_batch_registered,
+                                                    effect.count,
+                                                ),
+                                            )
                                         is ManufacturerDashboardUiEffect.SharePdf -> {
                                             val file =
                                                 File(
@@ -358,13 +431,25 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable(AppRoutes.TRANSFER) {
+                            val context = LocalContext.current
                             val transferVm: TransferViewModel =
                                 viewModel(factory = TransferViewModel.factory(transferProduct))
                             val transferState by transferVm.state.collectAsStateWithLifecycle()
                             LaunchedEffect(transferVm) {
                                 transferVm.effects.collectLatest { effect ->
-                                    if (effect is TransferUiEffect.ShowMessage) {
-                                        snackbarHostState.showSnackbar(effect.message)
+                                    when (effect) {
+                                        is TransferUiEffect.Transferred ->
+                                            snackbarHostState.showSnackbar(
+                                                context.getString(
+                                                    ir.aut.supplementtracker.feature.transfer.R.string.transfer_success,
+                                                    effect.txHash,
+                                                ),
+                                            )
+                                        is TransferUiEffect.ShowMessage ->
+                                            snackbarHostState.showSnackbar(
+                                                localizeErrorMessage(context, effect.message)
+                                                    ?: effect.message,
+                                            )
                                     }
                                 }
                             }
@@ -374,13 +459,25 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable(AppRoutes.CONSUME) {
+                            val context = LocalContext.current
                             val consumeVm: ConsumeViewModel =
                                 viewModel(factory = ConsumeViewModel.factory(consumeProduct))
                             val consumeState by consumeVm.state.collectAsStateWithLifecycle()
                             LaunchedEffect(consumeVm) {
                                 consumeVm.effects.collectLatest { effect ->
-                                    if (effect is ConsumeUiEffect.ShowMessage) {
-                                        snackbarHostState.showSnackbar(effect.message)
+                                    when (effect) {
+                                        is ConsumeUiEffect.Consumed ->
+                                            snackbarHostState.showSnackbar(
+                                                context.getString(
+                                                    ir.aut.supplementtracker.feature.consume.R.string.consume_success,
+                                                    effect.chainProductId,
+                                                ),
+                                            )
+                                        is ConsumeUiEffect.ShowMessage ->
+                                            snackbarHostState.showSnackbar(
+                                                localizeErrorMessage(context, effect.message)
+                                                    ?: effect.message,
+                                            )
                                     }
                                 }
                             }
@@ -390,13 +487,25 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable(AppRoutes.HISTORY) {
+                            val context = LocalContext.current
                             val historyVm: HistoryViewModel =
                                 viewModel(factory = HistoryViewModel.factory(getHistory))
                             val historyState by historyVm.state.collectAsStateWithLifecycle()
                             LaunchedEffect(historyVm) {
                                 historyVm.effects.collectLatest { effect ->
-                                    if (effect is HistoryUiEffect.ShowMessage) {
-                                        snackbarHostState.showSnackbar(effect.message)
+                                    when (effect) {
+                                        is HistoryUiEffect.Loaded ->
+                                            snackbarHostState.showSnackbar(
+                                                context.getString(
+                                                    ir.aut.supplementtracker.feature.history.R.string.history_elapsed,
+                                                    effect.elapsedMs.toInt(),
+                                                ),
+                                            )
+                                        is HistoryUiEffect.ShowMessage ->
+                                            snackbarHostState.showSnackbar(
+                                                localizeErrorMessage(context, effect.message)
+                                                    ?: effect.message,
+                                            )
                                     }
                                 }
                             }
@@ -406,6 +515,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable(AppRoutes.STOCK) {
+                            val context = LocalContext.current
                             val mode =
                                 when (session?.role) {
                                     SupplyRole.Pharmacy -> StockMode.Pharmacy
@@ -423,7 +533,10 @@ class MainActivity : ComponentActivity() {
                             LaunchedEffect(stockVm) {
                                 stockVm.effects.collectLatest { effect ->
                                     if (effect is StockUiEffect.ShowMessage) {
-                                        snackbarHostState.showSnackbar(effect.message)
+                                        snackbarHostState.showSnackbar(
+                                            localizeErrorMessage(context, effect.message)
+                                                ?: effect.message,
+                                        )
                                     }
                                 }
                             }
@@ -481,7 +594,10 @@ private fun VerifyRoute(
     LaunchedEffect(verifyVm) {
         verifyVm.effects.collectLatest { effect ->
             when (effect) {
-                is VerifyUiEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message)
+                is VerifyUiEffect.ShowMessage ->
+                    snackbarHostState.showSnackbar(
+                        localizeErrorMessage(context, effect.message) ?: effect.message,
+                    )
                 VerifyUiEffect.ReportSubmitted ->
                     snackbarHostState.showSnackbar(
                         context.getString(ir.aut.supplementtracker.feature.verify.R.string.verify_report_submitted),
@@ -499,38 +615,38 @@ private fun VerifyRoute(
 private fun destinationsFor(session: UserSession?): List<NavDestination> {
     if (session == null) {
         return listOf(
-            NavDestination(AppRoutes.VERIFY, R.string.nav_verify),
-            NavDestination(AppRoutes.LOGIN, R.string.nav_login),
+            NavDestination(AppRoutes.VERIFY, R.string.nav_verify, Icons.Filled.Verified),
+            NavDestination(AppRoutes.LOGIN, R.string.nav_login, Icons.Filled.Login),
         )
     }
     return when (session.role) {
         SupplyRole.Manufacturer -> listOf(
-            NavDestination(AppRoutes.VERIFY, R.string.nav_verify),
-            NavDestination(AppRoutes.DASHBOARD, R.string.nav_dashboard),
-            NavDestination(AppRoutes.REGISTER, R.string.nav_register),
-            NavDestination(AppRoutes.TRANSFER, R.string.nav_transfer),
-            NavDestination(AppRoutes.HISTORY, R.string.nav_history),
+            NavDestination(AppRoutes.VERIFY, R.string.nav_verify, Icons.Filled.Verified),
+            NavDestination(AppRoutes.DASHBOARD, R.string.nav_dashboard, Icons.Filled.Dashboard),
+            NavDestination(AppRoutes.REGISTER, R.string.nav_register, Icons.Filled.QrCodeScanner),
+            NavDestination(AppRoutes.TRANSFER, R.string.nav_transfer, Icons.Filled.SwapHoriz),
+            NavDestination(AppRoutes.HISTORY, R.string.nav_history, Icons.AutoMirrored.Filled.List),
         )
         SupplyRole.Distributor -> listOf(
-            NavDestination(AppRoutes.VERIFY, R.string.nav_verify),
-            NavDestination(AppRoutes.STOCK, R.string.nav_stock),
-            NavDestination(AppRoutes.TRANSFER, R.string.nav_transfer),
-            NavDestination(AppRoutes.HISTORY, R.string.nav_history),
+            NavDestination(AppRoutes.VERIFY, R.string.nav_verify, Icons.Filled.Verified),
+            NavDestination(AppRoutes.STOCK, R.string.nav_stock, Icons.Filled.Inventory2),
+            NavDestination(AppRoutes.TRANSFER, R.string.nav_transfer, Icons.Filled.SwapHoriz),
+            NavDestination(AppRoutes.HISTORY, R.string.nav_history, Icons.AutoMirrored.Filled.List),
         )
         SupplyRole.Pharmacy -> listOf(
-            NavDestination(AppRoutes.VERIFY, R.string.nav_verify),
-            NavDestination(AppRoutes.STOCK, R.string.nav_stock),
-            NavDestination(AppRoutes.CONSUME, R.string.nav_consume),
-            NavDestination(AppRoutes.HISTORY, R.string.nav_history),
+            NavDestination(AppRoutes.VERIFY, R.string.nav_verify, Icons.Filled.Verified),
+            NavDestination(AppRoutes.STOCK, R.string.nav_stock, Icons.Filled.Inventory2),
+            NavDestination(AppRoutes.CONSUME, R.string.nav_consume, Icons.Filled.LocalPharmacy),
+            NavDestination(AppRoutes.HISTORY, R.string.nav_history, Icons.AutoMirrored.Filled.List),
         )
         SupplyRole.Admin -> listOf(
-            NavDestination(AppRoutes.VERIFY, R.string.nav_verify),
-            NavDestination(AppRoutes.DASHBOARD, R.string.nav_dashboard),
-            NavDestination(AppRoutes.REGISTER, R.string.nav_register),
-            NavDestination(AppRoutes.STOCK, R.string.nav_stock),
-            NavDestination(AppRoutes.TRANSFER, R.string.nav_transfer),
-            NavDestination(AppRoutes.CONSUME, R.string.nav_consume),
-            NavDestination(AppRoutes.HISTORY, R.string.nav_history),
+            NavDestination(AppRoutes.VERIFY, R.string.nav_verify, Icons.Filled.Verified),
+            NavDestination(AppRoutes.DASHBOARD, R.string.nav_dashboard, Icons.Filled.Dashboard),
+            NavDestination(AppRoutes.REGISTER, R.string.nav_register, Icons.Filled.QrCodeScanner),
+            NavDestination(AppRoutes.STOCK, R.string.nav_stock, Icons.Filled.Inventory2),
+            NavDestination(AppRoutes.TRANSFER, R.string.nav_transfer, Icons.Filled.SwapHoriz),
+            NavDestination(AppRoutes.CONSUME, R.string.nav_consume, Icons.Filled.LocalPharmacy),
+            NavDestination(AppRoutes.HISTORY, R.string.nav_history, Icons.AutoMirrored.Filled.List),
         )
     }
 }

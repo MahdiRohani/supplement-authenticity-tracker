@@ -18,4 +18,5 @@ sealed interface TransferUiEvent {
 
 sealed interface TransferUiEffect {
     data class ShowMessage(val message: String) : TransferUiEffect
+    data class Transferred(val txHash: String) : TransferUiEffect
 }

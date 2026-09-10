@@ -14,4 +14,5 @@
     <string name="nav_consume">مصرف</string>
     <string name="nav_history">تاریخچه</string>
     <string name="nav_stock">موجودی</string>
+    <string name="action_logout">خروج</string>
 </resources>

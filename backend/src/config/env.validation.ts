@@ -49,5 +49,19 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
       .join('; ');
     throw new Error(`Invalid environment configuration: ${details}`);
   }
-  return parsed.data;
+  const data = parsed.data;
+  if (data.NODE_ENV === 'production' && !data.API_WRITE_KEY?.trim()) {
+    throw new Error(
+      'Invalid environment configuration: API_WRITE_KEY is required when NODE_ENV=production',
+    );
+  }
+  if (
+    data.NODE_ENV === 'production' &&
+    (data.ALLOW_IPFS_STUB === 'true' || data.ALLOW_IPFS_STUB === '1')
+  ) {
+    throw new Error(
+      'Invalid environment configuration: ALLOW_IPFS_STUB cannot be enabled in production',
+    );
+  }
+  return data;
 }

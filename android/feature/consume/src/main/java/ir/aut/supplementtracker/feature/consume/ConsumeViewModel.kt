@@ -48,7 +48,7 @@ class ConsumeViewModel(
                 )
             }.onSuccess { result ->
                 _state.update { it.copy(isSubmitting = false, result = result, secret = "") }
-                _effects.emit(ConsumeUiEffect.ShowMessage("Consumed ${result.chainProductId}"))
+                _effects.emit(ConsumeUiEffect.Consumed(result.chainProductId))
             }.onFailure { error ->
                 val message = ErrorMapper.toUserMessage(error)
                 _state.update {

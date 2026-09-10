@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import ir.aut.supplementtracker.core.designsystem.SupplementSpacing
+import ir.aut.supplementtracker.core.designsystem.localizedErrorMessage
 import ir.aut.supplementtracker.core.designsystem.components.AuthenticityStatus
 import ir.aut.supplementtracker.core.designsystem.components.StatusChip
 import ir.aut.supplementtracker.core.designsystem.components.SupplementButton
@@ -60,8 +61,10 @@ fun VerifyScreen(
                 modifier = Modifier.testTag("verify_status_${status.name}"),
             )
         }
-        state.errorMessage?.let {
-            Text(text = it, modifier = Modifier.testTag("verify_error"))
+        state.errorMessage?.let { raw ->
+            localizedErrorMessage(raw)?.let {
+                Text(text = it, modifier = Modifier.testTag("verify_error"))
+            }
         }
         state.result?.let { result ->
             Text(text = stringResource(R.string.verify_owner, result.currentOwner))

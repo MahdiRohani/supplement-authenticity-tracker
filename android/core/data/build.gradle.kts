@@ -2,6 +2,19 @@ plugins {
     alias(libs.plugins.android.library)
 }
 
+import java.util.Properties
+
+val localProps =
+    Properties().apply {
+        val file = rootProject.file("local.properties")
+        if (file.exists()) {
+            file.inputStream().use { load(it) }
+        }
+    }
+
+fun localProp(key: String, default: String): String =
+    localProps.getProperty(key)?.trim()?.takeIf { it.isNotEmpty() } ?: default
+
 android {
     namespace = "ir.aut.supplementtracker.core.data"
     compileSdk {
@@ -19,7 +32,11 @@ android {
         }
         create("sepolia") {
             dimension = "env"
-            buildConfigField("String", "API_BASE_URL", "\"https://api.sepolia.placeholder/v1/\"")
+            buildConfigField(
+                "String",
+                "API_BASE_URL",
+                "\"${localProp("SEPOLIA_API_BASE_URL", "https://api.sepolia.example.invalid/v1/")}\"",
+            )
             buildConfigField("String", "SIGNING_MODE", "\"relayer\"")
         }
     }

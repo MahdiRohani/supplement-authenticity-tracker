@@ -50,13 +50,24 @@ export class IndexerService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    this.provider = new JsonRpcProvider(rpcUrl);
-    this.contract = new Contract(address, this.loadArtifact().abi, this.provider);
-    this.lastBlock = BigInt(await this.provider.getBlockNumber());
-    this.polling = setInterval(() => {
-      void this.poll();
-    }, 3000);
-    this.logger.log(`Indexer listening on ${address}`);
+    try {
+      this.provider = new JsonRpcProvider(rpcUrl);
+      this.provider.on('error', (error) => {
+        this.logger.warn(`RPC provider error: ${String(error)}`);
+      });
+      this.contract = new Contract(address, this.loadArtifact().abi, this.provider);
+      this.lastBlock = BigInt(await this.provider.getBlockNumber());
+      this.polling = setInterval(() => {
+        void this.poll();
+      }, 3000);
+      this.logger.log(`Indexer listening on ${address}`);
+    } catch (error) {
+      this.logger.warn(
+        `Indexer disabled: cannot reach RPC at ${rpcUrl} (${String(error)})`,
+      );
+      this.provider = undefined;
+      this.contract = undefined;
+    }
   }
 
   onModuleDestroy() {

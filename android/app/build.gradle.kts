@@ -3,6 +3,19 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+import java.util.Properties
+
+val localProps =
+    Properties().apply {
+        val file = rootProject.file("local.properties")
+        if (file.exists()) {
+            file.inputStream().use { load(it) }
+        }
+    }
+
+fun localProp(key: String, default: String): String =
+    localProps.getProperty(key)?.trim()?.takeIf { it.isNotEmpty() } ?: default
+
 android {
     namespace = "ir.aut.supplementtracker"
     compileSdk {
@@ -34,9 +47,21 @@ android {
         }
         create("sepolia") {
             dimension = "env"
-            buildConfigField("String", "API_BASE_URL", "\"https://api.sepolia.placeholder/v1/\"")
-            buildConfigField("String", "RPC_URL", "\"https://sepolia.placeholder.rpc\"")
-            buildConfigField("String", "REGISTRY_ADDRESS", "\"0x0000000000000000000000000000000000000000\"")
+            buildConfigField(
+                "String",
+                "API_BASE_URL",
+                "\"${localProp("SEPOLIA_API_BASE_URL", "https://api.sepolia.example.invalid/v1/")}\"",
+            )
+            buildConfigField(
+                "String",
+                "RPC_URL",
+                "\"${localProp("SEPOLIA_RPC_URL", "https://rpc.sepolia.example.invalid")}\"",
+            )
+            buildConfigField(
+                "String",
+                "REGISTRY_ADDRESS",
+                "\"${localProp("SEPOLIA_REGISTRY_ADDRESS", "0x0000000000000000000000000000000000000000")}\"",
+            )
             buildConfigField("String", "SIGNING_MODE", "\"relayer\"")
         }
     }
@@ -85,6 +110,7 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
+    implementation("androidx.compose.material:material-icons-extended")
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)

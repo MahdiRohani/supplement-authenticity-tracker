@@ -8,4 +8,5 @@
     <string name="result_cid">CID: %1$s</string>
     <string name="result_secret">رمز (فقط یک‌بار): %1$s</string>
     <string name="hide_secret_action">پنهان کردن رمز (چاپ شد)</string>
+    <string name="register_success">ثبت شد · %1$s</string>
 </resources>

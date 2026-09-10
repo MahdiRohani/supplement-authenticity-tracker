@@ -1,0 +1,6 @@
+# Copy keys into android/local.properties (gitignored) before building sepolia flavor.
+# Defaults use *.example.invalid so a misconfigured build cannot silently hit a fake host.
+
+SEPOLIA_API_BASE_URL=https://your-api.example.com/v1/
+SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_KEY
+SEPOLIA_REGISTRY_ADDRESS=0x0000000000000000000000000000000000000000
