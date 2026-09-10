@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import ir.aut.supplementtracker.core.designsystem.SupplementSpacing
+import ir.aut.supplementtracker.core.designsystem.localizedErrorMessage
 import ir.aut.supplementtracker.core.designsystem.components.SupplementButton
 
 @Composable
@@ -41,7 +42,9 @@ fun StockScreen(
         if (state.isLoading) {
             CircularProgressIndicator()
         }
-        state.errorMessage?.let { Text(text = it) }
+        state.errorMessage?.let { raw ->
+            localizedErrorMessage(raw)?.let { Text(text = it) }
+        }
         if (state.items.isEmpty() && !state.isLoading) {
             Text(text = stringResource(R.string.stock_empty))
         } else {

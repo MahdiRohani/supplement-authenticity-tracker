@@ -19,4 +19,5 @@ sealed interface ManufacturerRegisterUiEvent {
 
 sealed interface ManufacturerRegisterUiEffect {
     data class ShowMessage(val message: String) : ManufacturerRegisterUiEffect
+    data class Registered(val chainProductId: String) : ManufacturerRegisterUiEffect
 }

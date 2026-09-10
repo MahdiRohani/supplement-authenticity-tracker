@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import ir.aut.supplementtracker.core.designsystem.SupplementSpacing
+import ir.aut.supplementtracker.core.designsystem.localizedErrorMessage
 import ir.aut.supplementtracker.core.designsystem.components.AuthenticityStatus
 import ir.aut.supplementtracker.core.designsystem.components.StatusChip
 import ir.aut.supplementtracker.core.designsystem.components.SupplementButton
@@ -44,7 +45,9 @@ fun HistoryScreen(
         if (state.isLoading) {
             CircularProgressIndicator()
         }
-        state.errorMessage?.let { Text(text = it) }
+        state.errorMessage?.let { raw ->
+            localizedErrorMessage(raw)?.let { Text(text = it) }
+        }
         state.history?.let { history ->
             StatusChip(status = history.status.toAuthenticityStatus())
             Text(text = stringResource(R.string.history_owner, history.currentOwner))

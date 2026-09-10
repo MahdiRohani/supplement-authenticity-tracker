@@ -25,16 +25,16 @@ describe('ApiWriteGuard', () => {
     expect(guard.canActivate(context('GET') as never)).toBe(true);
   });
 
-  it('rejects POST with wrong key when configured', () => {
+  it('rejects POST without key in production when API_WRITE_KEY empty', () => {
     const guard = new ApiWriteGuard(
       {
         get: (key: string) =>
-          key === 'API_WRITE_KEY' ? 'secret' : 'development',
+          key === 'API_WRITE_KEY' ? undefined : key === 'NODE_ENV' ? 'production' : undefined,
       } as never,
       reflector as never,
     );
-    expect(() =>
-      guard.canActivate(context('POST', { 'x-api-key': 'nope' }) as never),
-    ).toThrow(UnauthorizedException);
+    expect(() => guard.canActivate(context('POST') as never)).toThrow(
+      UnauthorizedException,
+    );
   });
 });

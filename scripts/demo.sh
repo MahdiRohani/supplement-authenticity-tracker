@@ -17,6 +17,8 @@ npm run e2e:local
 echo "==> Docker stack: Postgres + IPFS + Backend"
 cd "$ROOT"
 export REGISTRY_ADDRESS="${REGISTRY_ADDRESS:-}"
+# Leave RPC unset unless a live Hardhat/Sepolia node is available (indexer stays off).
+unset RPC_URL
 docker compose up -d --build postgres ipfs backend
 
 echo "==> Waiting for backend health"

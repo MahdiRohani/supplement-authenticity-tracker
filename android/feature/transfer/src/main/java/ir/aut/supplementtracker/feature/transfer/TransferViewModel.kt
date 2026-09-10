@@ -48,7 +48,7 @@ class TransferViewModel(
                 )
             }.onSuccess { result ->
                 _state.update { it.copy(isSubmitting = false, result = result) }
-                _effects.emit(TransferUiEffect.ShowMessage("Transferred ${result.txHash}"))
+                _effects.emit(TransferUiEffect.Transferred(result.txHash))
             }.onFailure { error ->
                 val message = ErrorMapper.toUserMessage(error)
                 _state.update {

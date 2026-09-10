@@ -55,9 +55,7 @@ class ManufacturerRegisterViewModel(
                     it.copy(isSubmitting = false, result = product)
                 }
                 _effects.emit(
-                    ManufacturerRegisterUiEffect.ShowMessage(
-                        "Registered ${product.chainProductId}",
-                    ),
+                    ManufacturerRegisterUiEffect.Registered(product.chainProductId),
                 )
             }.onFailure { error ->
                 val message = ErrorMapper.toUserMessage(error)

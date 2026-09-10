@@ -18,6 +18,9 @@ data class ManufacturerDashboardUiState(
     val batchResult: RegisterBatchResult? = null,
     val errorMessage: String? = null,
     val labelsPdfEnabled: Boolean = true,
+    val analyticsEnabled: Boolean = false,
+    val analyticsVerifyCount: Int = 0,
+    val analyticsScanCount: Int = 0,
 )
 
 sealed interface ManufacturerDashboardUiEvent {
@@ -33,5 +36,6 @@ sealed interface ManufacturerDashboardUiEvent {
 
 sealed interface ManufacturerDashboardUiEffect {
     data class ShowMessage(val message: String) : ManufacturerDashboardUiEffect
+    data class BatchRegistered(val count: Int) : ManufacturerDashboardUiEffect
     data class SharePdf(val bytes: ByteArray, val batchCode: String) : ManufacturerDashboardUiEffect
 }

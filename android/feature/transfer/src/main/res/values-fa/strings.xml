@@ -5,4 +5,5 @@
     <string name="recipient_label">آدرس گیرنده</string>
     <string name="transfer_action">انتقال از طریق رله</string>
     <string name="transfer_result">تراکنش: %1$s</string>
+    <string name="transfer_success">انتقال انجام شد · %1$s</string>
 </resources>

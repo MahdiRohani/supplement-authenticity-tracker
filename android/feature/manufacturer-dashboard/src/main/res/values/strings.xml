@@ -17,4 +17,8 @@
     <string name="dashboard_batch_progress">Registered %1$d of %2$d</string>
     <string name="dashboard_empty">No products yet</string>
     <string name="dashboard_item_line">%1$s · %2$s</string>
+    <string name="dashboard_batch_registered">Batch registered (%1$d units)</string>
+    <string name="dashboard_analytics_title">Local analytics</string>
+    <string name="dashboard_analytics_verify">Verify taps: %1$d</string>
+    <string name="dashboard_analytics_scan">Scan taps: %1$d</string>
 </resources>

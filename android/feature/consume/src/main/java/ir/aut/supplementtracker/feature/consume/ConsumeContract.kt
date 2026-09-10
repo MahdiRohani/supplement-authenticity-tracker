@@ -18,4 +18,5 @@ sealed interface ConsumeUiEvent {
 
 sealed interface ConsumeUiEffect {
     data class ShowMessage(val message: String) : ConsumeUiEffect
+    data class Consumed(val chainProductId: String) : ConsumeUiEffect
 }

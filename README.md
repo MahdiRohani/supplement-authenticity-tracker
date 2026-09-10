@@ -13,6 +13,8 @@ Blockchain-based supplement authenticity tracking: smart contracts, IPFS metadat
 | `subgraph/` | Optional The Graph scaffold (Nest indexer remains primary) |
 | `admin-web/` | Minimal static ops panel |
 | `docs/meta-transactions.md` | Relayer meta-tx / EIP-712 consume path |
+| `docs/architecture-decisions.md` | Locked architecture + intentional deviations |
+| `docs/audit-scorecard.md` | Full-system audit scorecard |
 
 ## Prerequisites
 
@@ -33,6 +35,7 @@ cd supplement-authenticity-tracker
 1. Open the `android/` directory in Android Studio (not the monorepo root).
 2. Let Gradle sync finish. If prompted, set the Android SDK path (creates `android/local.properties` locally; it is gitignored).
 3. Select product flavor **`local`** (emulator → `10.0.2.2`) or **`sepolia`**, then run `:app`.
+   - For **sepolia**, copy keys from [`android/sepolia.properties.example`](android/sepolia.properties.example) into `android/local.properties` (`SEPOLIA_API_BASE_URL`, `SEPOLIA_RPC_URL`, `SEPOLIA_REGISTRY_ADDRESS`). Defaults use `*.example.invalid` so misconfiguration fails closed.
 
 From the command line:
 

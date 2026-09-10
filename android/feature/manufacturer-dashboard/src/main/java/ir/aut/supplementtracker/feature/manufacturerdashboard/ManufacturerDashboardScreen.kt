@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import ir.aut.supplementtracker.core.designsystem.SupplementSpacing
+import ir.aut.supplementtracker.core.designsystem.localizedErrorMessage
 import ir.aut.supplementtracker.core.designsystem.components.SupplementButton
 import ir.aut.supplementtracker.core.designsystem.components.SupplementTextField
 
@@ -44,6 +45,21 @@ fun ManufacturerDashboardScreen(
         verticalArrangement = Arrangement.spacedBy(SupplementSpacing.Sm),
     ) {
         Text(text = stringResource(R.string.dashboard_title))
+        if (state.analyticsEnabled) {
+            Text(text = stringResource(R.string.dashboard_analytics_title))
+            Text(
+                text = stringResource(
+                    R.string.dashboard_analytics_verify,
+                    state.analyticsVerifyCount,
+                ),
+            )
+            Text(
+                text = stringResource(
+                    R.string.dashboard_analytics_scan,
+                    state.analyticsScanCount,
+                ),
+            )
+        }
         SupplementTextField(
             value = state.search,
             onValueChange = { onEvent(ManufacturerDashboardUiEvent.SearchChanged(it)) },
@@ -117,7 +133,9 @@ fun ManufacturerDashboardScreen(
         if (state.isLoading || state.isSubmitting || state.isExporting) {
             CircularProgressIndicator()
         }
-        state.errorMessage?.let { Text(text = it) }
+        state.errorMessage?.let { raw ->
+            localizedErrorMessage(raw)?.let { Text(text = it) }
+        }
         if (state.items.isEmpty() && !state.isLoading) {
             Text(text = stringResource(R.string.dashboard_empty))
         } else {

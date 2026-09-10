@@ -24,9 +24,19 @@ class ManufacturerDashboardViewModel(
     private val downloadBatchLabelsPdf: DownloadBatchLabelsPdfUseCase? = null,
     private val ownerAddress: String? = null,
     labelsPdfEnabled: Boolean = true,
+    analyticsEnabled: Boolean = false,
+    analyticsVerifyCount: Int = 0,
+    analyticsScanCount: Int = 0,
 ) : ViewModel() {
     private val _state =
-        MutableStateFlow(ManufacturerDashboardUiState(labelsPdfEnabled = labelsPdfEnabled))
+        MutableStateFlow(
+            ManufacturerDashboardUiState(
+                labelsPdfEnabled = labelsPdfEnabled,
+                analyticsEnabled = analyticsEnabled,
+                analyticsVerifyCount = analyticsVerifyCount,
+                analyticsScanCount = analyticsScanCount,
+            ),
+        )
     val state: StateFlow<ManufacturerDashboardUiState> = _state.asStateFlow()
 
     private val _effects = MutableSharedFlow<ManufacturerDashboardUiEffect>()
@@ -115,7 +125,7 @@ class ManufacturerDashboardViewModel(
                     )
                 }
                 _effects.emit(
-                    ManufacturerDashboardUiEffect.ShowMessage("Batch registered ${result.count}"),
+                    ManufacturerDashboardUiEffect.BatchRegistered(result.count),
                 )
                 refresh()
             }.onFailure { error ->
@@ -156,6 +166,9 @@ class ManufacturerDashboardViewModel(
             downloadBatchLabelsPdf: DownloadBatchLabelsPdfUseCase? = null,
             ownerAddress: String? = null,
             labelsPdfEnabled: Boolean = true,
+            analyticsEnabled: Boolean = false,
+            analyticsVerifyCount: Int = 0,
+            analyticsScanCount: Int = 0,
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
@@ -166,6 +179,9 @@ class ManufacturerDashboardViewModel(
                         downloadBatchLabelsPdf = downloadBatchLabelsPdf,
                         ownerAddress = ownerAddress,
                         labelsPdfEnabled = labelsPdfEnabled,
+                        analyticsEnabled = analyticsEnabled,
+                        analyticsVerifyCount = analyticsVerifyCount,
+                        analyticsScanCount = analyticsScanCount,
                     ) as T
                 }
             }

@@ -7,7 +7,7 @@ sealed class DomainError(
     class Validation(message: String) : DomainError(message)
     class NotFound(message: String) : DomainError(message)
     class Conflict(message: String) : DomainError(message)
-    class RateLimited(message: String = "Too many requests") : DomainError(message)
+    class RateLimited(message: String = "RATE_LIMITED") : DomainError(message)
     class Network(message: String, cause: Throwable? = null) : DomainError(message, cause)
     class Api(val statusCode: Int, message: String) : DomainError(message)
     class Unknown(message: String, cause: Throwable? = null) : DomainError(message, cause)
@@ -16,14 +16,14 @@ sealed class DomainError(
 object ErrorMapper {
     fun toUserMessage(error: Throwable): String =
         when (error) {
-            is DomainError.Validation -> error.message ?: "Invalid input"
-            is DomainError.NotFound -> error.message ?: "Not found"
-            is DomainError.Conflict -> error.message ?: "Conflict"
-            is DomainError.RateLimited -> error.message ?: "Too many requests"
-            is DomainError.Network -> error.message ?: "Network error"
-            is DomainError.Api -> error.message ?: "Request failed"
-            is DomainError -> error.message ?: "Unexpected error"
-            else -> error.message ?: "Unexpected error"
+            is DomainError.Validation -> error.message ?: "INVALID_INPUT"
+            is DomainError.NotFound -> error.message ?: "NOT_FOUND"
+            is DomainError.Conflict -> error.message ?: "CONFLICT"
+            is DomainError.RateLimited -> error.message ?: "RATE_LIMITED"
+            is DomainError.Network -> error.message ?: "NETWORK_ERROR"
+            is DomainError.Api -> error.message ?: "REQUEST_FAILED"
+            is DomainError -> error.message ?: "UNEXPECTED_ERROR"
+            else -> error.message ?: "UNEXPECTED_ERROR"
         }
 
     fun fromHttp(statusCode: Int, body: String): DomainError {
@@ -33,9 +33,9 @@ object ErrorMapper {
             404 -> DomainError.NotFound(extractMessage(body) ?: message)
             409 -> DomainError.Conflict(
                 extractMessage(body)
-                    ?: "Product already consumed; refill is not allowed",
+                    ?: "ALREADY_CONSUMED",
             )
-            429 -> DomainError.RateLimited()
+            429 -> DomainError.RateLimited("RATE_LIMITED")
             in 500..599 -> DomainError.Api(statusCode, extractMessage(body) ?: message)
             else -> DomainError.Api(statusCode, extractMessage(body) ?: message)
         }

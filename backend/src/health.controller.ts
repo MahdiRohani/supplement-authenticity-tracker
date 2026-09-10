@@ -29,7 +29,7 @@ export class HealthController {
     const status = checks.database === 'ok' ? 'ok' : 'degraded';
     return {
       status,
-      version: '1.0.0',
+      version: '1.1.0',
       api: 'v1',
       checks,
       timestamp: new Date().toISOString(),
