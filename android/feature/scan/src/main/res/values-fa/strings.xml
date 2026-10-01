@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="scan_title">اسکن QR</string>
-    <string name="scan_permission_required">برای اسکن به دسترسی دوربین نیاز است</string>
+    <string name="scan_hint">کد QR روی برچسب را داخل کادر قرار دهید</string>
+    <string name="scan_permission_title">دسترسی به دوربین لازم است</string>
+    <string name="scan_permission_required">دوربین فقط برای خواندن کد QR روی برچسب محصول استفاده می‌شود. چیزی ضبط یا ارسال نمی‌شود.</string>
     <string name="scan_grant_permission">اجازه دسترسی به دوربین</string>
+    <string name="scan_open_settings">باز کردن تنظیمات برنامه</string>
+    <string name="scan_error_title">دوربین در دسترس نیست</string>
+    <string name="scan_error_message">اسکنر روی این دستگاه اجرا نشد. آن را ببندید و شناسه محصول را دستی وارد کنید.</string>
+    <string name="scan_torch_on">روشن کردن چراغ‌قوه</string>
+    <string name="scan_torch_off">خاموش کردن چراغ‌قوه</string>
     <string name="scan_close">بستن</string>
 </resources>

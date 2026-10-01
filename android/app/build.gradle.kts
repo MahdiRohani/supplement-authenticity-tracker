@@ -16,6 +16,10 @@ val localProps =
 fun localProp(key: String, default: String): String =
     localProps.getProperty(key)?.trim()?.takeIf { it.isNotEmpty() } ?: default
 
+// 10.0.2.2 only resolves to the dev machine inside the emulator; a physical phone
+// needs 127.0.0.1 (with `adb reverse`) or the machine's LAN IP.
+val localDevHost = localProp("LOCAL_DEV_HOST", "10.0.2.2")
+
 android {
     namespace = "ir.aut.supplementtracker"
     compileSdk {
@@ -36,8 +40,8 @@ android {
     productFlavors {
         create("local") {
             dimension = "env"
-            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3000/v1/\"")
-            buildConfigField("String", "RPC_URL", "\"http://10.0.2.2:8545\"")
+            buildConfigField("String", "API_BASE_URL", "\"http://$localDevHost:3000/v1/\"")
+            buildConfigField("String", "RPC_URL", "\"http://$localDevHost:8545\"")
             buildConfigField(
                 "String",
                 "REGISTRY_ADDRESS",
@@ -83,11 +87,32 @@ android {
     }
     packaging {
         resources {
-            pickFirsts += "META-INF/**"
+            // Signature files from signed jars (BouncyCastle via web3j) must never reach
+            // the APK: next to a foreign MANIFEST.MF they make every classpath resource
+            // read throw SecurityException (this crashed ML Kit on the scan screen).
             excludes += setOf(
                 "META-INF/*.SF",
                 "META-INF/*.DSA",
                 "META-INF/*.RSA",
+                "META-INF/*.EC",
+                "META-INF/INDEX.LIST",
+                "META-INF/DEPENDENCIES",
+                // Build-time metadata duplicated across server-side jars (Jackson, AWS SDK,
+                // Netty); none of it is read at runtime on Android.
+                "META-INF/LICENSE*",
+                "META-INF/NOTICE*",
+                "META-INF/*-LICENSE*",
+                "META-INF/*-NOTICE*",
+                "META-INF/license/**",
+                "META-INF/DISCLAIMER",
+                "META-INF/AL2.0",
+                "META-INF/LGPL2.1",
+                "META-INF/*.md",
+                "META-INF/versions/*/OSGI-INF/**",
+                "META-INF/native-image/**",
+                "META-INF/io.netty.versions.properties",
+                "META-INF/versions/*/module-info.class",
+                "module-info.class",
             )
         }
     }
@@ -110,7 +135,7 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
-    implementation("androidx.compose.material:material-icons-extended")
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)

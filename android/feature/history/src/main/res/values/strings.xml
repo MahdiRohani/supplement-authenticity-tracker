@@ -1,9 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="history_title">Ownership history</string>
+    <string name="history_subtitle">Follow a unit from the factory to the pharmacy shelf.</string>
     <string name="history_product_id_label">Product ID</string>
-    <string name="history_load_action">Load timeline</string>
-    <string name="history_owner">Owner: %1$s</string>
+    <string name="history_load_action">Show timeline</string>
+    <string name="history_unit">Unit #%1$s</string>
+    <string name="history_owner">Current owner</string>
+    <string name="history_chain_title">Custody chain</string>
+    <plurals name="history_event_count">
+        <item quantity="one">%1$d step</item>
+        <item quantity="other">%1$d steps</item>
+    </plurals>
+    <string name="history_no_events">No on-chain events indexed yet</string>
+    <string name="history_event_minted">Registered by manufacturer</string>
+    <string name="history_event_transfer">Ownership transferred</string>
     <string name="history_event">%1$s → %2$s</string>
+    <string name="history_event_meta">Block %1$s · %2$s</string>
+    <string name="history_tx">Transaction hash</string>
     <string name="history_elapsed">Fetched in %1$d ms</string>
 </resources>

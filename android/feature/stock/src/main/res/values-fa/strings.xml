@@ -2,8 +2,17 @@
 <resources>
     <string name="stock_title_distributor">صندوق ورودی توزیع‌کننده</string>
     <string name="stock_title_pharmacy">موجودی داروخانه</string>
+    <string name="stock_owner">در اختیار %1$s</string>
+    <string name="stock_section">واحدهای در اختیار شما</string>
+    <plurals name="stock_unit_count">
+        <item quantity="one">%1$d واحد</item>
+        <item quantity="other">%1$d واحد</item>
+    </plurals>
     <string name="stock_refresh">بروزرسانی</string>
     <string name="stock_empty">واحدی در موجودی نیست</string>
-    <string name="stock_item_line">%1$s · %2$s</string>
+    <string name="stock_empty_hint_distributor">واحدهایی که تولیدکننده به شما منتقل کند اینجا نمایش داده می‌شوند.</string>
+    <string name="stock_empty_hint_pharmacy">واحدهایی که توزیع‌کننده به شما تحویل دهد اینجا نمایش داده می‌شوند.</string>
+    <string name="stock_unit_fallback">واحد #%1$s</string>
+    <string name="stock_item_batch">بچ %1$s</string>
     <string name="stock_owner_missing">آدرس مالک لازم است</string>
 </resources>

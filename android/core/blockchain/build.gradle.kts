@@ -27,7 +27,11 @@ android {
     productFlavors {
         create("local") {
             dimension = "env"
-            buildConfigField("String", "RPC_URL", "\"http://10.0.2.2:8545\"")
+            buildConfigField(
+                "String",
+                "RPC_URL",
+                "\"http://${localProp("LOCAL_DEV_HOST", "10.0.2.2")}:8545\"",
+            )
             buildConfigField(
                 "String",
                 "REGISTRY_ADDRESS",

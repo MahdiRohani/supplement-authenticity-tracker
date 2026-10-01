@@ -15,14 +15,13 @@ sleep 3
 npx hardhat run scripts/deploy.ts --network localhost | tee /tmp/sat-deploy-ci.log
 REG="$(grep -o 'SupplementRegistry=0x[0-9a-fA-F]*' /tmp/sat-deploy-ci.log | cut -d= -f2)"
 
-echo "==> backend unit tests"
+echo "==> backend vet + tests (set TEST_DATABASE_URL to include Postgres integration tests)"
 cd "$ROOT/backend"
-npm ci
-npx prisma generate
-npm test
+go vet ./...
+go test -race -count=1 ./...
 
 echo "==> backend build"
-npm run build
+go build -o bin/api ./cmd/api
 
 echo "Integration smoke ready. REGISTRY_ADDRESS=${REG}"
-echo "Start Postgres and backend locally to run scripts/load-verify.sh"
+echo "Start Postgres and backend/bin/api locally to run scripts/load-verify.sh"

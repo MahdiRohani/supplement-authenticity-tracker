@@ -17,6 +17,18 @@ private val SourceSansFamily = FontFamily(
     Font(R.font.source_sans3_semibold, FontWeight.SemiBold),
 )
 
+/** Monospace for hashes, addresses and secrets, where every character matters. */
+val SupplementMonoFamily: FontFamily = FontFamily.Monospace
+
+private fun sans(weight: FontWeight, size: Int, line: Int, tracking: Double = 0.0) = TextStyle(
+    fontFamily = SourceSansFamily,
+    fontWeight = weight,
+    fontSize = size.sp,
+    lineHeight = line.sp,
+    letterSpacing = tracking.sp,
+)
+
+// Every Material slot is defined so no component falls back to Roboto.
 val SupplementTypography = Typography(
     displayLarge = TextStyle(
         fontFamily = SourceSerifFamily,
@@ -24,34 +36,28 @@ val SupplementTypography = Typography(
         fontSize = 40.sp,
         lineHeight = 46.sp,
     ),
-    headlineMedium = TextStyle(
+    displayMedium = TextStyle(
         fontFamily = SourceSerifFamily,
         fontWeight = FontWeight.Bold,
-        fontSize = 28.sp,
-        lineHeight = 34.sp,
+        fontSize = 34.sp,
+        lineHeight = 40.sp,
     ),
-    titleLarge = TextStyle(
-        fontFamily = SourceSansFamily,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 20.sp,
-        lineHeight = 26.sp,
+    displaySmall = TextStyle(
+        fontFamily = SourceSerifFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 30.sp,
+        lineHeight = 36.sp,
     ),
-    bodyLarge = TextStyle(
-        fontFamily = SourceSansFamily,
-        fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-    ),
-    bodyMedium = TextStyle(
-        fontFamily = SourceSansFamily,
-        fontWeight = FontWeight.Normal,
-        fontSize = 14.sp,
-        lineHeight = 20.sp,
-    ),
-    labelLarge = TextStyle(
-        fontFamily = SourceSansFamily,
-        fontWeight = FontWeight.Medium,
-        fontSize = 14.sp,
-        lineHeight = 18.sp,
-    ),
+    headlineLarge = sans(FontWeight.SemiBold, 30, 36),
+    headlineMedium = sans(FontWeight.SemiBold, 26, 32),
+    headlineSmall = sans(FontWeight.SemiBold, 22, 28),
+    titleLarge = sans(FontWeight.SemiBold, 20, 26),
+    titleMedium = sans(FontWeight.SemiBold, 16, 22, 0.1),
+    titleSmall = sans(FontWeight.SemiBold, 14, 20, 0.1),
+    bodyLarge = sans(FontWeight.Normal, 16, 24),
+    bodyMedium = sans(FontWeight.Normal, 14, 20),
+    bodySmall = sans(FontWeight.Normal, 12, 16, 0.2),
+    labelLarge = sans(FontWeight.SemiBold, 14, 20, 0.1),
+    labelMedium = sans(FontWeight.SemiBold, 12, 16, 0.4),
+    labelSmall = sans(FontWeight.SemiBold, 11, 16, 0.5),
 )

@@ -1,9 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="transfer_title">Transfer ownership</string>
+    <string name="transfer_subtitle">Hand a unit to the next party in the supply chain. The relayer pays the gas.</string>
     <string name="product_id_label">Product ID</string>
     <string name="recipient_label">Recipient address</string>
-    <string name="transfer_action">Transfer via relayer</string>
-    <string name="transfer_result">Tx: %1$s</string>
+    <string name="recipient_invalid">Must be a 0x address with 40 hex characters</string>
+    <string name="recipient_quick_pick">Quick pick</string>
+    <string name="transfer_action">Transfer</string>
+    <string name="transfer_done_title">Transferred</string>
+    <string name="transfer_done_message">Unit #%1$s has a new owner on-chain.</string>
+    <string name="transfer_from">From</string>
+    <string name="transfer_to">To</string>
+    <string name="transfer_result">Transaction</string>
     <string name="transfer_success">Transferred · %1$s</string>
 </resources>

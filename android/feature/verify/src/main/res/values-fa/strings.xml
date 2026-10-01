@@ -1,16 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="verify_title">استعلام اصالت</string>
+    <string name="verify_title">اصل است یا تقلبی؟</string>
+    <string name="verify_guest_hint">هر مکملی را با بلاکچین استعلام کنید — بدون نیاز به حساب کاربری.</string>
     <string name="verify_input_label">شناسه محصول یا محتوای QR</string>
+    <string name="verify_input_support">زیر کد QR روی برچسب چاپ شده است</string>
     <string name="verify_action">استعلام</string>
-    <string name="verify_owner">مالک: %1$s</string>
-    <string name="verify_name">نام: %1$s</string>
-    <string name="verify_batch">بچ: %1$s</string>
-    <string name="verify_expires">انقضا: %1$s</string>
-    <string name="verify_source">منبع: %1$s</string>
-    <string name="verify_guest_hint">استعلام مهمان — بدون ورود</string>
-    <string name="verify_metadata_link">فراداده: %1$s</string>
     <string name="verify_scan_qr">اسکن QR</string>
+    <string name="verify_details_title">مشخصات محصول</string>
+    <string name="verify_name">نام</string>
+    <string name="verify_batch">بچ</string>
+    <string name="verify_expires">انقضا</string>
+    <string name="verify_product_id">شناسه روی زنجیره</string>
+    <string name="verify_owner">مالک فعلی</string>
+    <string name="verify_metadata_link">فراداده (IPFS)</string>
+    <string name="verify_source">منبع: %1$s</string>
+    <string name="verify_report_title">چیزی مشکوک است؟</string>
+    <string name="verify_report_hint">اگر بسته‌بندی، پلمپ یا نتیجه استعلام درست به نظر نمی‌رسد، گزارش دهید تا تولیدکننده بررسی کند.</string>
     <string name="verify_report_counterfeit">گزارش تقلبی</string>
     <string name="verify_report_submitted">گزارش ثبت شد</string>
+    <string name="verify_how_title">چطور کار می‌کند</string>
+    <string name="verify_how_step1">کد QR روی برچسب محصول را اسکن کنید یا شناسه آن را وارد کنید.</string>
+    <string name="verify_how_step2">سابقه و زنجیره مالکیت آن روی بلاکچین بررسی می‌شود.</string>
+    <string name="verify_how_step3">اگر قبلاً مصرف شده یا ناشناخته است، مصرف نکنید و گزارش دهید.</string>
 </resources>

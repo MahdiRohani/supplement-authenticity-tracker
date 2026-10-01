@@ -5,23 +5,18 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.Dashboard
-import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.LocalPharmacy
-import androidx.compose.material.icons.filled.Login
-import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -34,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -55,8 +51,10 @@ import ir.aut.supplementtracker.core.data.AnalyticsStore
 import ir.aut.supplementtracker.core.data.HttpProductRepository
 import ir.aut.supplementtracker.core.data.SessionStore
 import ir.aut.supplementtracker.core.data.VerifyCacheStore
+import ir.aut.supplementtracker.core.designsystem.SupplementIcons
 import ir.aut.supplementtracker.core.designsystem.SupplementTheme
 import ir.aut.supplementtracker.core.designsystem.components.SupplementTopBar
+import ir.aut.supplementtracker.core.designsystem.components.shortenMiddle
 import ir.aut.supplementtracker.core.designsystem.localizeErrorMessage
 import ir.aut.supplementtracker.core.domain.ConsumeProductUseCase
 import ir.aut.supplementtracker.core.domain.DownloadBatchLabelsPdfUseCase
@@ -88,6 +86,7 @@ import ir.aut.supplementtracker.feature.stock.StockMode
 import ir.aut.supplementtracker.feature.stock.StockScreen
 import ir.aut.supplementtracker.feature.stock.StockUiEffect
 import ir.aut.supplementtracker.feature.stock.StockViewModel
+import ir.aut.supplementtracker.feature.transfer.RecipientSuggestion
 import ir.aut.supplementtracker.feature.transfer.TransferScreen
 import ir.aut.supplementtracker.feature.transfer.TransferUiEffect
 import ir.aut.supplementtracker.feature.transfer.TransferViewModel
@@ -167,22 +166,27 @@ class MainActivity : ComponentActivity() {
                 }
 
                 val destinations = remember(session) { destinationsFor(session) }
+                // The scanner draws edge-to-edge over the camera feed.
+                val fullScreen = currentRoute == AppRoutes.SCAN
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
-                    topBar = {
+                    contentWindowInsets = if (fullScreen) {
+                        WindowInsets(0)
+                    } else {
+                        ScaffoldDefaults.contentWindowInsets
+                    },
+                    topBar = topBar@{
+                        if (fullScreen) return@topBar
+                        val current = session
                         SupplementTopBar(
-                            title = if (session == null) {
-                                stringResource(R.string.app_name)
-                            } else {
-                                stringResource(
-                                    R.string.session_title,
-                                    session!!.role.name,
-                                    session!!.address.take(10),
-                                )
-                            },
+                            title = current?.let { stringResource(it.role.labelRes) }
+                                ?: stringResource(R.string.app_name),
+                            subtitle = current?.address?.shortenMiddle()
+                                ?: stringResource(R.string.app_tagline),
+                            icon = current?.role?.icon ?: SupplementIcons.Verify,
                             actions = {
-                                if (session != null) {
+                                if (current != null) {
                                     val logoutCd = stringResource(R.string.action_logout)
                                     IconButton(
                                         onClick = {
@@ -203,7 +207,7 @@ class MainActivity : ComponentActivity() {
                                         },
                                     ) {
                                         Icon(
-                                            imageVector = Icons.AutoMirrored.Filled.Logout,
+                                            imageVector = SupplementIcons.Logout,
                                             contentDescription = logoutCd,
                                         )
                                     }
@@ -211,8 +215,9 @@ class MainActivity : ComponentActivity() {
                             },
                         )
                     },
-                    bottomBar = {
-                        NavigationBar {
+                    bottomBar = bottomBar@{
+                        if (fullScreen) return@bottomBar
+                        NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
                             destinations.forEach { item ->
                                 val label = stringResource(item.labelRes)
                                 val selected =
@@ -236,7 +241,13 @@ class MainActivity : ComponentActivity() {
                                             contentDescription = label,
                                         )
                                     },
-                                    label = { Text(label) },
+                                    label = { Text(label, maxLines = 1) },
+                                    alwaysShowLabel = destinations.size <= 5,
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                                    ),
                                     modifier = Modifier.semantics {
                                         contentDescription = label
                                     },
@@ -249,7 +260,9 @@ class MainActivity : ComponentActivity() {
                     NavHost(
                         navController = navController,
                         startDestination = AppRoutes.VERIFY,
-                        modifier = Modifier.padding(innerPadding),
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .consumeWindowInsets(innerPadding),
                     ) {
                         composable(AppRoutes.VERIFY) { entry ->
                             val scannedProductId by entry.savedStateHandle
@@ -326,7 +339,7 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onAddressChanged = { draftAddress = it },
                                 onContinue = {
-                                    val next = UserSession(role = draftRole, address = draftAddress)
+                                    val next = UserSession(role = draftRole, address = draftAddress.trim())
                                     sessionStore.save(next)
                                     session = next
                                     val home = homeRouteFor(next.role)
@@ -339,6 +352,7 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(AppRoutes.REGISTER) {
                             val context = LocalContext.current
+                            val resources = LocalResources.current
                             val registerVm: ManufacturerRegisterViewModel =
                                 viewModel(
                                     factory = ManufacturerRegisterViewModel.factory(registerProduct),
@@ -349,7 +363,7 @@ class MainActivity : ComponentActivity() {
                                     when (effect) {
                                         is ManufacturerRegisterUiEffect.Registered ->
                                             snackbarHostState.showSnackbar(
-                                                context.getString(
+                                                resources.getString(
                                                     ir.aut.supplementtracker.feature.manufacturerregister.R.string.register_success,
                                                     effect.chainProductId,
                                                 ),
@@ -369,6 +383,7 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(AppRoutes.DASHBOARD) {
                             val context = LocalContext.current
+                            val resources = LocalResources.current
                             val dashboardVm: ManufacturerDashboardViewModel =
                                 viewModel(
                                     key = "dashboard-${featureFlags.labelsPdfEnabled}-${featureFlags.analyticsEnabled}-${analyticsStore.verifyCount()}-${analyticsStore.scanCount()}",
@@ -394,7 +409,7 @@ class MainActivity : ComponentActivity() {
                                             )
                                         is ManufacturerDashboardUiEffect.BatchRegistered ->
                                             snackbarHostState.showSnackbar(
-                                                context.getString(
+                                                resources.getString(
                                                     ir.aut.supplementtracker.feature.manufacturerdashboard.R.string.dashboard_batch_registered,
                                                     effect.count,
                                                 ),
@@ -432,6 +447,7 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(AppRoutes.TRANSFER) {
                             val context = LocalContext.current
+                            val resources = LocalResources.current
                             val transferVm: TransferViewModel =
                                 viewModel(factory = TransferViewModel.factory(transferProduct))
                             val transferState by transferVm.state.collectAsStateWithLifecycle()
@@ -440,7 +456,7 @@ class MainActivity : ComponentActivity() {
                                     when (effect) {
                                         is TransferUiEffect.Transferred ->
                                             snackbarHostState.showSnackbar(
-                                                context.getString(
+                                                resources.getString(
                                                     ir.aut.supplementtracker.feature.transfer.R.string.transfer_success,
                                                     effect.txHash,
                                                 ),
@@ -453,13 +469,24 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             }
+                            val suggestionRoles = listOf(SupplyRole.Distributor, SupplyRole.Pharmacy)
                             TransferScreen(
                                 state = transferState,
                                 onEvent = transferVm::onEvent,
+                                recipientSuggestions = suggestionRoles
+                                    .map { role ->
+                                        RecipientSuggestion(
+                                            label = stringResource(role.labelRes),
+                                            address = defaultSessionFor(role).address,
+                                            icon = role.icon,
+                                        )
+                                    }
+                                    .filterNot { it.address.equals(session?.address, ignoreCase = true) },
                             )
                         }
                         composable(AppRoutes.CONSUME) {
                             val context = LocalContext.current
+                            val resources = LocalResources.current
                             val consumeVm: ConsumeViewModel =
                                 viewModel(factory = ConsumeViewModel.factory(consumeProduct))
                             val consumeState by consumeVm.state.collectAsStateWithLifecycle()
@@ -468,7 +495,7 @@ class MainActivity : ComponentActivity() {
                                     when (effect) {
                                         is ConsumeUiEffect.Consumed ->
                                             snackbarHostState.showSnackbar(
-                                                context.getString(
+                                                resources.getString(
                                                     ir.aut.supplementtracker.feature.consume.R.string.consume_success,
                                                     effect.chainProductId,
                                                 ),
@@ -488,6 +515,7 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(AppRoutes.HISTORY) {
                             val context = LocalContext.current
+                            val resources = LocalResources.current
                             val historyVm: HistoryViewModel =
                                 viewModel(factory = HistoryViewModel.factory(getHistory))
                             val historyState by historyVm.state.collectAsStateWithLifecycle()
@@ -496,7 +524,7 @@ class MainActivity : ComponentActivity() {
                                     when (effect) {
                                         is HistoryUiEffect.Loaded ->
                                             snackbarHostState.showSnackbar(
-                                                context.getString(
+                                                resources.getString(
                                                     ir.aut.supplementtracker.feature.history.R.string.history_elapsed,
                                                     effect.elapsedMs.toInt(),
                                                 ),
@@ -566,6 +594,7 @@ private fun VerifyRoute(
     onScannedConsumed: () -> Unit,
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val verifyVm: VerifyViewModel =
         viewModel(
             key = "verify-${featureFlags.reportsEnabled}-${featureFlags.scanEnabled}-${featureFlags.analyticsEnabled}",
@@ -600,7 +629,7 @@ private fun VerifyRoute(
                     )
                 VerifyUiEffect.ReportSubmitted ->
                     snackbarHostState.showSnackbar(
-                        context.getString(ir.aut.supplementtracker.feature.verify.R.string.verify_report_submitted),
+                        resources.getString(ir.aut.supplementtracker.feature.verify.R.string.verify_report_submitted),
                     )
                 VerifyUiEffect.NavigateToScan -> onNavigateToScan()
             }
@@ -613,41 +642,21 @@ private fun VerifyRoute(
 }
 
 private fun destinationsFor(session: UserSession?): List<NavDestination> {
+    val verify = NavDestination(AppRoutes.VERIFY, R.string.nav_verify, SupplementIcons.Verify)
+    val dashboard = NavDestination(AppRoutes.DASHBOARD, R.string.nav_dashboard, SupplementIcons.Dashboard)
+    val register = NavDestination(AppRoutes.REGISTER, R.string.nav_register, SupplementIcons.Register)
+    val stock = NavDestination(AppRoutes.STOCK, R.string.nav_stock, SupplementIcons.Stock)
+    val transfer = NavDestination(AppRoutes.TRANSFER, R.string.nav_transfer, SupplementIcons.Transfer)
+    val consume = NavDestination(AppRoutes.CONSUME, R.string.nav_consume, SupplementIcons.Consume)
+    val history = NavDestination(AppRoutes.HISTORY, R.string.nav_history, SupplementIcons.History)
     if (session == null) {
-        return listOf(
-            NavDestination(AppRoutes.VERIFY, R.string.nav_verify, Icons.Filled.Verified),
-            NavDestination(AppRoutes.LOGIN, R.string.nav_login, Icons.Filled.Login),
-        )
+        return listOf(verify, NavDestination(AppRoutes.LOGIN, R.string.nav_login, SupplementIcons.Login))
     }
     return when (session.role) {
-        SupplyRole.Manufacturer -> listOf(
-            NavDestination(AppRoutes.VERIFY, R.string.nav_verify, Icons.Filled.Verified),
-            NavDestination(AppRoutes.DASHBOARD, R.string.nav_dashboard, Icons.Filled.Dashboard),
-            NavDestination(AppRoutes.REGISTER, R.string.nav_register, Icons.Filled.QrCodeScanner),
-            NavDestination(AppRoutes.TRANSFER, R.string.nav_transfer, Icons.Filled.SwapHoriz),
-            NavDestination(AppRoutes.HISTORY, R.string.nav_history, Icons.AutoMirrored.Filled.List),
-        )
-        SupplyRole.Distributor -> listOf(
-            NavDestination(AppRoutes.VERIFY, R.string.nav_verify, Icons.Filled.Verified),
-            NavDestination(AppRoutes.STOCK, R.string.nav_stock, Icons.Filled.Inventory2),
-            NavDestination(AppRoutes.TRANSFER, R.string.nav_transfer, Icons.Filled.SwapHoriz),
-            NavDestination(AppRoutes.HISTORY, R.string.nav_history, Icons.AutoMirrored.Filled.List),
-        )
-        SupplyRole.Pharmacy -> listOf(
-            NavDestination(AppRoutes.VERIFY, R.string.nav_verify, Icons.Filled.Verified),
-            NavDestination(AppRoutes.STOCK, R.string.nav_stock, Icons.Filled.Inventory2),
-            NavDestination(AppRoutes.CONSUME, R.string.nav_consume, Icons.Filled.LocalPharmacy),
-            NavDestination(AppRoutes.HISTORY, R.string.nav_history, Icons.AutoMirrored.Filled.List),
-        )
-        SupplyRole.Admin -> listOf(
-            NavDestination(AppRoutes.VERIFY, R.string.nav_verify, Icons.Filled.Verified),
-            NavDestination(AppRoutes.DASHBOARD, R.string.nav_dashboard, Icons.Filled.Dashboard),
-            NavDestination(AppRoutes.REGISTER, R.string.nav_register, Icons.Filled.QrCodeScanner),
-            NavDestination(AppRoutes.STOCK, R.string.nav_stock, Icons.Filled.Inventory2),
-            NavDestination(AppRoutes.TRANSFER, R.string.nav_transfer, Icons.Filled.SwapHoriz),
-            NavDestination(AppRoutes.CONSUME, R.string.nav_consume, Icons.Filled.LocalPharmacy),
-            NavDestination(AppRoutes.HISTORY, R.string.nav_history, Icons.AutoMirrored.Filled.List),
-        )
+        SupplyRole.Manufacturer -> listOf(verify, dashboard, register, transfer, history)
+        SupplyRole.Distributor -> listOf(verify, stock, transfer, history)
+        SupplyRole.Pharmacy -> listOf(verify, stock, consume, history)
+        SupplyRole.Admin -> listOf(verify, dashboard, register, stock, transfer, consume, history)
     }
 }
 

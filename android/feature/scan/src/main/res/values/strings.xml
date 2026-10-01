@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="scan_title">Scan QR</string>
-    <string name="scan_permission_required">Camera permission is required to scan</string>
-    <string name="scan_grant_permission">Grant camera access</string>
+    <string name="scan_hint">Fit the QR code on the label inside the frame</string>
+    <string name="scan_permission_title">Camera access needed</string>
+    <string name="scan_permission_required">The camera is only used to read the QR code on the product label. Nothing is recorded or uploaded.</string>
+    <string name="scan_grant_permission">Allow camera</string>
+    <string name="scan_open_settings">Open app settings</string>
+    <string name="scan_error_title">Camera unavailable</string>
+    <string name="scan_error_message">The scanner could not start on this device. Close it and type the product ID instead.</string>
+    <string name="scan_torch_on">Turn flashlight on</string>
+    <string name="scan_torch_off">Turn flashlight off</string>
     <string name="scan_close">Close</string>
 </resources>

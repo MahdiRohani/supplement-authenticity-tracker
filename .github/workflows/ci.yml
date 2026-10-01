@@ -48,17 +48,32 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: supplement_tracker
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-go@v5
         with:
-          node-version: "20"
-          cache: npm
-          cache-dependency-path: backend/package-lock.json
-      - run: npm ci
-      - run: npx prisma generate
-      - run: npm test
-      - run: npm run build
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
+      - run: go vet ./...
+      - run: go test -race -count=1 ./...
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/supplement_tracker
+      - run: go build -o bin/api ./cmd/api
 
   integration-chain:
     runs-on: ubuntu-latest
@@ -81,6 +96,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
       - name: Install contracts
         working-directory: contracts
         run: npm ci
@@ -93,7 +112,7 @@ jobs:
           sleep 3
           npx hardhat run scripts/deploy.ts --network localhost | tee /tmp/deploy.log
           echo "REGISTRY_ADDRESS=$(grep -o 'SupplementRegistry=0x[0-9a-fA-F]*' /tmp/deploy.log | cut -d= -f2)" >> "$GITHUB_ENV"
-      - name: Install and start backend
+      - name: Build and start backend
         working-directory: backend
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/supplement_tracker?schema=public
@@ -101,15 +120,14 @@ jobs:
           REGISTRY_ABI_PATH: ../packages/abis/SupplementRegistry.json
           CHAIN_ID: "31337"
           ALLOW_IPFS_STUB: "true"
-          NODE_ENV: test
+          APP_ENV: test
           PORT: "3000"
+          # load-verify.sh fires concurrent verify calls from one IP
+          VERIFY_RATE_LIMIT: "1000"
           RELAYER_KEYS_JSON: '{"0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266":"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80","0x70997970c51812dc3a010c7d01b50e0d17dc79c8":"0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d","0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc":"0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"}'
         run: |
-          npm ci
-          npx prisma generate
-          npx prisma db push
-          npm run build
-          node dist/main.js > /tmp/backend.log 2>&1 &
+          go build -o bin/api ./cmd/api
+          ./bin/api > /tmp/backend.log 2>&1 &
           for i in $(seq 1 40); do
             if curl -fsS http://127.0.0.1:3000/v1/health >/dev/null; then
               break
@@ -139,5 +157,5 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - name: Assemble and lint localDebug
-        run: ./gradlew :app:assembleLocalDebug :app:lintLocalDebug :core:designsystem:assembleDebug --no-daemon
+      - name: Unit tests, assemble and lint localDebug
+        run: ./gradlew :core:model:testDebugUnitTest :core:data:testLocalDebugUnitTest :app:assembleLocalDebug :app:lintLocalDebug :core:designsystem:assembleDebug --no-daemon

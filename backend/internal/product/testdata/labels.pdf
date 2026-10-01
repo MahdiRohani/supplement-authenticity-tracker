@@ -1,0 +1,21 @@
+%PDF-1.4
+1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj
+2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1 >>endobj
+3 0 obj<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources<< /Font<< /F1 5 0 R >> >> >>endobj
+4 0 obj<< /Length 315 >>stream
+BT /F1 11 Tf 50 780 Td 14 TL (Supplement batch labels) Tj T* (Batch: B-\(1\)\\x) Tj T* (Units: 2) Tj T* () Tj T* (Vitamin D3 | id=7 | status=Created | {"v":1,"productId":"7","chainId":31337}) Tj T* (Omega 3 é | id=pending-batch-1-0 | status=Consumed | {"v":1,"productId":"pending-batch-1-0","chainId":31337}) Tj ET
+endstream
+endobj
+5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000056 00000 n 
+0000000111 00000 n 
+0000000233 00000 n 
+0000000597 00000 n 
+trailer<< /Size 6 /Root 1 0 R >>
+startxref
+665
+%%EOF

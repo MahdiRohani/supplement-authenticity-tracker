@@ -2,8 +2,17 @@
 <resources>
     <string name="stock_title_distributor">Distributor inbox</string>
     <string name="stock_title_pharmacy">Pharmacy stock</string>
+    <string name="stock_owner">Held by %1$s</string>
+    <string name="stock_section">Units you hold</string>
+    <plurals name="stock_unit_count">
+        <item quantity="one">%1$d unit</item>
+        <item quantity="other">%1$d units</item>
+    </plurals>
     <string name="stock_refresh">Refresh</string>
     <string name="stock_empty">No units in stock</string>
-    <string name="stock_item_line">%1$s · %2$s</string>
+    <string name="stock_empty_hint_distributor">Units the manufacturer transfers to you will appear here.</string>
+    <string name="stock_empty_hint_pharmacy">Units a distributor delivers to you will appear here.</string>
+    <string name="stock_unit_fallback">Unit #%1$s</string>
+    <string name="stock_item_batch">Batch %1$s</string>
     <string name="stock_owner_missing">Owner address required</string>
 </resources>

@@ -27,7 +27,11 @@ android {
     productFlavors {
         create("local") {
             dimension = "env"
-            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3000/v1/\"")
+            buildConfigField(
+                "String",
+                "API_BASE_URL",
+                "\"http://${localProp("LOCAL_DEV_HOST", "10.0.2.2")}:3000/v1/\"",
+            )
             buildConfigField("String", "SIGNING_MODE", "\"managed\"")
         }
         create("sepolia") {
@@ -57,4 +61,14 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     testImplementation(libs.junit)
+    // android.jar only ships stubs of org.json; JVM tests need the real parser.
+    testImplementation(libs.org.json)
+}
+
+tasks.withType<Test>().configureEach {
+    listOf("SAT_API_BASE_URL", "SAT_DISTRIBUTOR", "SAT_PHARMACY").forEach { key ->
+        val value = System.getenv(key).orEmpty()
+        inputs.property(key, value)
+        if (value.isNotEmpty()) environment(key, value)
+    }
 }
