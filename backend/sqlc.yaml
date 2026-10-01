@@ -17,10 +17,26 @@ sql:
           productId: ProductID
           entityId: EntityID
           metadataCid: MetadataCID
+          batchId: BatchID
+          segmentId: SegmentID
+          fromSegmentId: FromSegmentID
+          toSegmentId: ToSegmentID
+          physicalBatchId: PhysicalBatchID
           chain_product_id: ChainProductID
           product_id: ProductID
           entity_id: EntityID
           metadata_cid: MetadataCID
+          batch_id: BatchID
+          segment_id: SegmentID
+          from_segment_id: FromSegmentID
+          to_segment_id: ToSegmentID
+          physical_batch_id: PhysicalBatchID
         overrides:
           - db_type: pg_catalog.timestamp
             go_type: time.Time
+          - db_type: pg_catalog.timestamp
+            nullable: true
+            go_type:
+              import: time
+              type: Time
+              pointer: true

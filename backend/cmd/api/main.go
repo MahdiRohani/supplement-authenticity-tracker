@@ -29,6 +29,7 @@ import (
 	"github.com/MahdiRohani/supplement-authenticity-tracker/backend/internal/httpapi"
 	"github.com/MahdiRohani/supplement-authenticity-tracker/backend/internal/ipfs"
 	"github.com/MahdiRohani/supplement-authenticity-tracker/backend/internal/product"
+	"github.com/MahdiRohani/supplement-authenticity-tracker/backend/internal/protocol"
 	"github.com/MahdiRohani/supplement-authenticity-tracker/backend/internal/ratelimit"
 	"github.com/MahdiRohani/supplement-authenticity-tracker/backend/internal/reports"
 	"github.com/MahdiRohani/supplement-authenticity-tracker/backend/internal/roles"
@@ -140,6 +141,38 @@ func run() error {
 	relayer := chain.NewRelayer(chainDeps.writes, keys, chainDeps.writeErr)
 	products := product.NewService(st, relayer, ipfsClient, auditor, verifyCache, log)
 
+	// v2 reads are served from the projection even without RPC; writes then
+	// fail with the setup error.
+	v2Address := chainDeps.network.RegistryV2().Address
+	if chainDeps.v2 != nil {
+		v2Address = chainDeps.v2.Address().Hex()
+	}
+	registryV2 := chain.NewRegistryV2(chainDeps.v2, keys, chainDeps.v2Err)
+	protocolSvc := protocol.NewService(st, registryV2, ipfsClient, auditor,
+		chain.NewEIP712V2(v2Address), log, protocol.Options{
+			ChainID:             cfg.ActiveChainID(),
+			PublicBaseURL:       cfg.PublicVerifyBaseURL,
+			MaxBatchUnits:       cfg.MaxBatchUnits,
+			ScanSalt:            cfg.ScanHashSalt,
+			DefaultManufacturer: product.DefaultManufacturer,
+			SnapshotTTL:         cfg.VerifyCacheTTL,
+		})
+	if chainDeps.v2 != nil {
+		indexerV2 := chain.NewIndexerV2(chainDeps.client, chainDeps.v2, protocolSvc.Projector(), st, log, chain.IndexerV2Options{
+			StartBlock:    chainDeps.v2StartBlock,
+			Confirmations: uint64(cfg.IndexerConfirmations),
+			AllowReset:    !cfg.IsProduction(),
+		})
+		go indexerV2.Run(ctx)
+	} else {
+		log.Warn("v2 indexer disabled", "err", chainDeps.v2Err)
+	}
+
+	v1Address := cfg.RegistryAddress
+	if chainDeps.writes != nil {
+		v1Address = chainDeps.writes.Address().Hex()
+	}
+
 	handler := httpapi.New(httpapi.Deps{
 		Log:       log,
 		Config:    cfg,
@@ -150,7 +183,9 @@ func run() error {
 		Roles:     roles.NewService(st),
 		Reports:   reports.NewService(st, auditor, cfg.Flags.ReportsEnabled),
 		Analytics: analytics.NewService(st, cfg.Flags.AnalyticsEnabled),
-		EIP712:    chain.NewEIP712(cfg.RegistryAddress),
+		EIP712:    chain.NewEIP712(v1Address),
+		Protocol:  protocolSvc,
+		Parties:   roles.NewPartyService(st, registryV2),
 		ReloadKeys: func(ctx context.Context) ([]string, error) {
 			return reloadKeys(ctx, "api")
 		},
@@ -192,6 +227,10 @@ type chainSetup struct {
 	writes   *chain.Contract
 	reads    *chain.Contract
 	writeErr error
+	// v2 is SupplementRegistryV2, used by the v2 relayer and indexer.
+	v2           *chain.Contract
+	v2Err        error
+	v2StartBlock uint64
 }
 
 // setupChain resolves registry addresses the way the previous service did:
@@ -200,7 +239,7 @@ type chainSetup struct {
 // the artifact address.
 func setupChain(ctx context.Context, cfg config.Config, log *slog.Logger) (chainSetup, error) {
 	deployments := chain.LoadDeployments(cfg.DeploymentsPath)
-	out := chainSetup{network: chain.NewNetwork(cfg.ActiveChainID(), cfg.RegistryAddress, deployments)}
+	out := chainSetup{network: chain.NewNetwork(cfg.ActiveChainID(), cfg.RegistryAddress, deployments).WithRegistryV2(cfg.RegistryV2Address)}
 
 	artifact, err := chain.LoadArtifact(cfg.RegistryABIPath)
 	if err != nil {
@@ -213,6 +252,7 @@ func setupChain(ctx context.Context, cfg config.Config, log *slog.Logger) (chain
 
 	if cfg.RPCURL == "" {
 		out.writeErr = apperr.BadRequest("RPC_URL is not configured")
+		out.v2Err = out.writeErr
 		return out, nil
 	}
 	client, err := ethclient.DialContext(ctx, cfg.RPCURL)
@@ -220,6 +260,7 @@ func setupChain(ctx context.Context, cfg config.Config, log *slog.Logger) (chain
 		return out, fmt.Errorf("connect RPC_URL: %w", err)
 	}
 	out.client = client
+	setupRegistryV2(&out, cfg, log)
 	if artifact == nil {
 		out.writeErr = fmt.Errorf("registry ABI unavailable at %s", cfg.RegistryABIPath)
 		return out, nil
@@ -238,6 +279,34 @@ func setupChain(ctx context.Context, cfg config.Config, log *slog.Logger) (chain
 		out.reads = chain.NewContract(client, artifact.ABI, common.HexToAddress(readAddress))
 	}
 	return out, nil
+}
+
+// setupRegistryV2 resolves SupplementRegistryV2: REGISTRY_V2_ADDRESS, then
+// deployments.json, then the ABI artifact. Indexing starts at
+// INDEXER_START_BLOCK when set, otherwise at the deploy block recorded for
+// that same address.
+func setupRegistryV2(out *chainSetup, cfg config.Config, log *slog.Logger) {
+	artifact, err := chain.LoadArtifact(cfg.RegistryV2ABIPath)
+	if err != nil {
+		log.Warn("registry v2 ABI unavailable; protocol v2 writes disabled", "path", cfg.RegistryV2ABIPath, "err", err)
+		out.v2Err = apperr.ServiceUnavailable("SupplementRegistryV2 ABI is not available")
+		return
+	}
+	deployment := out.network.RegistryV2()
+	address := firstNonEmpty(deployment.Address, strings.TrimSpace(artifact.Address))
+	if !common.IsHexAddress(address) {
+		out.v2Err = apperr.ServiceUnavailable("REGISTRY_V2_ADDRESS is not configured")
+		return
+	}
+	switch {
+	case cfg.IndexerStartBlock >= 0:
+		out.v2StartBlock = uint64(cfg.IndexerStartBlock)
+	case strings.EqualFold(address, deployment.Address):
+		out.v2StartBlock = deployment.DeployBlock
+	case strings.EqualFold(address, artifact.Address):
+		out.v2StartBlock = artifact.DeployBlock
+	}
+	out.v2 = chain.NewContract(out.client, artifact.ABI, common.HexToAddress(address))
 }
 
 func firstNonEmpty(values ...string) string {
