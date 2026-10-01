@@ -1,4 +1,55 @@
-# Full-system audit scorecard (2026-09-10)
+# Full-system audit scorecard
+
+## Protocol v2 audit (2026-10-01)
+
+Scope: `SupplementRegistryV2` and `/v2` (`2.0.0`), covering:
+
+- Merkle batch registration;
+- splittable custody segments;
+- gasless unit-key consume;
+- two-layer labels;
+- clone detection;
+- recall.
+
+Each item was checked across the contract, backend, Android, admin-web and
+subgraph. The specification is in [`protocol-v2.md`](protocol-v2.md), the
+threats in [`threat-model.md`](threat-model.md), and the measurements in
+[`evaluation.md`](evaluation.md).
+
+### Feature matrix (v2)
+
+| Area | Implemented | Tested | Demoable |
+| --- | --- | --- | --- |
+| `SupplementRegistryV2` (batches, segments, consume, recall, pause) | Yes, non-upgradeable, ABI `2.0.0` | 67 Hardhat tests (v1 + v2 + vectors); v2 coverage 100% statements/functions/lines; Slither 0 findings in the last full run | `npm run e2e:local` (split to two pharmacies, refill/forged-key/recall blocked) |
+| Cross-language vectors | `packages/abis/test-vectors/` | Contracts, Go and Android test against the same file; CI fails on drift | `npm run vectors` |
+| Go `/v2` API + indexer | Register, transfer/split, consume relay, verify + risk, proof, labels PDF, recall, suspicious scans | `go test -race` with Postgres; `backend/e2e` against a real chain (100-unit batch → partial transfers → consume → 409 refill → verify → clones → recall) | `scripts/ci-integration.sh` |
+| Clone detection | Noisy-OR over devices, post-consumption scans and regions; salted device hash | Unit tests plus `cmd/scansim` (10 seeds): F1 0.895, FPR 1.5% | `GET /v2/scans/suspicious` |
+| Android v2 | Public/secret QR parsing, `/u/` App Link, verify with an independent on-chain check, unit-key consume, segment stock/transfer, batch registration with label PDF | 47 JVM unit tests (model, domain, data contract, blockchain vectors, UI state); `assembleLocalDebug`; androidTest compile | Emulator / device |
+| admin-web v2 | Batches with segment distribution, recall, clone suspects, reports | Script syntax check in CI; manual run against the live API | `python3 -m http.server` |
+| subgraph v2 | `Batch`, `Segment` (with parent), `SegmentTransfer`, `UnitConsumption`, `Recall` | Event signatures, handlers and schema checked statically against the ABI; `graph build` in CI | Optional |
+| Docs | Protocol, threat model, evaluation, decisions, meta-tx | Reviewed against the code | — |
+
+### Scores (0–5, v2)
+
+| Dimension | Score | Notes |
+| --- | --- | --- |
+| Correct execution / E2E | 5 | The full lifecycle runs over HTTP against a real chain in CI |
+| Security posture | 4 | Threats T1–T15 analysed. A single clone before consumption can only be detected statistically (T1). Demo role keys are held by the API (assumption 5). |
+| Evaluation evidence | 4 | Gas and off-chain costs measured; the clone detector is compared with baselines and ablations. Latency and USD/L2 cost are still pending. |
+| Architecture / layers | 5 | v2 lives in its own modules and packages (`internal/protocol`, `merkle`, `risk`; `ProtocolRepository`); v1 is unchanged |
+| Spec coverage | 5 | All six v2 capabilities work end to end |
+
+### Remaining (non-blocking)
+
+- P2: The API latency benchmark (`cmd/loadgen`) and the USD/L2 cost table have not been run yet.
+- P2: The clone detector is evaluated on simulated scans only. There is no field data.
+- P3: `graph build` has not been run on the development machine (the npm registry is unreachable there). CI runs it.
+- P3: The Android consumer identity key is stored in private app storage, not in the Android Keystore. It only labels history and controls no funds.
+- P3: A manual role walkthrough on a device is still recommended for camera permissions and App Link verification (`assetlinks.json` must be hosted on the verify domain).
+
+---
+
+## v1 audit (2026-09-10)
 
 Scope: Wave 0–7 / `v1.1.0` acceptance + production-lite hardening + UI/UX polish.
 
