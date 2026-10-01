@@ -1,16 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="transfer_title">انتقال مالکیت</string>
-    <string name="transfer_subtitle">یک واحد را به حلقه بعدی زنجیره تأمین تحویل دهید. کارمزد را رله پرداخت می‌کند.</string>
-    <string name="product_id_label">شناسه محصول</string>
+    <string name="transfer_title">انتقال واحدها</string>
+    <string name="transfer_subtitle">بخشی یا همه‌ی واحدهای یک بازه را به حلقه‌ی بعدی تحویل دهید. هر تعداد با یک تراکنش؛ کارمزد را رله پرداخت می‌کند.</string>
+    <string name="transfer_refresh">بروزرسانی</string>
+    <string name="transfer_pick_segment">واحدهای قابل انتقال</string>
+    <string name="transfer_no_segments">چیزی برای انتقال نیست</string>
+    <string name="transfer_no_segments_hint">یک بچ ثبت کنید یا منتظر تحویل بمانید؛ بازه‌های واحدهای شما اینجا نمایش داده می‌شوند.</string>
+    <string name="transfer_batch_fallback">بچ #%1$s</string>
+    <string name="transfer_segment_desc">سری %1$s · واحدهای %2$d تا %3$d · %4$s</string>
+    <plurals name="transfer_unit_count">
+        <item quantity="one">%1$d واحد</item>
+        <item quantity="other">%1$d واحد</item>
+    </plurals>
+    <string name="transfer_count_label">تعداد واحد</string>
+    <string name="transfer_count_hint">برای انتقال همه‌ی %1$d واحد خالی بگذارید</string>
+    <string name="transfer_split_preview">واحدهای %1$d تا %2$d به گیرنده می‌رسد و %3$d تا %4$d نزد شما می‌ماند.</string>
     <string name="recipient_label">آدرس گیرنده</string>
     <string name="recipient_invalid">باید آدرسی با 0x و ۴۰ کاراکتر هگز باشد</string>
     <string name="recipient_quick_pick">انتخاب سریع</string>
     <string name="transfer_action">انتقال</string>
+    <plurals name="transfer_action_count">
+        <item quantity="one">انتقال %1$d واحد</item>
+        <item quantity="other">انتقال %1$d واحد</item>
+    </plurals>
     <string name="transfer_done_title">انتقال انجام شد</string>
-    <string name="transfer_done_message">واحد #%1$s روی بلاکچین مالک جدید دارد.</string>
-    <string name="transfer_from">از</string>
+    <string name="transfer_done_message">%1$s از بچ #%2$s روی بلاکچین نگهدارنده‌ی جدید دارد.</string>
+    <string name="transfer_done_split">%1$s از بچ #%2$s منتقل شد؛ بقیه‌ی بازه نزد شما می‌ماند.</string>
     <string name="transfer_to">به</string>
+    <string name="transfer_range">واحدها</string>
+    <string name="transfer_range_value">%1$d تا %2$d</string>
     <string name="transfer_result">تراکنش</string>
     <string name="transfer_success">انتقال انجام شد · %1$s</string>
 </resources>

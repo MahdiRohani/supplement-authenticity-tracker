@@ -18,14 +18,46 @@ dataSources:
         - OwnershipTransfer
       abis:
         - name: SupplementRegistry
-          file: ../packages/abis/SupplementRegistry.json
+          file: ./abis/SupplementRegistry.json
       eventHandlers:
-        - event: ProductRegistered(uint256,address,uint8,string,bytes32)
+        - event: ProductRegistered(indexed uint256,indexed address,uint8,string,bytes32)
           handler: handleProductRegistered
-        - event: OwnershipTransferred(uint256,address,address)
+        - event: OwnershipTransferred(indexed uint256,indexed address,indexed address)
           handler: handleOwnershipTransferred
-        - event: ProductConsumed(uint256,address)
+        - event: ProductConsumed(indexed uint256,indexed address)
           handler: handleProductConsumed
-        - event: ProductInvalidated(uint256,address)
+        - event: ProductInvalidated(indexed uint256,indexed address)
           handler: handleProductInvalidated
       file: ./src/mapping.ts
+  - kind: ethereum
+    name: SupplementRegistryV2
+    network: hardhat
+    source:
+      address: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+      abi: SupplementRegistryV2
+      startBlock: 2
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Batch
+        - Segment
+        - SegmentTransfer
+        - UnitConsumption
+        - Recall
+      abis:
+        - name: SupplementRegistryV2
+          file: ./abis/SupplementRegistryV2.json
+      eventHandlers:
+        - event: BatchRegistered(indexed uint256,indexed uint256,indexed address,uint32,bytes32,bytes32,string,bytes32)
+          handler: handleBatchRegistered
+        - event: SegmentTransferred(indexed uint256,indexed uint256,indexed uint256,address,address,uint32,uint32,uint8)
+          handler: handleSegmentTransferred
+        - event: UnitConsumed(indexed uint256,indexed uint32,indexed uint256,address,address,address)
+          handler: handleUnitConsumed
+        - event: BatchInvalidated(indexed uint256,indexed address)
+          handler: handleBatchInvalidated
+        - event: SegmentInvalidated(indexed uint256,indexed uint256,indexed address)
+          handler: handleSegmentInvalidated
+      file: ./src/mappingV2.ts

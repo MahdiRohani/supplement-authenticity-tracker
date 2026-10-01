@@ -10,6 +10,13 @@
     <string name="error_already_consumed">محصول قبلاً مصرف شده؛ پر کردن مجدد مجاز نیست</string>
     <string name="error_owner_required">آدرس مالک لازم است</string>
     <string name="error_history_failed">بارگذاری تاریخچه ممکن نشد</string>
+    <string name="error_hidden_label_mismatch">این کد پنهان متعلق به واحد دیگری است، نه واحدی که استعلام کردید.</string>
+    <string name="error_wrong_chain">این برچسب روی شبکه بلاکچین دیگری صادر شده است.</string>
+    <string name="error_not_a_hidden_label">این کد پنهان نیست. لایه‌ی محافظ را بتراشید و کد زیر آن را اسکن کنید.</string>
+    <string name="error_not_a_unit_code">این کد متعلق به برچسب مکمل نیست.</string>
+    <string name="error_batch_size">اندازه‌ی دسته باید بین ۱ تا ۵٬۰۰۰ واحد باشد.</string>
+    <string name="error_transfer_count">تعداد باید بین ۱ و تعداد واحدهای بخش انتخاب‌شده باشد.</string>
+    <string name="error_keys_discarded">کلیدهای یک‌بارمصرف واحدها قبلاً دور ریخته شده‌اند؛ برچسب فقط بلافاصله پس از ثبت قابل چاپ است.</string>
     <string name="cd_logout">خروج</string>
     <string name="cd_status">وضعیت: %1$s</string>
     <string name="cd_copy">کپی %1$s</string>
@@ -31,4 +38,10 @@
     <string name="status_not_found_desc">محصولی با این شناسه وجود ندارد. ممکن است تقلبی باشد.</string>
     <string name="status_network_error">اتصال به سرور ممکن نیست</string>
     <string name="status_network_error_desc">اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.</string>
+    <string name="status_in_transit">اصل · هنوز برای فروش نیست</string>
+    <string name="status_in_transit_desc">روی بلاکچین ثبت شده اما هنوز نزد تولیدکننده یا توزیع‌کننده است و به داروخانه نرسیده.</string>
+    <string name="status_recalled">فراخوان‌شده</string>
+    <string name="status_recalled_desc">تولیدکننده این دسته را فراخوان کرده است. از آن استفاده نکنید.</string>
+    <string name="status_suspicious">مشکوک</string>
+    <string name="status_suspicious_desc">ثبت اصلی است، اما الگوی اسکن این برچسب نشان می‌دهد که از روی آن کپی شده است.</string>
 </resources>

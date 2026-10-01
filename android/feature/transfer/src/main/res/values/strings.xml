@@ -1,16 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="transfer_title">Transfer ownership</string>
-    <string name="transfer_subtitle">Hand a unit to the next party in the supply chain. The relayer pays the gas.</string>
-    <string name="product_id_label">Product ID</string>
+    <string name="transfer_title">Transfer units</string>
+    <string name="transfer_subtitle">Hand some or all units of a range to the next party. One transaction, whatever the count; the relayer pays the gas.</string>
+    <string name="transfer_refresh">Refresh</string>
+    <string name="transfer_pick_segment">Units you can transfer</string>
+    <string name="transfer_no_segments">Nothing to transfer</string>
+    <string name="transfer_no_segments_hint">Register a batch or wait for a delivery; your unit ranges will appear here.</string>
+    <string name="transfer_batch_fallback">Batch #%1$s</string>
+    <string name="transfer_segment_desc">Lot %1$s · units %2$d–%3$d · %4$s</string>
+    <plurals name="transfer_unit_count">
+        <item quantity="one">%1$d unit</item>
+        <item quantity="other">%1$d units</item>
+    </plurals>
+    <string name="transfer_count_label">How many units</string>
+    <string name="transfer_count_hint">Leave empty to transfer all %1$d</string>
+    <string name="transfer_split_preview">Units %1$d–%2$d go to the recipient; %3$d–%4$d stay with you.</string>
     <string name="recipient_label">Recipient address</string>
     <string name="recipient_invalid">Must be a 0x address with 40 hex characters</string>
     <string name="recipient_quick_pick">Quick pick</string>
     <string name="transfer_action">Transfer</string>
+    <plurals name="transfer_action_count">
+        <item quantity="one">Transfer %1$d unit</item>
+        <item quantity="other">Transfer %1$d units</item>
+    </plurals>
     <string name="transfer_done_title">Transferred</string>
-    <string name="transfer_done_message">Unit #%1$s has a new owner on-chain.</string>
-    <string name="transfer_from">From</string>
+    <string name="transfer_done_message">%1$s of batch #%2$s have a new holder on-chain.</string>
+    <string name="transfer_done_split">%1$s of batch #%2$s moved; the rest of the range stays with you.</string>
     <string name="transfer_to">To</string>
+    <string name="transfer_range">Units</string>
+    <string name="transfer_range_value">%1$d–%2$d</string>
     <string name="transfer_result">Transaction</string>
     <string name="transfer_success">Transferred · %1$s</string>
 </resources>

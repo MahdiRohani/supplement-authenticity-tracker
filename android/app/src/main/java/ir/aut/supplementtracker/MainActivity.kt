@@ -1,6 +1,8 @@
 package ir.aut.supplementtracker
 
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -36,6 +38,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -44,11 +47,15 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
-import ir.aut.supplementtracker.core.blockchain.BuildConfig as BlockchainBuildConfig
-import ir.aut.supplementtracker.core.blockchain.ManagedKeyChainWriter
+import ir.aut.supplementtracker.core.blockchain.ConsumerKeyStore
+import ir.aut.supplementtracker.core.blockchain.Eip712ConsumeSigner
+import ir.aut.supplementtracker.core.blockchain.UnitMerkleVerifier
+import ir.aut.supplementtracker.core.blockchain.Web3jChainAnchorReader
 import ir.aut.supplementtracker.core.blockchain.Web3jChainVerifier
 import ir.aut.supplementtracker.core.data.AnalyticsStore
 import ir.aut.supplementtracker.core.data.HttpProductRepository
+import ir.aut.supplementtracker.core.data.HttpProtocolRepository
+import ir.aut.supplementtracker.core.data.ScanContextStore
 import ir.aut.supplementtracker.core.data.SessionStore
 import ir.aut.supplementtracker.core.data.VerifyCacheStore
 import ir.aut.supplementtracker.core.designsystem.SupplementIcons
@@ -56,18 +63,22 @@ import ir.aut.supplementtracker.core.designsystem.SupplementTheme
 import ir.aut.supplementtracker.core.designsystem.components.SupplementTopBar
 import ir.aut.supplementtracker.core.designsystem.components.shortenMiddle
 import ir.aut.supplementtracker.core.designsystem.localizeErrorMessage
-import ir.aut.supplementtracker.core.domain.ConsumeProductUseCase
-import ir.aut.supplementtracker.core.domain.DownloadBatchLabelsPdfUseCase
+import ir.aut.supplementtracker.core.domain.ConsumeUnitUseCase
+import ir.aut.supplementtracker.core.domain.GetBatchDetailUseCase
 import ir.aut.supplementtracker.core.domain.GetFeatureFlagsUseCase
 import ir.aut.supplementtracker.core.domain.GetOwnershipHistoryUseCase
-import ir.aut.supplementtracker.core.domain.ListProductsUseCase
-import ir.aut.supplementtracker.core.domain.RegisterBatchUseCase
-import ir.aut.supplementtracker.core.domain.RegisterProductUseCase
+import ir.aut.supplementtracker.core.domain.GetUnitHistoryUseCase
+import ir.aut.supplementtracker.core.domain.ListBatchesUseCase
+import ir.aut.supplementtracker.core.domain.ListCustodySegmentsUseCase
+import ir.aut.supplementtracker.core.domain.RegisterUnitBatchUseCase
+import ir.aut.supplementtracker.core.domain.RenderBatchLabelsUseCase
 import ir.aut.supplementtracker.core.domain.ReportCounterfeitUseCase
-import ir.aut.supplementtracker.core.domain.TransferProductUseCase
+import ir.aut.supplementtracker.core.domain.TransferSegmentUseCase
 import ir.aut.supplementtracker.core.domain.VerifyProductUseCase
+import ir.aut.supplementtracker.core.domain.VerifyUnitUseCase
 import ir.aut.supplementtracker.core.model.FeatureFlags
 import ir.aut.supplementtracker.core.model.SupplyRole
+import ir.aut.supplementtracker.core.model.UnitRef
 import ir.aut.supplementtracker.core.model.UserSession
 import ir.aut.supplementtracker.feature.consume.ConsumeScreen
 import ir.aut.supplementtracker.feature.consume.ConsumeUiEffect
@@ -81,6 +92,8 @@ import ir.aut.supplementtracker.feature.manufacturerdashboard.ManufacturerDashbo
 import ir.aut.supplementtracker.feature.manufacturerregister.ManufacturerRegisterScreen
 import ir.aut.supplementtracker.feature.manufacturerregister.ManufacturerRegisterUiEffect
 import ir.aut.supplementtracker.feature.manufacturerregister.ManufacturerRegisterViewModel
+import ir.aut.supplementtracker.feature.consume.ConsumeUiEvent
+import ir.aut.supplementtracker.feature.scan.ScanMode
 import ir.aut.supplementtracker.feature.scan.ScanScreen
 import ir.aut.supplementtracker.feature.stock.StockMode
 import ir.aut.supplementtracker.feature.stock.StockScreen
@@ -100,14 +113,32 @@ import kotlinx.coroutines.flow.collectLatest
 object AppRoutes {
     const val VERIFY = "verify"
     const val VERIFY_WITH_ID = "verify/{productId}"
+    const val UNIT = "u/{chainId}/{batchId}/{index}"
     const val SCAN = "scan"
+    const val SCAN_PATTERN = "scan?mode={mode}"
     const val LOGIN = "login"
     const val REGISTER = "register"
     const val DASHBOARD = "batchDashboard"
     const val TRANSFER = "transfer"
+    const val TRANSFER_PATTERN = "transfer?segment={segment}"
     const val CONSUME = "consume"
+    const val CONSUME_PATTERN = "consume?unit={unit}"
     const val HISTORY = "history"
     const val STOCK = "stock"
+
+    /** Default of the backend's `PUBLIC_VERIFY_BASE_URL`; printed on every open label. */
+    const val PUBLIC_UNIT_URL = "https://supplementtracker.aut.ir/u/{chainId}/{batchId}/{index}"
+
+    /** Shared by the scanner and whichever screen opened it. */
+    const val SCANNED_CODE = "scannedCode"
+
+    fun scan(mode: ScanMode): String = "$SCAN?mode=${mode.name}"
+
+    fun consume(unit: UnitRef?): String =
+        if (unit == null) CONSUME else "$CONSUME?unit=${Uri.encode(unit.path)}"
+
+    fun transfer(segmentId: String?): String =
+        if (segmentId == null) TRANSFER else "$TRANSFER?segment=${Uri.encode(segmentId)}"
 }
 
 data class NavDestination(
@@ -123,26 +154,42 @@ class MainActivity : ComponentActivity() {
         val sessionStore = SessionStore(applicationContext)
         val verifyCacheStore = VerifyCacheStore(applicationContext)
         val analyticsStore = AnalyticsStore(applicationContext)
+        val scanContextStore = ScanContextStore(applicationContext)
+        val consumerKeyStore = ConsumerKeyStore(applicationContext)
+
+        // v1: legacy single-product labels still in circulation, flags and reports.
         val repository = HttpProductRepository()
-        val chainVerifier = Web3jChainVerifier()
-        val chainWriter =
-            if (BlockchainBuildConfig.SIGNING_MODE == "managed" &&
-                BlockchainBuildConfig.MANAGED_PRIVATE_KEY.isNotBlank()
-            ) {
-                ManagedKeyChainWriter()
-            } else {
-                null
-            }
-        val registerProduct = RegisterProductUseCase(repository)
-        val registerBatch = RegisterBatchUseCase(repository)
-        val listProducts = ListProductsUseCase(repository)
-        val transferProduct = TransferProductUseCase(repository)
-        val consumeProduct = ConsumeProductUseCase(repository, chainWriter)
         val getHistory = GetOwnershipHistoryUseCase(repository)
-        val verifyProduct = VerifyProductUseCase(repository, chainVerifier)
+        val verifyProduct = VerifyProductUseCase(repository, Web3jChainVerifier())
         val getFeatureFlags = GetFeatureFlagsUseCase(repository)
         val reportCounterfeit = ReportCounterfeitUseCase(repository)
-        val downloadBatchLabelsPdf = DownloadBatchLabelsPdfUseCase(repository)
+
+        // v2: Merkle batches, custody segments, gasless consumption, clone risk.
+        val protocol = HttpProtocolRepository()
+        val verifyUnit =
+            VerifyUnitUseCase(
+                repository = protocol,
+                scanContext = scanContextStore,
+                proofVerifier = UnitMerkleVerifier(),
+                anchorReader = Web3jChainAnchorReader(),
+            )
+        val consumeUnit = ConsumeUnitUseCase(protocol, Eip712ConsumeSigner(), consumerKeyStore)
+        val registerUnitBatch = RegisterUnitBatchUseCase(protocol)
+        val renderBatchLabels = RenderBatchLabelsUseCase(protocol)
+        val listBatches = ListBatchesUseCase(protocol)
+        val getBatchDetail = GetBatchDetailUseCase(protocol)
+        val listSegments = ListCustodySegmentsUseCase(protocol)
+        val transferSegment = TransferSegmentUseCase(protocol)
+        val getUnitHistory = GetUnitHistoryUseCase(protocol)
+        val verifyDeps =
+            VerifyDeps(
+                verifyProduct = verifyProduct,
+                verifyUnit = verifyUnit,
+                verifyCacheStore = verifyCacheStore,
+                reportCounterfeit = reportCounterfeit,
+                analyticsStore = analyticsStore,
+                scanContextStore = scanContextStore,
+            )
 
         setContent {
             SupplementTheme {
@@ -159,7 +206,7 @@ class MainActivity : ComponentActivity() {
                 }
                 val navController = rememberNavController()
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentRoute = navBackStackEntry?.destination?.route
+                val currentRoute = navBackStackEntry?.destination?.route?.substringBefore('?')
 
                 LaunchedEffect(Unit) {
                     featureFlags = runCatching { getFeatureFlags() }.getOrElse { FeatureFlags() }
@@ -223,7 +270,8 @@ class MainActivity : ComponentActivity() {
                                 val selected =
                                     currentRoute == item.route ||
                                         (item.route == AppRoutes.VERIFY &&
-                                            currentRoute?.startsWith("verify") == true)
+                                            (currentRoute?.startsWith("verify") == true ||
+                                                currentRoute == AppRoutes.UNIT))
                                 NavigationBarItem(
                                     selected = selected,
                                     onClick = {
@@ -265,24 +313,14 @@ class MainActivity : ComponentActivity() {
                             .consumeWindowInsets(innerPadding),
                     ) {
                         composable(AppRoutes.VERIFY) { entry ->
-                            val scannedProductId by entry.savedStateHandle
-                                .getStateFlow<String?>("scannedProductId", null)
-                                .collectAsStateWithLifecycle()
                             VerifyRoute(
-                                verifyProduct = verifyProduct,
-                                verifyCacheStore = verifyCacheStore,
-                                reportCounterfeit = reportCounterfeit,
-                                analyticsStore = analyticsStore,
+                                entry = entry,
+                                deps = verifyDeps,
                                 featureFlags = featureFlags,
                                 snackbarHostState = snackbarHostState,
-                                productId = null,
-                                onNavigateToScan = {
-                                    navController.navigate(AppRoutes.SCAN)
-                                },
-                                scannedProductId = scannedProductId,
-                                onScannedConsumed = {
-                                    entry.savedStateHandle.remove<String>("scannedProductId")
-                                },
+                                initialCode = null,
+                                onNavigateToScan = { navController.navigate(AppRoutes.scan(ScanMode.PublicLabel)) },
+                                onNavigateToConsume = { navController.navigate(AppRoutes.consume(it)) },
                             )
                         }
                         composable(
@@ -301,29 +339,59 @@ class MainActivity : ComponentActivity() {
                             ),
                         ) { entry ->
                             VerifyRoute(
-                                verifyProduct = verifyProduct,
-                                verifyCacheStore = verifyCacheStore,
-                                reportCounterfeit = reportCounterfeit,
-                                analyticsStore = analyticsStore,
+                                entry = entry,
+                                deps = verifyDeps,
                                 featureFlags = featureFlags,
                                 snackbarHostState = snackbarHostState,
-                                productId = entry.arguments?.getString("productId"),
-                                onNavigateToScan = {
-                                    navController.navigate(AppRoutes.SCAN)
-                                },
-                                scannedProductId = null,
-                                onScannedConsumed = {},
+                                initialCode = entry.arguments?.getString("productId"),
+                                onNavigateToScan = { navController.navigate(AppRoutes.scan(ScanMode.PublicLabel)) },
+                                onNavigateToConsume = { navController.navigate(AppRoutes.consume(it)) },
                             )
                         }
-                        composable(AppRoutes.SCAN) {
+                        composable(
+                            route = AppRoutes.UNIT,
+                            arguments = listOf(
+                                navArgument("chainId") { type = NavType.StringType },
+                                navArgument("batchId") { type = NavType.StringType },
+                                navArgument("index") { type = NavType.StringType },
+                            ),
+                            deepLinks = listOf(navDeepLink { uriPattern = AppRoutes.PUBLIC_UNIT_URL }),
+                        ) { entry ->
+                            val args = entry.arguments
+                            val code = listOf("chainId", "batchId", "index")
+                                .map { args?.getString(it).orEmpty() }
+                                .joinToString("/")
+                            VerifyRoute(
+                                entry = entry,
+                                deps = verifyDeps,
+                                featureFlags = featureFlags,
+                                snackbarHostState = snackbarHostState,
+                                initialCode = code,
+                                onNavigateToScan = { navController.navigate(AppRoutes.scan(ScanMode.PublicLabel)) },
+                                onNavigateToConsume = { navController.navigate(AppRoutes.consume(it)) },
+                            )
+                        }
+                        composable(
+                            route = AppRoutes.SCAN_PATTERN,
+                            arguments = listOf(
+                                navArgument("mode") {
+                                    type = NavType.StringType
+                                    defaultValue = ScanMode.PublicLabel.name
+                                },
+                            ),
+                        ) { entry ->
+                            val mode = entry.arguments?.getString("mode")
+                                ?.let { runCatching { ScanMode.valueOf(it) }.getOrNull() }
+                                ?: ScanMode.PublicLabel
                             ScanScreen(
-                                onDetected = { productId ->
+                                mode = mode,
+                                onDetected = { raw ->
                                     if (featureFlags.analyticsEnabled) {
                                         analyticsStore.incrementScan()
                                     }
                                     navController.previousBackStackEntry
                                         ?.savedStateHandle
-                                        ?.set("scannedProductId", productId)
+                                        ?.set(AppRoutes.SCANNED_CODE, raw)
                                     navController.popBackStack()
                                 },
                                 onClose = { navController.popBackStack() },
@@ -355,7 +423,13 @@ class MainActivity : ComponentActivity() {
                             val resources = LocalResources.current
                             val registerVm: ManufacturerRegisterViewModel =
                                 viewModel(
-                                    factory = ManufacturerRegisterViewModel.factory(registerProduct),
+                                    key = "register-${session?.address}-${featureFlags.labelsPdfEnabled}",
+                                    factory = ManufacturerRegisterViewModel.factory(
+                                        registerBatch = registerUnitBatch,
+                                        renderLabels = renderBatchLabels,
+                                        manufacturerAddress = session?.address,
+                                        labelsPdfEnabled = featureFlags.labelsPdfEnabled,
+                                    ),
                                 )
                             val registerState by registerVm.state.collectAsStateWithLifecycle()
                             LaunchedEffect(registerVm) {
@@ -365,9 +439,12 @@ class MainActivity : ComponentActivity() {
                                             snackbarHostState.showSnackbar(
                                                 resources.getString(
                                                     ir.aut.supplementtracker.feature.manufacturerregister.R.string.register_success,
-                                                    effect.chainProductId,
+                                                    effect.batchId,
+                                                    effect.size,
                                                 ),
                                             )
+                                        is ManufacturerRegisterUiEffect.ShareLabels ->
+                                            sharePdf(context, effect.bytes, effect.fileName)
                                         is ManufacturerRegisterUiEffect.ShowMessage ->
                                             snackbarHostState.showSnackbar(
                                                 localizeErrorMessage(context, effect.message)
@@ -383,16 +460,15 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(AppRoutes.DASHBOARD) {
                             val context = LocalContext.current
-                            val resources = LocalResources.current
                             val dashboardVm: ManufacturerDashboardViewModel =
                                 viewModel(
-                                    key = "dashboard-${featureFlags.labelsPdfEnabled}-${featureFlags.analyticsEnabled}-${analyticsStore.verifyCount()}-${analyticsStore.scanCount()}",
+                                    key = "dashboard-${session?.address}-${featureFlags.analyticsEnabled}-${analyticsStore.verifyCount()}-${analyticsStore.scanCount()}",
                                     factory = ManufacturerDashboardViewModel.factory(
-                                        listProducts = listProducts,
-                                        registerBatch = registerBatch,
-                                        downloadBatchLabelsPdf = downloadBatchLabelsPdf,
-                                        ownerAddress = session?.address,
-                                        labelsPdfEnabled = featureFlags.labelsPdfEnabled,
+                                        listBatches = listBatches,
+                                        getBatchDetail = getBatchDetail,
+                                        manufacturerAddress = session?.address?.takeIf {
+                                            session?.role != SupplyRole.Admin
+                                        },
                                         analyticsEnabled = featureFlags.analyticsEnabled,
                                         analyticsVerifyCount = analyticsStore.verifyCount(),
                                         analyticsScanCount = analyticsStore.scanCount(),
@@ -407,36 +483,8 @@ class MainActivity : ComponentActivity() {
                                                 localizeErrorMessage(context, effect.message)
                                                     ?: effect.message,
                                             )
-                                        is ManufacturerDashboardUiEffect.BatchRegistered ->
-                                            snackbarHostState.showSnackbar(
-                                                resources.getString(
-                                                    ir.aut.supplementtracker.feature.manufacturerdashboard.R.string.dashboard_batch_registered,
-                                                    effect.count,
-                                                ),
-                                            )
-                                        is ManufacturerDashboardUiEffect.SharePdf -> {
-                                            val file =
-                                                File(
-                                                    context.cacheDir,
-                                                    "labels-${effect.batchCode}.pdf",
-                                                )
-                                            file.writeBytes(effect.bytes)
-                                            val uri =
-                                                FileProvider.getUriForFile(
-                                                    context,
-                                                    "${context.packageName}.fileprovider",
-                                                    file,
-                                                )
-                                            val share =
-                                                Intent(Intent.ACTION_SEND).apply {
-                                                    type = "application/pdf"
-                                                    putExtra(Intent.EXTRA_STREAM, uri)
-                                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                                }
-                                            context.startActivity(
-                                                Intent.createChooser(share, null),
-                                            )
-                                        }
+                                        ManufacturerDashboardUiEffect.NavigateToRegister ->
+                                            navController.navigate(AppRoutes.REGISTER) { launchSingleTop = true }
                                     }
                                 }
                             }
@@ -445,11 +493,30 @@ class MainActivity : ComponentActivity() {
                                 onEvent = dashboardVm::onEvent,
                             )
                         }
-                        composable(AppRoutes.TRANSFER) {
+                        composable(
+                            route = AppRoutes.TRANSFER_PATTERN,
+                            arguments = listOf(
+                                navArgument("segment") {
+                                    type = NavType.StringType
+                                    nullable = true
+                                    defaultValue = null
+                                },
+                            ),
+                        ) { entry ->
                             val context = LocalContext.current
                             val resources = LocalResources.current
+                            val segment = entry.arguments?.getString("segment")
+                            val owner = session?.address.orEmpty()
                             val transferVm: TransferViewModel =
-                                viewModel(factory = TransferViewModel.factory(transferProduct))
+                                viewModel(
+                                    key = "transfer-$owner-$segment",
+                                    factory = TransferViewModel.factory(
+                                        listSegments = listSegments,
+                                        transferSegment = transferSegment,
+                                        ownerAddress = owner,
+                                        initialSegmentId = segment,
+                                    ),
+                                )
                             val transferState by transferVm.state.collectAsStateWithLifecycle()
                             LaunchedEffect(transferVm) {
                                 transferVm.effects.collectLatest { effect ->
@@ -458,7 +525,7 @@ class MainActivity : ComponentActivity() {
                                             snackbarHostState.showSnackbar(
                                                 resources.getString(
                                                     ir.aut.supplementtracker.feature.transfer.R.string.transfer_success,
-                                                    effect.txHash,
+                                                    effect.txHash.shortenMiddle(10, 6),
                                                 ),
                                             )
                                         is TransferUiEffect.ShowMessage ->
@@ -484,12 +551,39 @@ class MainActivity : ComponentActivity() {
                                     .filterNot { it.address.equals(session?.address, ignoreCase = true) },
                             )
                         }
-                        composable(AppRoutes.CONSUME) {
+                        composable(
+                            route = AppRoutes.CONSUME_PATTERN,
+                            arguments = listOf(
+                                navArgument("unit") {
+                                    type = NavType.StringType
+                                    nullable = true
+                                    defaultValue = null
+                                },
+                            ),
+                        ) { entry ->
                             val context = LocalContext.current
                             val resources = LocalResources.current
+                            val unitArg = entry.arguments?.getString("unit")
+                            val expected = unitArg?.let(UnitRef::parse)
                             val consumeVm: ConsumeViewModel =
-                                viewModel(factory = ConsumeViewModel.factory(consumeProduct))
+                                viewModel(
+                                    key = "consume-${expected?.path}-${featureFlags.scanEnabled}",
+                                    factory = ConsumeViewModel.factory(
+                                        consumeUnit = consumeUnit,
+                                        expected = expected,
+                                        scanEnabled = featureFlags.scanEnabled,
+                                    ),
+                                )
                             val consumeState by consumeVm.state.collectAsStateWithLifecycle()
+                            val scanned by entry.savedStateHandle
+                                .getStateFlow<String?>(AppRoutes.SCANNED_CODE, null)
+                                .collectAsStateWithLifecycle()
+                            LaunchedEffect(scanned) {
+                                scanned?.let {
+                                    consumeVm.onEvent(ConsumeUiEvent.SecretChanged(it))
+                                    entry.savedStateHandle.remove<String>(AppRoutes.SCANNED_CODE)
+                                }
+                            }
                             LaunchedEffect(consumeVm) {
                                 consumeVm.effects.collectLatest { effect ->
                                     when (effect) {
@@ -497,9 +591,11 @@ class MainActivity : ComponentActivity() {
                                             snackbarHostState.showSnackbar(
                                                 resources.getString(
                                                     ir.aut.supplementtracker.feature.consume.R.string.consume_success,
-                                                    effect.chainProductId,
+                                                    effect.unit.path,
                                                 ),
                                             )
+                                        ConsumeUiEffect.NavigateToScan ->
+                                            navController.navigate(AppRoutes.scan(ScanMode.HiddenLabel))
                                         is ConsumeUiEffect.ShowMessage ->
                                             snackbarHostState.showSnackbar(
                                                 localizeErrorMessage(context, effect.message)
@@ -517,7 +613,7 @@ class MainActivity : ComponentActivity() {
                             val context = LocalContext.current
                             val resources = LocalResources.current
                             val historyVm: HistoryViewModel =
-                                viewModel(factory = HistoryViewModel.factory(getHistory))
+                                viewModel(factory = HistoryViewModel.factory(getHistory, getUnitHistory))
                             val historyState by historyVm.state.collectAsStateWithLifecycle()
                             LaunchedEffect(historyVm) {
                                 historyVm.effects.collectLatest { effect ->
@@ -549,22 +645,27 @@ class MainActivity : ComponentActivity() {
                                     SupplyRole.Pharmacy -> StockMode.Pharmacy
                                     else -> StockMode.Distributor
                                 }
+                            val owner = session?.address.orEmpty()
                             val stockVm: StockViewModel =
                                 viewModel(
+                                    key = "stock-$owner-$mode",
                                     factory = StockViewModel.factory(
-                                        listProducts = listProducts,
+                                        listSegments = listSegments,
                                         mode = mode,
-                                        ownerAddress = session?.address.orEmpty(),
+                                        ownerAddress = owner,
                                     ),
                                 )
                             val stockState by stockVm.state.collectAsStateWithLifecycle()
                             LaunchedEffect(stockVm) {
                                 stockVm.effects.collectLatest { effect ->
-                                    if (effect is StockUiEffect.ShowMessage) {
-                                        snackbarHostState.showSnackbar(
-                                            localizeErrorMessage(context, effect.message)
-                                                ?: effect.message,
-                                        )
+                                    when (effect) {
+                                        is StockUiEffect.ShowMessage ->
+                                            snackbarHostState.showSnackbar(
+                                                localizeErrorMessage(context, effect.message)
+                                                    ?: effect.message,
+                                            )
+                                        is StockUiEffect.NavigateToTransfer ->
+                                            navController.navigate(AppRoutes.transfer(effect.segmentId))
                                     }
                                 }
                             }
@@ -580,18 +681,25 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/** Everything the verify screens need; one instance shared by the plain, legacy and unit routes. */
+private class VerifyDeps(
+    val verifyProduct: VerifyProductUseCase,
+    val verifyUnit: VerifyUnitUseCase,
+    val verifyCacheStore: VerifyCacheStore,
+    val reportCounterfeit: ReportCounterfeitUseCase,
+    val analyticsStore: AnalyticsStore,
+    val scanContextStore: ScanContextStore,
+)
+
 @Composable
 private fun VerifyRoute(
-    verifyProduct: VerifyProductUseCase,
-    verifyCacheStore: VerifyCacheStore,
-    reportCounterfeit: ReportCounterfeitUseCase,
-    analyticsStore: AnalyticsStore,
+    entry: NavBackStackEntry,
+    deps: VerifyDeps,
     featureFlags: FeatureFlags,
     snackbarHostState: SnackbarHostState,
-    productId: String?,
+    initialCode: String?,
     onNavigateToScan: () -> Unit,
-    scannedProductId: String?,
-    onScannedConsumed: () -> Unit,
+    onNavigateToConsume: (UnitRef) -> Unit,
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -599,25 +707,32 @@ private fun VerifyRoute(
         viewModel(
             key = "verify-${featureFlags.reportsEnabled}-${featureFlags.scanEnabled}-${featureFlags.analyticsEnabled}",
             factory = VerifyViewModel.factory(
-                verifyProduct = verifyProduct,
-                verifyCacheStore = verifyCacheStore,
-                reportCounterfeit = reportCounterfeit,
-                analyticsStore = analyticsStore,
+                verifyProduct = deps.verifyProduct,
+                verifyUnit = deps.verifyUnit,
+                verifyCacheStore = deps.verifyCacheStore,
+                reportCounterfeit = deps.reportCounterfeit,
+                analyticsStore = deps.analyticsStore,
+                scanContextStore = deps.scanContextStore,
                 analyticsEnabled = featureFlags.analyticsEnabled,
                 reportsEnabled = featureFlags.reportsEnabled,
                 scanEnabled = featureFlags.scanEnabled,
             ),
         )
     val verifyState by verifyVm.state.collectAsStateWithLifecycle()
-    LaunchedEffect(productId) {
-        if (!productId.isNullOrBlank()) {
-            verifyVm.onEvent(VerifyUiEvent.InputChanged(productId))
+    val scanned by entry.savedStateHandle
+        .getStateFlow<String?>(AppRoutes.SCANNED_CODE, null)
+        .collectAsStateWithLifecycle()
+    LaunchedEffect(initialCode) {
+        if (!initialCode.isNullOrBlank()) {
+            verifyVm.onEvent(VerifyUiEvent.InputChanged(initialCode))
+            verifyVm.onEvent(VerifyUiEvent.Submit)
         }
     }
-    LaunchedEffect(scannedProductId) {
-        if (!scannedProductId.isNullOrBlank()) {
-            verifyVm.onEvent(VerifyUiEvent.InputChanged(scannedProductId))
-            onScannedConsumed()
+    LaunchedEffect(scanned) {
+        scanned?.let {
+            verifyVm.onEvent(VerifyUiEvent.InputChanged(it))
+            verifyVm.onEvent(VerifyUiEvent.Submit)
+            entry.savedStateHandle.remove<String>(AppRoutes.SCANNED_CODE)
         }
     }
     LaunchedEffect(verifyVm) {
@@ -632,6 +747,7 @@ private fun VerifyRoute(
                         resources.getString(ir.aut.supplementtracker.feature.verify.R.string.verify_report_submitted),
                     )
                 VerifyUiEffect.NavigateToScan -> onNavigateToScan()
+                is VerifyUiEffect.NavigateToConsume -> onNavigateToConsume(effect.unit)
             }
         }
     }
@@ -639,6 +755,20 @@ private fun VerifyRoute(
         state = verifyState,
         onEvent = verifyVm::onEvent,
     )
+}
+
+private fun sharePdf(context: Context, bytes: ByteArray, name: String) {
+    val safeName = name.replace(Regex("[^A-Za-z0-9._-]"), "_")
+    val file = File(context.cacheDir, "$safeName.pdf")
+    file.writeBytes(bytes)
+    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+    val share =
+        Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+    context.startActivity(Intent.createChooser(share, null))
 }
 
 private fun destinationsFor(session: UserSession?): List<NavDestination> {
@@ -650,7 +780,8 @@ private fun destinationsFor(session: UserSession?): List<NavDestination> {
     val consume = NavDestination(AppRoutes.CONSUME, R.string.nav_consume, SupplementIcons.Consume)
     val history = NavDestination(AppRoutes.HISTORY, R.string.nav_history, SupplementIcons.History)
     if (session == null) {
-        return listOf(verify, NavDestination(AppRoutes.LOGIN, R.string.nav_login, SupplementIcons.Login))
+        // Buyers record consumption without an account.
+        return listOf(verify, consume, NavDestination(AppRoutes.LOGIN, R.string.nav_login, SupplementIcons.Login))
     }
     return when (session.role) {
         SupplyRole.Manufacturer -> listOf(verify, dashboard, register, transfer, history)

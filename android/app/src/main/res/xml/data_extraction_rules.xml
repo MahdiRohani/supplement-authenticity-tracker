@@ -1,19 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
+   The consumer key and the scan device id are per-install by design: restoring
+   them on another phone would merge two devices in clone detection.
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <exclude domain="sharedpref" path="consumer_identity.xml" />
+        <exclude domain="sharedpref" path="scan_context.xml" />
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <exclude domain="sharedpref" path="consumer_identity.xml" />
+        <exclude domain="sharedpref" path="scan_context.xml" />
     </device-transfer>
-    -->
 </data-extraction-rules>

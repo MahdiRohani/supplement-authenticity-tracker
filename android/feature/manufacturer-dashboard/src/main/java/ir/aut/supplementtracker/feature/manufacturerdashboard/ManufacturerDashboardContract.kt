@@ -1,41 +1,44 @@
 package ir.aut.supplementtracker.feature.manufacturerdashboard
 
-import ir.aut.supplementtracker.core.model.ProductSummary
-import ir.aut.supplementtracker.core.model.RegisterBatchResult
+import ir.aut.supplementtracker.core.model.Batch
+import ir.aut.supplementtracker.core.model.BatchDetail
 
 data class ManufacturerDashboardUiState(
     val search: String = "",
-    val statusFilter: String? = null,
-    val items: List<ProductSummary> = emptyList(),
+    val items: List<Batch> = emptyList(),
     val isLoading: Boolean = false,
-    val batchName: String = "",
-    val batchCode: String = "",
-    val batchCount: String = "1",
-    val isSubmitting: Boolean = false,
-    val isExporting: Boolean = false,
-    val completedCount: Int = 0,
-    val targetCount: Int = 0,
-    val batchResult: RegisterBatchResult? = null,
+    val selectedBatchId: String? = null,
+    val detail: BatchDetail? = null,
+    val isLoadingDetail: Boolean = false,
     val errorMessage: String? = null,
-    val labelsPdfEnabled: Boolean = true,
     val analyticsEnabled: Boolean = false,
     val analyticsVerifyCount: Int = 0,
     val analyticsScanCount: Int = 0,
-)
+) {
+    val visibleItems: List<Batch>
+        get() {
+            val q = search.trim()
+            if (q.isEmpty()) return items
+            return items.filter {
+                it.batchId == q.removePrefix("#") ||
+                    it.name?.contains(q, ignoreCase = true) == true ||
+                    it.lotCode?.contains(q, ignoreCase = true) == true
+            }
+        }
+
+    val totalUnits: Int get() = items.sumOf { it.size }
+    val consumedUnits: Int get() = items.sumOf { it.consumedCount }
+    val recalledBatches: Int get() = items.count { it.recalled }
+}
 
 sealed interface ManufacturerDashboardUiEvent {
     data class SearchChanged(val value: String) : ManufacturerDashboardUiEvent
-    data class StatusFilterChanged(val status: String?) : ManufacturerDashboardUiEvent
     data object Refresh : ManufacturerDashboardUiEvent
-    data class BatchNameChanged(val value: String) : ManufacturerDashboardUiEvent
-    data class BatchCodeChanged(val value: String) : ManufacturerDashboardUiEvent
-    data class BatchCountChanged(val value: String) : ManufacturerDashboardUiEvent
-    data object SubmitBatch : ManufacturerDashboardUiEvent
-    data object ExportLabelsPdf : ManufacturerDashboardUiEvent
+    data class BatchSelected(val batchId: String) : ManufacturerDashboardUiEvent
+    data object NewBatch : ManufacturerDashboardUiEvent
 }
 
 sealed interface ManufacturerDashboardUiEffect {
     data class ShowMessage(val message: String) : ManufacturerDashboardUiEffect
-    data class BatchRegistered(val count: Int) : ManufacturerDashboardUiEffect
-    data class SharePdf(val bytes: ByteArray, val batchCode: String) : ManufacturerDashboardUiEffect
+    data object NavigateToRegister : ManufacturerDashboardUiEffect
 }

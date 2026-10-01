@@ -10,9 +10,11 @@
     </plurals>
     <string name="stock_refresh">بروزرسانی</string>
     <string name="stock_empty">واحدی در موجودی نیست</string>
-    <string name="stock_empty_hint_distributor">واحدهایی که تولیدکننده به شما منتقل کند اینجا نمایش داده می‌شوند.</string>
-    <string name="stock_empty_hint_pharmacy">واحدهایی که توزیع‌کننده به شما تحویل دهد اینجا نمایش داده می‌شوند.</string>
-    <string name="stock_unit_fallback">واحد #%1$s</string>
-    <string name="stock_item_batch">بچ %1$s</string>
+    <string name="stock_empty_hint_distributor">بازه‌هایی از واحدها که تولیدکننده به شما منتقل کند اینجا نمایش داده می‌شوند.</string>
+    <string name="stock_empty_hint_pharmacy">بازه‌هایی از واحدها که توزیع‌کننده به شما تحویل دهد اینجا نمایش داده می‌شوند.</string>
+    <string name="stock_batch_fallback">بچ #%1$s</string>
+    <string name="stock_segment_subtitle">بچ #%1$s · سری %2$s</string>
+    <string name="stock_segment_range">واحدهای %1$d تا %2$d</string>
+    <string name="stock_transfer">انتقال بخشی یا همه</string>
     <string name="stock_owner_missing">آدرس مالک لازم است</string>
 </resources>

@@ -1,36 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="dashboard_title">داشبورد</string>
-    <string name="dashboard_subtitle">واحدهای ثبت‌شده شما و اینکه الان کجا هستند.</string>
-    <string name="dashboard_search_label">جستجوی نام، بچ یا شناسه</string>
+    <string name="dashboard_subtitle">بچ‌های شما، میزان مصرف هر کدام و اینکه بقیه‌ی واحدها در اختیار کیست.</string>
+    <string name="dashboard_search_label">جستجوی نام، شماره سری یا شناسه بچ</string>
     <string name="dashboard_refresh">بروزرسانی فهرست</string>
+    <string name="dashboard_stat_batches">بچ‌ها</string>
     <string name="dashboard_stat_units">واحدها</string>
-    <string name="dashboard_stat_in_chain">در زنجیره تأمین</string>
     <string name="dashboard_stat_consumed">مصرف‌شده</string>
-    <string name="dashboard_filter_all">همه</string>
-    <string name="dashboard_filter_created">ثبت‌شده</string>
-    <string name="dashboard_filter_transferred">در حال انتقال</string>
-    <string name="dashboard_filter_pos">در داروخانه</string>
-    <string name="dashboard_filter_consumed">مصرف‌شده</string>
-    <string name="dashboard_batch_section">ثبت دسته‌ای</string>
-    <string name="dashboard_batch_hint">تا ۱۰۰ واحد را یک‌جا ثبت کنید و برچسب‌هایشان را به‌صورت PDF بگیرید.</string>
-    <string name="dashboard_batch_name">نام محصول</string>
-    <string name="dashboard_batch_code">کد بچ</string>
-    <string name="dashboard_batch_count">تعداد</string>
-    <string name="dashboard_batch_submit">ثبت دسته</string>
-    <string name="dashboard_export_labels">خروجی PDF برچسب‌ها</string>
-    <string name="dashboard_batch_progress">ثبت‌شده %1$d از %2$d</string>
-    <string name="dashboard_inventory">موجودی</string>
+    <string name="dashboard_new_batch">ثبت بچ جدید</string>
+    <plurals name="dashboard_recalled_notice">
+        <item quantity="one">%1$d بچ فراخوان شده است؛ خریداران واحدهای آن را فراخوان‌شده می‌بینند.</item>
+        <item quantity="other">%1$d بچ فراخوان شده‌اند؛ خریداران واحدهای آن‌ها را فراخوان‌شده می‌بینند.</item>
+    </plurals>
+    <string name="dashboard_inventory">بچ‌ها</string>
+    <plurals name="dashboard_batch_count">
+        <item quantity="one">%1$d بچ</item>
+        <item quantity="other">%1$d بچ</item>
+    </plurals>
     <plurals name="dashboard_unit_count">
         <item quantity="one">%1$d واحد</item>
         <item quantity="other">%1$d واحد</item>
     </plurals>
-    <string name="dashboard_empty">هنوز محصولی نیست</string>
-    <string name="dashboard_empty_hint">یک دسته در بالا ثبت کنید تا اینجا نمایش داده شود.</string>
-    <string name="dashboard_empty_filtered">موردی با این جستجو یا فیلتر پیدا نشد.</string>
-    <string name="dashboard_unit_fallback">واحد #%1$s</string>
-    <string name="dashboard_item_batch">بچ %1$s</string>
-    <string name="dashboard_batch_registered">دسته ثبت شد (%1$d واحد)</string>
+    <string name="dashboard_empty">هنوز بچی ثبت نشده</string>
+    <string name="dashboard_empty_hint">یک بچ ثبت کنید تا اینجا نمایش داده شود.</string>
+    <string name="dashboard_empty_filtered">موردی با این جستجو پیدا نشد.</string>
+    <string name="dashboard_batch_fallback">بچ #%1$s</string>
+    <string name="dashboard_batch_subtitle">#%1$s · سری %2$s</string>
+    <string name="dashboard_batch_consumed">%1$d از %2$d مصرف شده</string>
+    <string name="dashboard_distribution">واحدها در اختیار چه کسانی است</string>
+    <string name="dashboard_segments">بازه‌های نگهداری</string>
+    <string name="dashboard_segment_range">واحدهای %1$d تا %2$d</string>
     <string name="dashboard_analytics_verify">دفعات استعلام</string>
     <string name="dashboard_analytics_scan">دفعات اسکن</string>
 </resources>

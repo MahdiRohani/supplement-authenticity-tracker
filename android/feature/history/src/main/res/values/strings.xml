@@ -1,8 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="history_title">Ownership history</string>
-    <string name="history_subtitle">Follow a unit from the factory to the pharmacy shelf.</string>
-    <string name="history_product_id_label">Product ID</string>
+    <string name="history_title">Custody history</string>
+    <string name="history_subtitle">Follow a unit from the factory to the pharmacy shelf and the buyer.</string>
+    <string name="history_product_id_label">Unit code or product ID</string>
+    <string name="history_input_hint">Paste the open QR link, chain/batch/unit, or an old product ID</string>
+    <string name="history_unit_v2">Batch #%1$s · unit #%2$d</string>
+    <string name="history_manufacturer">Manufacturer</string>
+    <string name="history_recalled">This batch has been recalled by its manufacturer.</string>
+    <string name="history_step_transfer">Handed to distributor</string>
+    <string name="history_step_pharmacy">Delivered to pharmacy</string>
+    <string name="history_step_consumed">Used by the buyer</string>
+    <string name="history_block">Block %1$d</string>
+    <plurals name="history_units">
+        <item quantity="one">%1$d unit</item>
+        <item quantity="other">%1$d units</item>
+    </plurals>
     <string name="history_load_action">Show timeline</string>
     <string name="history_unit">Unit #%1$s</string>
     <string name="history_owner">Current owner</string>

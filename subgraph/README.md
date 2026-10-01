@@ -6,14 +6,48 @@ This folder is an optional Graph Protocol scaffold for environments that prefer 
 
 ## Layout
 
-- `subgraph.yaml` — data source pointing at local Hardhat address
-- `schema.graphql` — Product + OwnershipTransfer entities
-- `src/mapping.ts` — event handlers including `ProductInvalidated`
+- `subgraph.yaml`: two data sources on local Hardhat
+  - `SupplementRegistry` (v1, one record per product)
+  - `SupplementRegistryV2` (v2, Merkle batches, custody segments, unit consumption, recall)
+- `schema.graphql`
+  - v1: `Product`, `OwnershipTransfer`
+  - v2: `Batch`, `Segment`, `SegmentTransfer`, `UnitConsumption`, `Recall`
+- `src/mapping.ts`: v1 handlers
+- `src/mappingV2.ts`: v2 handlers
+- `scripts/extract-abis.mjs`: unwraps `packages/abis/*.json` artifacts into raw ABI arrays under `abis/` (git-ignored); runs automatically before `codegen` and `build`
+
+## v2 indexing model
+
+| Event | Effect |
+| --- | --- |
+| `BatchRegistered` | creates `Batch` and its root `Segment` `[0, size)` owned by the manufacturer |
+| `SegmentTransferred` | full move: re-owns the segment; partial move: the head `[start, end)` becomes a new `Segment` (with `parent`) and the source keeps the tail. Always records a `SegmentTransfer` |
+| `UnitConsumed` | creates `UnitConsumption` (`batchId-index`) and increments `Batch.consumedCount` |
+| `BatchInvalidated` | marks `Batch.recalled` and records a `Recall` |
+| `SegmentInvalidated` | marks the segment `Invalid` and records a `Recall` with the segment |
+
+This mirrors `transferSegment` in `contracts/contracts/SupplementRegistryV2.sol`, so segment ranges match `GET /v2/batches/:id` from the backend.
+
+Example query:
+
+```graphql
+{
+  batches(orderBy: registeredAtBlock, orderDirection: desc, first: 5) {
+    id
+    size
+    consumedCount
+    recalled
+    segments { id start end owner status }
+  }
+}
+```
 
 ## Local use
 
-1. Deploy `SupplementRegistry` and update `source.address` in `subgraph.yaml`.
+1. Deploy the contracts. Then check `source.address` and `startBlock` in `subgraph.yaml` against `packages/abis/deployments.json`.
 2. Run a Graph Node + IPFS.
-3. `cd subgraph && npm install && npm run codegen && npm run build`
+3. Build the subgraph:
 
-ABI is loaded from `packages/abis/SupplementRegistry.json` (artifact wrapper). Graph CLI expects a raw ABI array in some versions — if codegen fails, extract the `abi` field into `abis/SupplementRegistry.json` and retarget the YAML path.
+```bash
+cd subgraph && npm install && npm run codegen && npm run build
+```

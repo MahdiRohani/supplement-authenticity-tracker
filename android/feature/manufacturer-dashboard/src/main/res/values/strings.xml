@@ -1,36 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="dashboard_title">Dashboard</string>
-    <string name="dashboard_subtitle">Your registered units and where they are now.</string>
-    <string name="dashboard_search_label">Search name, batch, or ID</string>
+    <string name="dashboard_subtitle">Your batches, how far each has been consumed, and who holds the rest.</string>
+    <string name="dashboard_search_label">Search name, lot, or batch ID</string>
     <string name="dashboard_refresh">Refresh list</string>
+    <string name="dashboard_stat_batches">Batches</string>
     <string name="dashboard_stat_units">Units</string>
-    <string name="dashboard_stat_in_chain">In supply chain</string>
     <string name="dashboard_stat_consumed">Consumed</string>
-    <string name="dashboard_filter_all">All</string>
-    <string name="dashboard_filter_created">Registered</string>
-    <string name="dashboard_filter_transferred">In transit</string>
-    <string name="dashboard_filter_pos">At pharmacy</string>
-    <string name="dashboard_filter_consumed">Consumed</string>
-    <string name="dashboard_batch_section">Register a batch</string>
-    <string name="dashboard_batch_hint">Mint up to 100 units at once, then export their labels as a PDF.</string>
-    <string name="dashboard_batch_name">Product name</string>
-    <string name="dashboard_batch_code">Batch code</string>
-    <string name="dashboard_batch_count">Count</string>
-    <string name="dashboard_batch_submit">Register batch</string>
-    <string name="dashboard_export_labels">Export labels PDF</string>
-    <string name="dashboard_batch_progress">Registered %1$d of %2$d</string>
-    <string name="dashboard_inventory">Inventory</string>
+    <string name="dashboard_new_batch">Register a new batch</string>
+    <plurals name="dashboard_recalled_notice">
+        <item quantity="one">%1$d batch is recalled; buyers see its units as recalled.</item>
+        <item quantity="other">%1$d batches are recalled; buyers see their units as recalled.</item>
+    </plurals>
+    <string name="dashboard_inventory">Batches</string>
+    <plurals name="dashboard_batch_count">
+        <item quantity="one">%1$d batch</item>
+        <item quantity="other">%1$d batches</item>
+    </plurals>
     <plurals name="dashboard_unit_count">
         <item quantity="one">%1$d unit</item>
         <item quantity="other">%1$d units</item>
     </plurals>
-    <string name="dashboard_empty">No products yet</string>
-    <string name="dashboard_empty_hint">Register a batch above and it will show up here.</string>
-    <string name="dashboard_empty_filtered">Nothing matches this search or filter.</string>
-    <string name="dashboard_unit_fallback">Unit #%1$s</string>
-    <string name="dashboard_item_batch">Batch %1$s</string>
-    <string name="dashboard_batch_registered">Batch registered (%1$d units)</string>
+    <string name="dashboard_empty">No batches yet</string>
+    <string name="dashboard_empty_hint">Register a batch and it will show up here.</string>
+    <string name="dashboard_empty_filtered">Nothing matches this search.</string>
+    <string name="dashboard_batch_fallback">Batch #%1$s</string>
+    <string name="dashboard_batch_subtitle">#%1$s · lot %2$s</string>
+    <string name="dashboard_batch_consumed">%1$d of %2$d consumed</string>
+    <string name="dashboard_distribution">Who holds the units</string>
+    <string name="dashboard_segments">Custody segments</string>
+    <string name="dashboard_segment_range">Units %1$d–%2$d</string>
     <string name="dashboard_analytics_verify">Verify taps</string>
     <string name="dashboard_analytics_scan">Scan taps</string>
 </resources>

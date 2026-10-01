@@ -1,44 +1,47 @@
 package ir.aut.supplementtracker.feature.manufacturerdashboard
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import ir.aut.supplementtracker.core.designsystem.SupplementIcons
+import ir.aut.supplementtracker.core.designsystem.SupplementMonoFamily
 import ir.aut.supplementtracker.core.designsystem.SupplementSpacing
 import ir.aut.supplementtracker.core.designsystem.components.AuthenticityStatus
 import ir.aut.supplementtracker.core.designsystem.components.EmptyState
 import ir.aut.supplementtracker.core.designsystem.components.NoticeCard
 import ir.aut.supplementtracker.core.designsystem.components.NoticeTone
-import ir.aut.supplementtracker.core.designsystem.components.ProductListItem
 import ir.aut.supplementtracker.core.designsystem.components.ScreenHeader
 import ir.aut.supplementtracker.core.designsystem.components.SectionHeader
 import ir.aut.supplementtracker.core.designsystem.components.StatTile
+import ir.aut.supplementtracker.core.designsystem.components.StatusChip
 import ir.aut.supplementtracker.core.designsystem.components.SupplementButton
-import ir.aut.supplementtracker.core.designsystem.components.SupplementButtonVariant
-import ir.aut.supplementtracker.core.designsystem.components.SupplementCard
 import ir.aut.supplementtracker.core.designsystem.components.SupplementScreenPadding
 import ir.aut.supplementtracker.core.designsystem.components.SupplementTextField
+import ir.aut.supplementtracker.core.designsystem.components.shortenMiddle
 import ir.aut.supplementtracker.core.designsystem.localizedErrorMessage
+import ir.aut.supplementtracker.core.model.Batch
+import ir.aut.supplementtracker.core.model.BatchDetail
 
 @Composable
 fun ManufacturerDashboardScreen(
@@ -46,20 +49,12 @@ fun ManufacturerDashboardScreen(
     onEvent: (ManufacturerDashboardUiEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val filters =
-        listOf(
-            null to stringResource(R.string.dashboard_filter_all),
-            "Created" to stringResource(R.string.dashboard_filter_created),
-            "Transferred" to stringResource(R.string.dashboard_filter_transferred),
-            "AtPointOfSale" to stringResource(R.string.dashboard_filter_pos),
-            "Consumed" to stringResource(R.string.dashboard_filter_consumed),
-        )
-    val unfiltered = state.statusFilter == null && state.search.isBlank()
-
+    val visible = state.visibleItems
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .imePadding(),
+            .imePadding()
+            .testTag("dashboard_screen"),
         contentPadding = SupplementScreenPadding,
         verticalArrangement = Arrangement.spacedBy(SupplementSpacing.Md),
     ) {
@@ -71,7 +66,7 @@ fun ManufacturerDashboardScreen(
                 trailing = {
                     IconButton(
                         onClick = { onEvent(ManufacturerDashboardUiEvent.Refresh) },
-                        enabled = !state.isLoading && !state.isSubmitting,
+                        enabled = !state.isLoading,
                     ) {
                         Icon(
                             imageVector = SupplementIcons.Refresh,
@@ -82,26 +77,24 @@ fun ManufacturerDashboardScreen(
             )
         }
 
-        if (unfiltered && state.items.isNotEmpty()) {
+        if (state.items.isNotEmpty()) {
             item(key = "stats") {
-                val inChain = state.items.count { it.status == "Transferred" || it.status == "AtPointOfSale" }
-                val consumed = state.items.count { it.status == "Consumed" }
                 Row(horizontalArrangement = Arrangement.spacedBy(SupplementSpacing.Sm)) {
                     StatTile(
-                        label = stringResource(R.string.dashboard_stat_units),
+                        label = stringResource(R.string.dashboard_stat_batches),
                         value = state.items.size.toString(),
                         icon = SupplementIcons.Stock,
                         modifier = Modifier.weight(1f),
                     )
                     StatTile(
-                        label = stringResource(R.string.dashboard_stat_in_chain),
-                        value = inChain.toString(),
+                        label = stringResource(R.string.dashboard_stat_units),
+                        value = state.totalUnits.toString(),
                         icon = SupplementIcons.Distributor,
                         modifier = Modifier.weight(1f),
                     )
                     StatTile(
                         label = stringResource(R.string.dashboard_stat_consumed),
-                        value = consumed.toString(),
+                        value = state.consumedUnits.toString(),
                         icon = SupplementIcons.Consume,
                         modifier = Modifier.weight(1f),
                     )
@@ -128,7 +121,28 @@ fun ManufacturerDashboardScreen(
             }
         }
 
-        item(key = "batch") { BatchCard(state = state, onEvent = onEvent) }
+        item(key = "new") {
+            SupplementButton(
+                text = stringResource(R.string.dashboard_new_batch),
+                onClick = { onEvent(ManufacturerDashboardUiEvent.NewBatch) },
+                leadingIcon = SupplementIcons.Register,
+                modifier = Modifier.testTag("dashboard_new_batch"),
+            )
+        }
+
+        if (state.recalledBatches > 0) {
+            item(key = "recalled") {
+                NoticeCard(
+                    message = pluralStringResource(
+                        R.plurals.dashboard_recalled_notice,
+                        state.recalledBatches,
+                        state.recalledBatches,
+                    ),
+                    tone = NoticeTone.Warning,
+                    icon = SupplementIcons.Blocked,
+                )
+            }
+        }
 
         state.errorMessage?.let { raw ->
             item(key = "error") {
@@ -141,128 +155,148 @@ fun ManufacturerDashboardScreen(
                 title = stringResource(R.string.dashboard_inventory),
                 trailing = {
                     Text(
-                        text = pluralStringResource(R.plurals.dashboard_unit_count, state.items.size, state.items.size),
+                        text = pluralStringResource(R.plurals.dashboard_batch_count, visible.size, visible.size),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 },
             )
         }
-        item(key = "search") {
-            SupplementTextField(
-                value = state.search,
-                onValueChange = { onEvent(ManufacturerDashboardUiEvent.SearchChanged(it)) },
-                label = stringResource(R.string.dashboard_search_label),
-                leadingIcon = SupplementIcons.Search,
-                imeAction = ImeAction.Search,
-            )
-        }
-        item(key = "filters") {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(SupplementSpacing.Xs)) {
-                items(filters, key = { it.first ?: "all" }) { (value, label) ->
-                    FilterChip(
-                        selected = state.statusFilter == value,
-                        onClick = { onEvent(ManufacturerDashboardUiEvent.StatusFilterChanged(value)) },
-                        label = { Text(text = label) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        ),
-                    )
-                }
+        if (state.items.isNotEmpty()) {
+            item(key = "search") {
+                SupplementTextField(
+                    value = state.search,
+                    onValueChange = { onEvent(ManufacturerDashboardUiEvent.SearchChanged(it)) },
+                    label = stringResource(R.string.dashboard_search_label),
+                    leadingIcon = SupplementIcons.Search,
+                    imeAction = ImeAction.Search,
+                )
             }
         }
         if (state.isLoading) {
             item(key = "loading") { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
         }
-        if (state.items.isEmpty() && !state.isLoading) {
+        if (visible.isEmpty() && !state.isLoading) {
             item(key = "empty") {
                 EmptyState(
                     icon = SupplementIcons.Stock,
                     title = stringResource(R.string.dashboard_empty),
                     message = stringResource(
-                        if (unfiltered) R.string.dashboard_empty_hint else R.string.dashboard_empty_filtered,
+                        if (state.items.isEmpty()) R.string.dashboard_empty_hint else R.string.dashboard_empty_filtered,
                     ),
                 )
             }
         }
-        items(state.items, key = { it.id }) { item ->
-            ProductListItem(
-                productId = item.chainProductId,
-                title = item.name ?: stringResource(R.string.dashboard_unit_fallback, item.chainProductId),
-                subtitle = item.batchCode?.let { stringResource(R.string.dashboard_item_batch, it) },
-                status = AuthenticityStatus.fromLifecycle(item.status),
+        items(visible, key = { it.batchId }) { batch ->
+            val selected = state.selectedBatchId == batch.batchId
+            BatchItem(
+                batch = batch,
+                selected = selected,
+                detail = state.detail?.takeIf { selected && it.batch.batchId == batch.batchId },
+                loadingDetail = selected && state.isLoadingDetail,
+                onClick = { onEvent(ManufacturerDashboardUiEvent.BatchSelected(batch.batchId)) },
             )
         }
     }
 }
 
 @Composable
-private fun BatchCard(
-    state: ManufacturerDashboardUiState,
-    onEvent: (ManufacturerDashboardUiEvent) -> Unit,
+private fun BatchItem(
+    batch: Batch,
+    selected: Boolean,
+    detail: BatchDetail?,
+    loadingDetail: Boolean,
+    onClick: () -> Unit,
 ) {
-    val count = state.batchCount.toIntOrNull() ?: 0
-    val countValid = count in 1..100
-    SupplementCard {
-        SectionHeader(title = stringResource(R.string.dashboard_batch_section))
-        Text(
-            text = stringResource(R.string.dashboard_batch_hint),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        SupplementTextField(
-            value = state.batchName,
-            onValueChange = { onEvent(ManufacturerDashboardUiEvent.BatchNameChanged(it)) },
-            label = stringResource(R.string.dashboard_batch_name),
-            leadingIcon = SupplementIcons.Consume,
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(SupplementSpacing.Sm)) {
-            SupplementTextField(
-                value = state.batchCode,
-                onValueChange = { onEvent(ManufacturerDashboardUiEvent.BatchCodeChanged(it)) },
-                label = stringResource(R.string.dashboard_batch_code),
-                leadingIcon = SupplementIcons.Receipt,
-                modifier = Modifier.weight(1f),
-            )
-            SupplementTextField(
-                value = state.batchCount,
-                onValueChange = { onEvent(ManufacturerDashboardUiEvent.BatchCountChanged(it)) },
-                label = stringResource(R.string.dashboard_batch_count),
-                keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Done,
-                isError = state.batchCount.isNotEmpty() && !countValid,
-                modifier = Modifier.width(112.dp),
-            )
-        }
-        SupplementButton(
-            text = stringResource(R.string.dashboard_batch_submit),
-            onClick = { onEvent(ManufacturerDashboardUiEvent.SubmitBatch) },
-            enabled = !state.isSubmitting && state.batchName.isNotBlank() && countValid,
-            loading = state.isSubmitting,
-            leadingIcon = SupplementIcons.Register,
-        )
-        if (state.isSubmitting || state.completedCount > 0) {
-            val target = state.targetCount.coerceAtLeast(state.completedCount).coerceAtLeast(1)
+    Surface(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("dashboard_batch_${batch.batchId}"),
+        shape = MaterialTheme.shapes.large,
+        color = if (selected) MaterialTheme.colorScheme.surfaceContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Column(
+            modifier = Modifier.padding(SupplementSpacing.Md),
+            verticalArrangement = Arrangement.spacedBy(SupplementSpacing.Xs),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = batch.name ?: stringResource(R.string.dashboard_batch_fallback, batch.batchId),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.dashboard_batch_subtitle,
+                            batch.batchId,
+                            batch.lotCode ?: "—",
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (batch.recalled) StatusChip(status = AuthenticityStatus.Recalled)
+            }
             LinearProgressIndicator(
-                progress = { state.completedCount.toFloat() / target },
+                progress = { if (batch.size == 0) 0f else batch.consumedCount.toFloat() / batch.size },
                 modifier = Modifier.fillMaxWidth(),
             )
             Text(
-                text = stringResource(R.string.dashboard_batch_progress, state.completedCount, target),
+                text = stringResource(R.string.dashboard_batch_consumed, batch.consumedCount, batch.size),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            AnimatedVisibility(visible = selected) {
+                Column(verticalArrangement = Arrangement.spacedBy(SupplementSpacing.Xs)) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    if (loadingDetail && detail == null) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    }
+                    detail?.let { BatchDistribution(it) }
+                }
+            }
         }
-        if (state.labelsPdfEnabled) {
-            SupplementButton(
-                text = stringResource(R.string.dashboard_export_labels),
-                onClick = { onEvent(ManufacturerDashboardUiEvent.ExportLabelsPdf) },
-                enabled = !state.isExporting && !state.isSubmitting && state.batchCode.isNotBlank(),
-                loading = state.isExporting,
-                variant = SupplementButtonVariant.Tonal,
-                leadingIcon = SupplementIcons.Pdf,
+    }
+}
+
+@Composable
+private fun BatchDistribution(detail: BatchDetail) {
+    Text(
+        text = stringResource(R.string.dashboard_distribution),
+        style = MaterialTheme.typography.titleSmall,
+    )
+    detail.distribution.entries.sortedByDescending { it.value }.forEach { (owner, units) ->
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = owner.shortenMiddle(8, 6),
+                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = SupplementMonoFamily),
+                modifier = Modifier.weight(1f),
             )
+            Text(
+                text = pluralStringResource(R.plurals.dashboard_unit_count, units, units),
+                style = MaterialTheme.typography.labelLarge,
+            )
+        }
+    }
+    Text(
+        text = stringResource(R.string.dashboard_segments),
+        style = MaterialTheme.typography.titleSmall,
+    )
+    detail.segments.sortedBy { it.start }.forEach { segment ->
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.dashboard_segment_range, segment.start, segment.lastIndex),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Text(
+                    text = segment.owner.shortenMiddle(8, 6),
+                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = SupplementMonoFamily),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            StatusChip(status = AuthenticityStatus.fromLifecycle(segment.status))
         }
     }
 }

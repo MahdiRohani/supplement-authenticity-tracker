@@ -1,3 +1,5 @@
+# v1: one on-chain record per product (SupplementRegistry).
+
 type Product @entity {
   id: ID!
   owner: Bytes!
@@ -14,4 +16,89 @@ type OwnershipTransfer @entity {
   to: Bytes!
   txHash: Bytes!
   blockNumber: BigInt!
+}
+
+# v2: Merkle-committed batches, splittable custody segments, unit consumption
+# (SupplementRegistryV2). Segment ranges are half-open: [start, end).
+
+enum SegmentStatus {
+  Created
+  Transferred
+  AtPointOfSale
+  Invalid
+}
+
+type Batch @entity {
+  id: ID!
+  manufacturer: Bytes!
+  size: Int!
+  merkleRoot: Bytes!
+  physicalBatchId: Bytes!
+  metadataCid: String!
+  metadataHash: Bytes!
+  consumedCount: Int!
+  recalled: Boolean!
+  registeredAtBlock: BigInt!
+  registeredAt: BigInt!
+  registerTx: Bytes!
+  segments: [Segment!]! @derivedFrom(field: "batch")
+  transfers: [SegmentTransfer!]! @derivedFrom(field: "batch")
+  consumptions: [UnitConsumption!]! @derivedFrom(field: "batch")
+}
+
+type Segment @entity {
+  id: ID!
+  batch: Batch!
+  "Segment this one was split from; null for the batch's root segment and for whole-segment moves."
+  parent: Segment
+  owner: Bytes!
+  start: Int!
+  end: Int!
+  units: Int!
+  status: SegmentStatus!
+  updatedAtBlock: BigInt!
+}
+
+type SegmentTransfer @entity(immutable: true) {
+  id: ID!
+  batch: Batch!
+  fromSegment: Segment!
+  toSegment: Segment!
+  "True when only part of fromSegment moved and toSegment is a new segment."
+  split: Boolean!
+  from: Bytes!
+  to: Bytes!
+  start: Int!
+  end: Int!
+  status: SegmentStatus!
+  txHash: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type UnitConsumption @entity(immutable: true) {
+  "batchId-index"
+  id: ID!
+  batch: Batch!
+  index: Int!
+  segment: Segment!
+  unitKey: Bytes!
+  "Pseudonymous consumer address, not a wallet the consumer funds."
+  consumer: Bytes!
+  "Relayer (or self) that paid gas."
+  submitter: Bytes!
+  txHash: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type Recall @entity(immutable: true) {
+  id: ID!
+  batch: Batch!
+  "Null for a whole-batch recall."
+  segment: Segment
+  actor: Bytes!
+  txHash: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
 }

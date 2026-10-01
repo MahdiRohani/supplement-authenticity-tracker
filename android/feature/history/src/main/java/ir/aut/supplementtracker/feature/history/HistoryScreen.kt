@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -32,6 +33,7 @@ import ir.aut.supplementtracker.core.designsystem.components.TimelineEntry
 import ir.aut.supplementtracker.core.designsystem.components.shortenMiddle
 import ir.aut.supplementtracker.core.designsystem.localizedErrorMessage
 import ir.aut.supplementtracker.core.model.OwnershipEvent
+import ir.aut.supplementtracker.core.model.UnitHistory
 
 private const val ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -41,8 +43,8 @@ fun HistoryScreen(
     onEvent: (HistoryUiEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val canLoad = !state.isLoading && state.productId.isNotBlank()
-    SupplementScreen(modifier = modifier) {
+    val canLoad = !state.isLoading && state.input.isNotBlank()
+    SupplementScreen(modifier = modifier.testTag("history_screen")) {
         ScreenHeader(
             title = stringResource(R.string.history_title),
             subtitle = stringResource(R.string.history_subtitle),
@@ -50,13 +52,15 @@ fun HistoryScreen(
         )
         SupplementCard {
             SupplementTextField(
-                value = state.productId,
-                onValueChange = { onEvent(HistoryUiEvent.ProductIdChanged(it)) },
+                value = state.input,
+                onValueChange = { onEvent(HistoryUiEvent.InputChanged(it)) },
                 label = stringResource(R.string.history_product_id_label),
                 leadingIcon = SupplementIcons.Tag,
-                keyboardType = KeyboardType.Number,
+                supportingText = stringResource(R.string.history_input_hint),
+                keyboardType = KeyboardType.Uri,
                 imeAction = ImeAction.Search,
                 onImeAction = { if (canLoad) onEvent(HistoryUiEvent.Load) },
+                modifier = Modifier.testTag("history_input"),
             )
             SupplementButton(
                 text = stringResource(R.string.history_load_action),
@@ -69,6 +73,7 @@ fun HistoryScreen(
         state.errorMessage?.let { raw ->
             localizedErrorMessage(raw)?.let { NoticeCard(message = it, tone = NoticeTone.Danger) }
         }
+        state.unitHistory?.let { UnitTimeline(it) }
         state.history?.let { history ->
             SupplementCard {
                 SectionHeader(
@@ -122,6 +127,107 @@ fun HistoryScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun UnitTimeline(history: UnitHistory) {
+    val steps = history.custody.size + 1 + (if (history.consumption != null) 1 else 0)
+    val status = when {
+        history.recalled -> AuthenticityStatus.Recalled
+        history.consumption != null -> AuthenticityStatus.Consumed
+        history.custody.isEmpty() -> AuthenticityStatus.fromLifecycle("Created")
+        else -> AuthenticityStatus.fromLifecycle(history.custody.last().status)
+    }
+    SupplementCard(modifier = Modifier.testTag("history_unit")) {
+        SectionHeader(
+            title = stringResource(R.string.history_unit_v2, history.unit.batchId, history.unit.index),
+            trailing = { StatusChip(status = status) },
+        )
+        InfoRow(
+            label = stringResource(R.string.history_manufacturer),
+            value = history.manufacturer,
+            icon = SupplementIcons.Manufacturer,
+            monospace = true,
+            copyable = true,
+        )
+    }
+    if (history.recalled) {
+        NoticeCard(
+            message = stringResource(R.string.history_recalled),
+            tone = NoticeTone.Danger,
+            icon = SupplementIcons.Blocked,
+        )
+    }
+    SupplementCard {
+        SectionHeader(
+            title = stringResource(R.string.history_chain_title),
+            trailing = {
+                Text(
+                    text = pluralStringResource(R.plurals.history_event_count, steps, steps),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            },
+        )
+        Column {
+            TimelineEntry(isFirst = true, isLast = steps == 1, highlighted = steps == 1) {
+                StepContent(
+                    title = stringResource(R.string.history_event_minted),
+                    parties = history.manufacturer.shortenMiddle(),
+                    meta = history.registeredAt.toShortTime(),
+                    txHash = history.registerTxHash,
+                )
+            }
+            history.custody.forEachIndexed { index, step ->
+                val last = index == history.custody.lastIndex && history.consumption == null
+                TimelineEntry(isFirst = false, isLast = last, highlighted = last) {
+                    StepContent(
+                        title = stringResource(
+                            if (step.status == "AtPointOfSale") R.string.history_step_pharmacy else R.string.history_step_transfer,
+                        ) + " · " + pluralStringResource(R.plurals.history_units, step.units, step.units),
+                        parties = stringResource(R.string.history_event, step.from.shortenMiddle(), step.to.shortenMiddle()),
+                        meta = stringResource(R.string.history_event_meta, step.blockNumber, step.at.toShortTime()),
+                        txHash = step.txHash,
+                    )
+                }
+            }
+            history.consumption?.let { consumption ->
+                TimelineEntry(isFirst = false, isLast = true, highlighted = true) {
+                    StepContent(
+                        title = stringResource(R.string.history_step_consumed),
+                        parties = consumption.consumer?.shortenMiddle().orEmpty(),
+                        meta = listOfNotNull(
+                            consumption.blockNumber?.let { stringResource(R.string.history_block, it) },
+                            consumption.at?.toShortTime(),
+                        ).joinToString(" · "),
+                        txHash = consumption.txHash,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun String.toShortTime(): String = replace('T', ' ').take(16)
+
+@Composable
+private fun StepContent(title: String, parties: String, meta: String, txHash: String) {
+    val mono = MaterialTheme.typography.bodySmall.copy(fontFamily = SupplementMonoFamily)
+    Column(verticalArrangement = Arrangement.spacedBy(SupplementSpacing.Xxs)) {
+        Text(text = title, style = MaterialTheme.typography.titleSmall)
+        if (parties.isNotBlank()) {
+            Text(text = parties, style = mono, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = meta,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
+            if (txHash.isNotBlank()) CopyButton(value = txHash, label = stringResource(R.string.history_tx))
         }
     }
 }

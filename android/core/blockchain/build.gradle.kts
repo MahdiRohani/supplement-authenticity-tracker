@@ -76,4 +76,13 @@ dependencies {
     implementation(project(":core:domain"))
     implementation(libs.web3j.core)
     implementation(libs.kotlinx.coroutines.android)
+    testImplementation(libs.junit)
+    // android.jar only ships stubs of org.json; JVM tests need the real parser.
+    testImplementation(libs.org.json)
+}
+
+tasks.withType<Test>().configureEach {
+    val vectors = rootProject.file("../packages/abis/test-vectors/supplement-registry-v2.json")
+    inputs.file(vectors)
+    systemProperty("sat.vectors", vectors.absolutePath)
 }

@@ -85,18 +85,28 @@ import ir.aut.supplementtracker.core.designsystem.SupplementSpacing
 import ir.aut.supplementtracker.core.designsystem.components.IconBadge
 import ir.aut.supplementtracker.core.designsystem.components.SupplementButton
 import ir.aut.supplementtracker.core.designsystem.components.SupplementButtonVariant
-import ir.aut.supplementtracker.core.model.QrPayload
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
 private const val TAG = "ScanScreen"
 
+/** Which of the two label layers the user is asked to scan. */
+enum class ScanMode {
+    /** The open label: verify URL, or a legacy v1 code. */
+    PublicLabel,
+
+    /** The code under the scratch-off, used once to record consumption. */
+    HiddenLabel,
+}
+
+/** Reports the raw QR text; callers decide which label generations they accept. */
 @Composable
 fun ScanScreen(
-    onDetected: (productId: String) -> Unit,
+    onDetected: (raw: String) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    mode: ScanMode = ScanMode.PublicLabel,
 ) {
     val context = LocalContext.current
     fun granted() =
@@ -159,9 +169,10 @@ fun ScanScreen(
             modifier = modifier,
         )
         else -> CameraScanner(
+            mode = mode,
             onBarcode = { raw ->
-                val productId = QrPayload.parse(raw)?.productId ?: raw.trim()
-                if (productId.isNotBlank()) onDetected(productId)
+                val trimmed = raw.trim()
+                if (trimmed.isNotEmpty()) onDetected(trimmed)
             },
             onCameraError = { cameraFailed = true },
             onClose = onClose,
@@ -172,11 +183,17 @@ fun ScanScreen(
 
 @Composable
 private fun CameraScanner(
+    mode: ScanMode,
     onBarcode: (String) -> Unit,
     onCameraError: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val (titleRes, hintRes, hintIcon) =
+        when (mode) {
+            ScanMode.PublicLabel -> Triple(R.string.scan_title, R.string.scan_hint, SupplementIcons.QrCode)
+            ScanMode.HiddenLabel -> Triple(R.string.scan_hidden_title, R.string.scan_hidden_hint, SupplementIcons.Secret)
+        }
     var torchOn by rememberSaveable { mutableStateOf(false) }
     var hasTorch by remember { mutableStateOf(false) }
     DarkSystemBarsEffect()
@@ -209,7 +226,7 @@ private fun CameraScanner(
                     onClick = onClose,
                 )
                 Text(
-                    text = stringResource(R.string.scan_title),
+                    text = stringResource(titleRes),
                     style = MaterialTheme.typography.titleLarge,
                     color = Color.White,
                     textAlign = TextAlign.Center,
@@ -240,8 +257,8 @@ private fun CameraScanner(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(SupplementSpacing.Xs),
                 ) {
-                    Icon(SupplementIcons.QrCode, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Text(text = stringResource(R.string.scan_hint), style = MaterialTheme.typography.bodyMedium)
+                    Icon(hintIcon, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(text = stringResource(hintRes), style = MaterialTheme.typography.bodyMedium)
                 }
             }
             Spacer(Modifier.size(SupplementSpacing.Lg))

@@ -35,9 +35,24 @@ enum class AuthenticityStatus {
     Invalid,
     NotFound,
     NetworkError,
+    InTransit,
+    Recalled,
+    Suspicious,
     ;
 
     companion object {
+        /** Maps a `/v2/verify` verdict (`Authentic`, `InTransit`, …) to its visual state. */
+        fun fromAuthenticity(raw: String?): AuthenticityStatus =
+            when (raw) {
+                "Authentic" -> Authentic
+                "InTransit" -> InTransit
+                "Consumed" -> Consumed
+                "Recalled" -> Recalled
+                "Suspicious" -> Suspicious
+                "Invalid" -> Invalid
+                else -> NotFound
+            }
+
         /** Maps a backend lifecycle status (`Created`, `Transferred`, …) to its visual state. */
         fun fromLifecycle(raw: String?): AuthenticityStatus =
             when (raw) {
@@ -115,6 +130,24 @@ private fun AuthenticityStatus.visual(): StatusVisual {
             SupplementIcons.Offline,
             stringResource(R.string.status_network_error),
             stringResource(R.string.status_network_error_desc),
+        )
+        AuthenticityStatus.InTransit -> StatusVisual(
+            colors.info,
+            SupplementIcons.Distributor,
+            stringResource(R.string.status_in_transit),
+            stringResource(R.string.status_in_transit_desc),
+        )
+        AuthenticityStatus.Recalled -> StatusVisual(
+            colors.danger,
+            SupplementIcons.Blocked,
+            stringResource(R.string.status_recalled),
+            stringResource(R.string.status_recalled_desc),
+        )
+        AuthenticityStatus.Suspicious -> StatusVisual(
+            colors.danger,
+            SupplementIcons.Report,
+            stringResource(R.string.status_suspicious),
+            stringResource(R.string.status_suspicious_desc),
         )
     }
 }

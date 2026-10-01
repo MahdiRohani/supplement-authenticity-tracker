@@ -10,6 +10,13 @@
     <string name="error_already_consumed">Product already consumed; refill is not allowed</string>
     <string name="error_owner_required">Owner address required</string>
     <string name="error_history_failed">Could not load history</string>
+    <string name="error_hidden_label_mismatch">This hidden code belongs to a different unit than the one you verified.</string>
+    <string name="error_wrong_chain">This label was issued on a different blockchain network.</string>
+    <string name="error_not_a_hidden_label">Not a hidden label. Scratch the seal and scan the code underneath.</string>
+    <string name="error_not_a_unit_code">Not a supplement label code.</string>
+    <string name="error_batch_size">Batch size must be between 1 and 5,000 units.</string>
+    <string name="error_transfer_count">Count must be between 1 and the units in the selected segment.</string>
+    <string name="error_keys_discarded">The one-time unit keys were already discarded; labels can only be printed right after registration.</string>
     <string name="cd_logout">Log out</string>
     <string name="cd_status">Status: %1$s</string>
     <string name="cd_copy">Copy %1$s</string>
@@ -31,4 +38,10 @@
     <string name="status_not_found_desc">No product has this ID. It may be counterfeit.</string>
     <string name="status_network_error">Can\'t reach server</string>
     <string name="status_network_error_desc">Check your connection and try again.</string>
+    <string name="status_in_transit">Genuine · not for sale yet</string>
+    <string name="status_in_transit_desc">Registered on-chain but still with the manufacturer or distributor. A pharmacy hasn\'t received it yet.</string>
+    <string name="status_recalled">Recalled</string>
+    <string name="status_recalled_desc">The manufacturer recalled this batch. Do not use it.</string>
+    <string name="status_suspicious">Suspicious</string>
+    <string name="status_suspicious_desc">The registration is genuine, but this label is being scanned in a way that suggests it was copied.</string>
 </resources>

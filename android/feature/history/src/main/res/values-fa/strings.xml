@@ -1,8 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="history_title">تاریخچه مالکیت</string>
-    <string name="history_subtitle">مسیر یک واحد را از کارخانه تا قفسه داروخانه دنبال کنید.</string>
-    <string name="history_product_id_label">شناسه محصول</string>
+    <string name="history_title">تاریخچه نگهداری</string>
+    <string name="history_subtitle">مسیر یک واحد را از کارخانه تا قفسه‌ی داروخانه و دست خریدار دنبال کنید.</string>
+    <string name="history_product_id_label">کد واحد یا شناسه محصول</string>
+    <string name="history_input_hint">لینک QR آشکار، chain/batch/unit یا شناسه‌ی قدیمی محصول را وارد کنید</string>
+    <string name="history_unit_v2">بچ #%1$s · واحد #%2$d</string>
+    <string name="history_manufacturer">تولیدکننده</string>
+    <string name="history_recalled">این بچ توسط تولیدکننده فراخوان شده است.</string>
+    <string name="history_step_transfer">تحویل به توزیع‌کننده</string>
+    <string name="history_step_pharmacy">تحویل به داروخانه</string>
+    <string name="history_step_consumed">مصرف توسط خریدار</string>
+    <string name="history_block">بلوک %1$d</string>
+    <plurals name="history_units">
+        <item quantity="one">%1$d واحد</item>
+        <item quantity="other">%1$d واحد</item>
+    </plurals>
     <string name="history_load_action">نمایش زمان‌خط</string>
     <string name="history_unit">واحد #%1$s</string>
     <string name="history_owner">مالک فعلی</string>

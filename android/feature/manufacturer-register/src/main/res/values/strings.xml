@@ -1,17 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="manufacturer_register_title">Register a unit</string>
-    <string name="manufacturer_register_subtitle">Mint one supplement unit on-chain and get its label secret.</string>
+    <string name="manufacturer_register_title">Register a batch</string>
+    <string name="manufacturer_register_subtitle">Anchor a whole production lot on-chain with one Merkle root and print a two-layer label for every unit.</string>
     <string name="product_name_label">Product name</string>
-    <string name="batch_label">Batch code</string>
+    <string name="batch_label">Lot code</string>
+    <string name="register_size_label">Units</string>
+    <string name="register_size_hint">Between 1 and %1$d units. One transaction covers the whole batch.</string>
+    <string name="register_expires_label">Expiry date (optional)</string>
+    <string name="register_expires_hint">Format YYYY-MM-DD</string>
     <string name="register_action">Register on-chain</string>
-    <string name="register_done_title">Registered</string>
-    <string name="register_done_message">Unit #%1$s is now on the blockchain.</string>
-    <string name="register_unit">Supplement unit</string>
-    <string name="result_id">On-chain ID</string>
-    <string name="result_cid">Metadata CID</string>
-    <string name="result_secret">Label secret</string>
-    <string name="result_secret_warning">Shown only once. Print it under the scratch-off on the label before hiding it.</string>
-    <string name="hide_secret_action">I\'ve printed it — hide secret</string>
-    <string name="register_success">Registered · %1$s</string>
+    <string name="register_how_title">What happens</string>
+    <string name="register_how_body">Each unit gets a one-time key pair. Only the Merkle root of all public keys goes on-chain; the open QR identifies the unit, and the hidden QR under the scratch-off holds its private key for the buyer.</string>
+    <string name="register_done_title">Batch registered</string>
+    <string name="register_done_message">%1$d units are now anchored on the blockchain as batch #%2$s.</string>
+    <string name="register_unit">Supplement batch</string>
+    <string name="result_id">Batch ID</string>
+    <string name="result_root">Merkle root</string>
+    <string name="result_cid">Manifest CID</string>
+    <string name="result_tx">Transaction</string>
+    <string name="result_not_pinned">The manifest was not pinned to IPFS; its hash is still on-chain.</string>
+    <string name="result_secret">Unit keys are on this phone</string>
+    <string name="result_secret_warning">The hidden codes of %1$d units exist only here and will not be shown again. Export the labels PDF and print it before discarding the keys.</string>
+    <string name="export_labels_action">Export labels PDF</string>
+    <string name="hide_secret_action">I\'ve printed them, discard keys</string>
+    <string name="keys_discarded">Unit keys discarded. Neither this app nor the server can recreate the hidden codes.</string>
+    <string name="register_another">Register another batch</string>
+    <string name="register_success">Batch #%1$s registered (%2$d units)</string>
 </resources>
