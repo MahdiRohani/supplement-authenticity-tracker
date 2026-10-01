@@ -11,6 +11,7 @@
     "e2e:local": "hardhat run scripts/e2e-supply-chain.ts",
     "e2e:v1": "hardhat run scripts/e2e-supply-chain-v1.ts",
     "bench:gas": "hardhat run scripts/bench-gas.ts",
+    "bench:cost": "hardhat run scripts/bench-cost.ts",
     "vectors": "hardhat run scripts/export-vectors.ts",
     "test:gas": "REPORT_GAS=true hardhat test",
     "test:coverage": "hardhat coverage",
