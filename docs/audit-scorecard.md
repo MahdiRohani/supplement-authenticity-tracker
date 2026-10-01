@@ -28,6 +28,7 @@ threats in [`threat-model.md`](threat-model.md), and the measurements in
 | admin-web v2 | Batches with segment distribution, recall, clone suspects, reports | Script syntax check in CI; manual run against the live API | `python3 -m http.server` |
 | subgraph v2 | `Batch`, `Segment` (with parent), `SegmentTransfer`, `UnitConsumption`, `Recall` | Event signatures, handlers and schema checked statically against the ABI; `graph build` in CI | Optional |
 | Docs | Protocol, threat model, evaluation, decisions, meta-tx | Reviewed against the code | — |
+| Evaluation tooling | `bench:gas`, `bench:cost`, `cmd/scansim`, `cmd/labelbench`, `cmd/loadgen` (incl. `-endpoint consume`), `scripts/eval/` (latency, plots, TikZ) | Each tool regenerates its CSV; figures rebuilt from the CSVs | `docs/figures/` |
 
 ### Scores (0–5, v2)
 
@@ -35,14 +36,14 @@ threats in [`threat-model.md`](threat-model.md), and the measurements in
 | --- | --- | --- |
 | Correct execution / E2E | 5 | The full lifecycle runs over HTTP against a real chain in CI |
 | Security posture | 4 | Threats T1–T15 analysed. A single clone before consumption can only be detected statistically (T1). Demo role keys are held by the API (assumption 5). |
-| Evaluation evidence | 4 | Gas and off-chain costs measured; the clone detector is compared with baselines and ablations. Latency and USD/L2 cost are still pending. |
+| Evaluation evidence | 5 | Gas, off-chain and USD costs (L1 median/p90, Arbitrum, Base) from a dated fee snapshot; label payload and PDF size; read and end-to-end consume latency at three block times; clone detector against baselines and ablations; security table. All reproducible from scripts, with 600 dpi figures. |
 | Architecture / layers | 5 | v2 lives in its own modules and packages (`internal/protocol`, `merkle`, `risk`; `ProtocolRepository`); v1 is unchanged |
 | Spec coverage | 5 | All six v2 capabilities work end to end |
 
 ### Remaining (non-blocking)
 
-- P2: The API latency benchmark (`cmd/loadgen`) and the USD/L2 cost table have not been run yet.
 - P2: The clone detector is evaluated on simulated scans only. There is no field data.
+- P3: Latency comes from one laptop over loopback, with Hardhat emulating block times. There is no measurement on a public L2 testnet (see [`evaluation.md`](evaluation.md), section 10).
 - P3: `graph build` has not been run on the development machine (the npm registry is unreachable there). CI runs it.
 - P3: The Android consumer identity key is stored in private app storage, not in the Android Keystore. It only labels history and controls no funds.
 - P3: A manual role walkthrough on a device is still recommended for camera permissions and App Link verification (`assetlinks.json` must be hosted on the verify domain).

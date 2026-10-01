@@ -27,7 +27,9 @@ Start with [`docs/protocol-v2.md`](docs/protocol-v2.md) for the specification, [
 | `admin-web/` | Static ops panel: health, batches/segments, recall, clone suspects, reports |
 | `docs/protocol-v2.md` | Protocol v2 specification (Merkle batches, segments, EIP-712 consume, labels, recall) |
 | `docs/threat-model.md` | Assets, adversaries, threats and mitigations |
-| `docs/evaluation.md` | Gas, off-chain cost and clone-detection results, with reproduction commands |
+| `docs/evaluation.md` | Gas, USD cost (L1/L2), label payload, latency, clone-detection and security results, with reproduction commands |
+| `docs/figures/` | Evaluation plots and protocol diagrams (600 dpi PNG/TIFF, vector PDF) |
+| `scripts/eval/` | Latency runner, matplotlib plots and TikZ diagram sources |
 | `docs/meta-transactions.md` | Relayer meta-tx / EIP-712 consume paths (v1 and v2) |
 | `docs/architecture-decisions.md` | Locked architecture + intentional deviations |
 | `docs/audit-scorecard.md` | Full-system audit scorecard |
@@ -95,7 +97,7 @@ Services: `postgres`, `ipfs` (Kubo), `backend` on port `3000`.
   (add `SAT_DISTRIBUTOR` / `SAT_PHARMACY` holding the on-chain roles to also run transfer → consume → refill rejection)
 - Full local integration (the same steps as CI): `TEST_DATABASE_URL=postgresql://… ./scripts/ci-integration.sh`.
   It starts its own Hardhat node on `HH_PORT` (default `8546`) and the API on `E2E_PORT` (default `3099`), deploys v1 and v2, and runs the v2 end-to-end suite (`backend/e2e`). Without `TEST_DATABASE_URL`, the API end-to-end step is skipped.
-- Benchmarks: `cd contracts && npm run bench:gas` and `cd backend && go run ./cmd/scansim` (see `docs/evaluation.md`)
+- Benchmarks: `cd contracts && npm run bench:gas` / `npm run bench:cost`, `cd backend && go run ./cmd/scansim` / `go run ./cmd/labelbench`, and `./scripts/eval/latency.sh` (see `docs/evaluation.md`)
 
 ## Operational runbook
 

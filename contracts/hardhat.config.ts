@@ -4,6 +4,9 @@ import "solidity-coverage";
 
 const sepoliaRpc = process.env.SEPOLIA_RPC_URL ?? "";
 const sepoliaKey = process.env.SEPOLIA_PRIVATE_KEY ?? "";
+// HARDHAT_BLOCK_TIME_MS > 0 mines on a fixed interval instead of per transaction,
+// to measure confirmation latency under L2-like (2000) or L1-like (12000) block times.
+const blockTimeMs = Number(process.env.HARDHAT_BLOCK_TIME_MS ?? 0);
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -26,7 +29,7 @@ const config: HardhatUserConfig = {
     currency: "USD",
   },
   networks: {
-    hardhat: {},
+    hardhat: blockTimeMs > 0 ? { mining: { auto: false, interval: blockTimeMs } } : {},
     localhost: {
       url: process.env.LOCALHOST_RPC_URL || "http://127.0.0.1:8545",
     },
