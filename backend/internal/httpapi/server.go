@@ -1,6 +1,7 @@
-// Package httpapi exposes the REST API under /v1. Its wire format (paths,
+// Package httpapi exposes the REST API. Under /v1 its wire format (paths,
 // status codes, JSON shapes and error bodies) is the contract the Android app
-// and admin panel were built against.
+// and admin panel were built against; /v2 serves the unit-level protocol of
+// SupplementRegistryV2 with strictly decoded bodies.
 package httpapi
 
 import (
@@ -75,6 +76,9 @@ type Deps struct {
 	Reports   ReportService
 	Analytics AnalyticsService
 	EIP712    Signer
+	// Protocol and Parties serve /v2; nil answers its routes with 503.
+	Protocol ProtocolService
+	Parties  PartyService
 	// ReloadKeys re-reads relayer keys and returns the active addresses.
 	ReloadKeys func(ctx context.Context) ([]string, error)
 	Limiter    *ratelimit.Limiter
@@ -162,4 +166,6 @@ func (s *Server) registerRoutes() {
 	s.handle(http.MethodPost, "/v1/meta/consume", s.metaConsume)
 
 	s.handle(http.MethodPost, "/v1/admin/relayer-keys/reload", s.reloadRelayerKeys)
+
+	s.registerV2Routes()
 }

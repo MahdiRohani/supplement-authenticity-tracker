@@ -57,6 +57,24 @@ func (s *Store) Close() {
 	s.Pool.Close()
 }
 
+// ResetV2Projection drops everything the v2 indexer derived from the chain
+// (batches, segments, units, custody history and its cursor) so it can be
+// rebuilt. Scan events are kept: they are observations, not chain state.
+func (s *Store) ResetV2Projection(ctx context.Context, cursor string) error {
+	tx, err := s.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	if _, err := tx.Exec(ctx, `TRUNCATE "Unit", "CustodyEvent", "Segment", "Batch"`); err != nil {
+		return fmt.Errorf("reset v2 projection: %w", err)
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM "IndexerCursor" WHERE "name" = $1`, cursor); err != nil {
+		return fmt.Errorf("reset indexer cursor: %w", err)
+	}
+	return tx.Commit(ctx)
+}
+
 // IsNotFound reports whether err means a query matched no rows.
 func IsNotFound(err error) bool {
 	return errors.Is(err, pgx.ErrNoRows)

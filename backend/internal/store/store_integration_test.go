@@ -81,25 +81,29 @@ func TestMigrateAdoptsPrismaSchema(t *testing.T) {
 	if _, err := st.Pool.Exec(ctx, `CREATE SCHEMA `+pgx.Identifier{schema}.Sanitize()); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := st.Pool.Exec(ctx, `CREATE TABLE "Product" ("id" TEXT PRIMARY KEY)`); err != nil {
+	// Later migrations extend RoleBinding, which every Prisma schema has.
+	if _, err := st.Pool.Exec(ctx, `CREATE TABLE "Product" ("id" TEXT PRIMARY KEY); CREATE TABLE "RoleBinding" ("id" TEXT PRIMARY KEY)`); err != nil {
 		t.Fatal(err)
 	}
 	if err := st.Migrate(ctx, quiet, time.Second); err != nil {
 		t.Fatal(err)
 	}
-	var roleTable *string
-	if err := st.Pool.QueryRow(ctx, `SELECT to_regclass('"RoleBinding"')::text`).Scan(&roleTable); err != nil {
+	var auditTable, batchTable *string
+	if err := st.Pool.QueryRow(ctx, `SELECT to_regclass('"AuditLog"')::text, to_regclass('"Batch"')::text`).Scan(&auditTable, &batchTable); err != nil {
 		t.Fatal(err)
 	}
-	if roleTable != nil {
+	if auditTable != nil {
 		t.Fatal("the initial migration must be skipped for an existing Prisma schema")
 	}
-	var version int64
-	if err := st.Pool.QueryRow(ctx, `SELECT max(version_id) FROM goose_db_version`).Scan(&version); err != nil {
+	if batchTable == nil {
+		t.Fatal("migrations after the baseline must still apply")
+	}
+	var baseline bool
+	if err := st.Pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM goose_db_version WHERE version_id = 1)`).Scan(&baseline); err != nil {
 		t.Fatal(err)
 	}
-	if version != 1 {
-		t.Fatalf("baseline version = %d", version)
+	if !baseline {
+		t.Fatal("baseline version 1 not recorded")
 	}
 }
 

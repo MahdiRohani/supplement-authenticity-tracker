@@ -84,6 +84,13 @@ func (s *KeyStore) Resolve(address string) (*ecdsa.PrivateKey, bool) {
 	return toECDSA(raw)
 }
 
+// Addresses lists the active addresses in configuration order.
+func (s *KeyStore) Addresses() []string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return append([]string(nil), s.active.addresses...)
+}
+
 // First returns the first configured active key.
 func (s *KeyStore) First() (*ecdsa.PrivateKey, bool) {
 	s.mu.RLock()

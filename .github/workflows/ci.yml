@@ -124,6 +124,7 @@ jobs:
           PORT: "3000"
           # load-verify.sh fires concurrent verify calls from one IP
           VERIFY_RATE_LIMIT: "1000"
+          SCAN_HASH_SALT: ci-salt
           RELAYER_KEYS_JSON: '{"0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266":"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80","0x70997970c51812dc3a010c7d01b50e0d17dc79c8":"0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d","0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc":"0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"}'
         run: |
           go build -o bin/api ./cmd/api
@@ -145,6 +146,17 @@ jobs:
           curl -fsS -o /tmp/labels.pdf "http://127.0.0.1:3000/v1/products/labels.pdf?batch=CI-1"
           test -s /tmp/labels.pdf
           PRODUCT_ID="$ID" BASE_URL=http://127.0.0.1:3000/v1 CONCURRENCY=10 THRESHOLD_MS=3000 bash ../scripts/load-verify.sh
+      - name: Protocol v2 end-to-end (register, split, consume, clone scans, recall)
+        working-directory: backend
+        env:
+          E2E_API_URL: http://127.0.0.1:3000
+        run: go test -tags e2e -count=1 -v ./e2e/
+      - name: Clone-detection simulation smoke
+        working-directory: backend
+        run: go run ./cmd/scansim -units 500 -runs 2 -out /tmp/scansim
+      - name: Backend log on failure
+        if: failure()
+        run: cat /tmp/backend.log
 
   android:
     runs-on: ubuntu-latest

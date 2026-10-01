@@ -12,6 +12,9 @@ import (
 
 const DefaultChainID int64 = 31337
 
+// maxContractBatchSize is SupplementRegistryV2.MAX_BATCH_SIZE.
+const maxContractBatchSize = 1 << 20
+
 // Config is the validated runtime configuration.
 type Config struct {
 	DatabaseURL string
@@ -22,6 +25,20 @@ type Config struct {
 	RegistryABIPath string
 	DeploymentsPath string
 	ChainID         int64
+
+	// SupplementRegistryV2 (Merkle batches, custody segments, unit keys).
+	RegistryV2Address string
+	RegistryV2ABIPath string
+	// IndexerStartBlock overrides the v2 deployBlock when backfilling.
+	IndexerStartBlock    int64
+	IndexerConfirmations int
+	// MaxBatchUnits caps POST /v2/batches; the contract allows up to 2^20.
+	MaxBatchUnits int
+	// PublicVerifyBaseURL prefixes the public label QR:
+	// {base}/{chainId}/{batchId}/{index}.
+	PublicVerifyBaseURL string
+	// ScanHashSalt keys the hash of device identifiers stored with scans.
+	ScanHashSalt string
 
 	IPFSAPIURL     string
 	IPFSGatewayURL string
@@ -67,6 +84,13 @@ func Load(lookup Lookup) (Config, error) {
 		RegistryABIPath:         p.str("REGISTRY_ABI_PATH", "../packages/abis/SupplementRegistry.json"),
 		DeploymentsPath:         p.str("DEPLOYMENTS_PATH", "../packages/abis/deployments.json"),
 		ChainID:                 int64(p.positiveInt("CHAIN_ID", 0)),
+		RegistryV2Address:       p.str("REGISTRY_V2_ADDRESS", ""),
+		RegistryV2ABIPath:       p.str("REGISTRY_V2_ABI_PATH", "../packages/abis/SupplementRegistryV2.json"),
+		IndexerStartBlock:       int64(p.nonNegativeInt("INDEXER_START_BLOCK", -1)),
+		IndexerConfirmations:    p.nonNegativeInt("INDEXER_CONFIRMATIONS", 0),
+		MaxBatchUnits:           p.positiveInt("MAX_BATCH_UNITS", 5000),
+		PublicVerifyBaseURL:     strings.TrimRight(p.str("PUBLIC_VERIFY_BASE_URL", "https://supplementtracker.aut.ir/u"), "/"),
+		ScanHashSalt:            p.str("SCAN_HASH_SALT", ""),
 		IPFSAPIURL:              p.str("IPFS_API_URL", ""),
 		IPFSGatewayURL:          p.str("IPFS_GATEWAY_URL", ""),
 		AllowIPFSStub:           p.str("ALLOW_IPFS_STUB", ""),
@@ -91,6 +115,12 @@ func Load(lookup Lookup) (Config, error) {
 	}
 	if cfg.IsProduction() && (cfg.AllowIPFSStub == "true" || cfg.AllowIPFSStub == "1") {
 		return Config{}, errors.New("invalid environment configuration: ALLOW_IPFS_STUB cannot be enabled in production")
+	}
+	if cfg.MaxBatchUnits > maxContractBatchSize {
+		return Config{}, fmt.Errorf("invalid environment configuration: MAX_BATCH_UNITS must not exceed %d", maxContractBatchSize)
+	}
+	if cfg.IsProduction() && strings.TrimSpace(cfg.ScanHashSalt) == "" {
+		return Config{}, errors.New("invalid environment configuration: SCAN_HASH_SALT is required when APP_ENV=production")
 	}
 	return cfg, nil
 }
@@ -135,6 +165,19 @@ func (p *parser) positiveInt(key string, fallback int) int {
 	n, err := strconv.Atoi(strings.TrimSpace(raw))
 	if err != nil || n <= 0 {
 		p.fail(key, fmt.Sprintf("must be a positive integer, got %q", raw))
+		return fallback
+	}
+	return n
+}
+
+func (p *parser) nonNegativeInt(key string, fallback int) int {
+	raw, ok := p.lookup(key)
+	if !ok || strings.TrimSpace(raw) == "" {
+		return fallback
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(raw))
+	if err != nil || n < 0 {
+		p.fail(key, fmt.Sprintf("must be a non-negative integer, got %q", raw))
 		return fallback
 	}
 	return n

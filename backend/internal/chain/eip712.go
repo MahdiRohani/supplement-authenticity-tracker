@@ -33,21 +33,55 @@ var (
 		{Name: "consumer", Type: "address"},
 		{Name: "deadline", Type: "uint256"},
 	}
+	// unitConsumeType is SupplementRegistryV2's ConsumeAuthorization: the
+	// one-time unit key authorizes exactly one consumer before a deadline.
+	unitConsumeType = []apitypes.Type{
+		{Name: "batchId", Type: "uint256"},
+		{Name: "index", Type: "uint32"},
+		{Name: "consumer", Type: "address"},
+		{Name: "deadline", Type: "uint256"},
+	}
 )
 
-// EIP712 signs and verifies typed data under the SupplementRegistry domain.
+const (
+	domainName       = "SupplementRegistry"
+	domainVersionV1  = "1"
+	domainVersionV2  = "2"
+	consumeTypeName  = "ConsumeAuthorization"
+	metadataTypeName = "ManufacturerMetadata"
+)
+
+// EIP712 signs and verifies typed data under a SupplementRegistry domain.
 type EIP712 struct {
+	version           string
 	verifyingContract string
 }
 
-// NewEIP712 uses registryAddress as the domain's verifyingContract, or the
-// zero address when it is empty.
+// NewEIP712 builds the v1 domain with registryAddress as verifyingContract,
+// or the zero address when it is empty.
 func NewEIP712(registryAddress string) *EIP712 {
-	if strings.TrimSpace(registryAddress) == "" {
-		registryAddress = common.Address{}.Hex()
-	}
-	return &EIP712{verifyingContract: registryAddress}
+	return newDomain(domainVersionV1, registryAddress)
 }
+
+// NewEIP712V2 builds the SupplementRegistryV2 domain (version "2").
+func NewEIP712V2(registryAddress string) *EIP712 {
+	return newDomain(domainVersionV2, registryAddress)
+}
+
+func newDomain(version, registryAddress string) *EIP712 {
+	registryAddress = strings.TrimSpace(registryAddress)
+	switch {
+	case registryAddress == "":
+		registryAddress = common.Address{}.Hex()
+	case common.IsHexAddress(registryAddress):
+		registryAddress = common.HexToAddress(registryAddress).Hex()
+	}
+	return &EIP712{version: version, verifyingContract: registryAddress}
+}
+
+func (e *EIP712) Name() string              { return domainName }
+func (e *EIP712) Version() string           { return e.version }
+func (e *EIP712) VerifyingContract() string { return e.verifyingContract }
 
 type ManufacturerMetadata struct {
 	MetadataHash string
@@ -107,7 +141,7 @@ func (e *EIP712) RecoverConsumeAuthorization(signature string, a ConsumeAuthoriz
 	if !common.IsHexAddress(a.Consumer) {
 		return common.Address{}, apperr.BadRequest("consumer must be a hex address")
 	}
-	hash, err := e.hash(a.ChainID, "ConsumeAuthorization", consumeType, apitypes.TypedDataMessage{
+	hash, err := e.hash(a.ChainID, consumeTypeName, consumeType, apitypes.TypedDataMessage{
 		"productId": productID,
 		"secret":    secret,
 		"consumer":  a.Consumer,
@@ -127,7 +161,7 @@ func (e *EIP712) metadataHash(m ManufacturerMetadata) ([]byte, error) {
 	if !common.IsHexAddress(m.Manufacturer) {
 		return nil, apperr.BadRequest("manufacturer must be a hex address")
 	}
-	return e.hash(m.ChainID, "ManufacturerMetadata", metadataType, apitypes.TypedDataMessage{
+	return e.hash(m.ChainID, metadataTypeName, metadataType, apitypes.TypedDataMessage{
 		"metadataHash": metadataHash,
 		"manufacturer": m.Manufacturer,
 		"chainId":      big.NewInt(m.ChainID),
@@ -143,8 +177,8 @@ func (e *EIP712) hash(chainID int64, primaryType string, fields []apitypes.Type,
 		},
 		PrimaryType: primaryType,
 		Domain: apitypes.TypedDataDomain{
-			Name:              "SupplementRegistry",
-			Version:           "1",
+			Name:              domainName,
+			Version:           e.version,
 			ChainId:           math.NewHexOrDecimal256(chainID),
 			VerifyingContract: e.verifyingContract,
 		},
