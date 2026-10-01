@@ -9,6 +9,9 @@
     "deploy:local": "hardhat run scripts/deploy.ts",
     "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
     "e2e:local": "hardhat run scripts/e2e-supply-chain.ts",
+    "e2e:v1": "hardhat run scripts/e2e-supply-chain-v1.ts",
+    "bench:gas": "hardhat run scripts/bench-gas.ts",
+    "vectors": "hardhat run scripts/export-vectors.ts",
     "test:gas": "REPORT_GAS=true hardhat test",
     "test:coverage": "hardhat coverage",
     "slither": "bash scripts/slither.sh",
@@ -16,6 +19,7 @@
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/merkle-tree": "^1.0.8",
     "fast-check": "^4.9.0",
     "hardhat": "^2.22.18",
     "solidity-coverage": "^0.8.17",
