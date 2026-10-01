@@ -77,6 +77,70 @@ func AllProductStatusValues() []ProductStatus {
 	}
 }
 
+type SegmentStatus string
+
+const (
+	SegmentStatusCreated       SegmentStatus = "Created"
+	SegmentStatusTransferred   SegmentStatus = "Transferred"
+	SegmentStatusAtPointOfSale SegmentStatus = "AtPointOfSale"
+	SegmentStatusInvalid       SegmentStatus = "Invalid"
+)
+
+func (e *SegmentStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = SegmentStatus(s)
+	case string:
+		*e = SegmentStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for SegmentStatus: %T", src)
+	}
+	return nil
+}
+
+type NullSegmentStatus struct {
+	SegmentStatus SegmentStatus
+	Valid         bool // Valid is true if SegmentStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullSegmentStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.SegmentStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.SegmentStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullSegmentStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.SegmentStatus), nil
+}
+
+func (e SegmentStatus) Valid() bool {
+	switch e {
+	case SegmentStatusCreated,
+		SegmentStatusTransferred,
+		SegmentStatusAtPointOfSale,
+		SegmentStatusInvalid:
+		return true
+	}
+	return false
+}
+
+func AllSegmentStatusValues() []SegmentStatus {
+	return []SegmentStatus{
+		SegmentStatusCreated,
+		SegmentStatusTransferred,
+		SegmentStatusAtPointOfSale,
+		SegmentStatusInvalid,
+	}
+}
+
 type SupplyRole string
 
 const (
@@ -157,12 +221,53 @@ type AuditLog struct {
 	CreatedAt time.Time
 }
 
+type Batch struct {
+	BatchID         int64
+	Manufacturer    string
+	Size            int32
+	MerkleRoot      string
+	PhysicalBatchID string
+	MetadataCID     string
+	MetadataHash    string
+	Name            *string
+	LotCode         *string
+	ConsumedCount   int32
+	Invalid         bool
+	TxHash          string
+	BlockNumber     int64
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+}
+
 type CounterfeitReport struct {
 	ID             string
 	ChainProductID string
 	Note           *string
 	Reporter       *string
 	CreatedAt      time.Time
+}
+
+type CustodyEvent struct {
+	ID            string
+	BatchID       int64
+	FromSegmentID int64
+	ToSegmentID   int64
+	FromAddress   string
+	ToAddress     string
+	Start         int32
+	End           int32
+	Status        SegmentStatus
+	TxHash        string
+	LogIndex      int32
+	BlockNumber   int64
+	CreatedAt     time.Time
+}
+
+type IndexerCursor struct {
+	Name      string
+	LastBlock int64
+	BlockHash string
+	UpdatedAt time.Time
 }
 
 type OwnershipEvent struct {
@@ -190,9 +295,47 @@ type Product struct {
 }
 
 type RoleBinding struct {
-	ID        string
-	Address   string
-	Role      SupplyRole
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID          string
+	Address     string
+	Role        SupplyRole
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	DisplayName *string
+	Region      *string
+}
+
+type ScanEvent struct {
+	ID           string
+	BatchID      int64
+	Index        int32
+	DeviceHash   string
+	Region       *string
+	StatusAtScan string
+	RiskScore    float64
+	CreatedAt    time.Time
+}
+
+type Segment struct {
+	SegmentID   int64
+	BatchID     int64
+	Owner       string
+	Start       int32
+	End         int32
+	Status      SegmentStatus
+	BlockNumber int64
+	LogIndex    int32
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+type Unit struct {
+	BatchID        int64
+	Index          int32
+	UnitKey        string
+	Proof          []byte
+	Consumer       *string
+	ConsumedTxHash *string
+	ConsumedBlock  *int64
+	ConsumedAt     *time.Time
+	CreatedAt      time.Time
 }
