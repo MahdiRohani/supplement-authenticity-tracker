@@ -22,4 +22,54 @@
     <string name="verify_how_step1">کد QR روی برچسب محصول را اسکن کنید یا شناسه آن را وارد کنید.</string>
     <string name="verify_how_step2">سابقه و زنجیره مالکیت آن روی بلاکچین بررسی می‌شود.</string>
     <string name="verify_how_step3">اگر قبلاً مصرف شده یا ناشناخته است، مصرف نکنید و گزارش دهید.</string>
+
+    <string name="verify_unit">واحد</string>
+    <string name="verify_unit_value">بچ #%1$s · واحد #%2$d</string>
+    <string name="verify_manufacturer">تولیدکننده</string>
+    <string name="verify_custodian">در اختیار</string>
+    <string name="verify_custodian_region">%1$s · %2$s</string>
+    <string name="verify_lot">شماره سری</string>
+
+    <string name="verify_region_title">استان شما</string>
+    <string name="verify_region_hint">اختیاری است و به کشف برچسب‌های کپی‌شده در شهرهای دیگر کمک می‌کند؛ به موقعیت مکانی دسترسی گرفته نمی‌شود.</string>
+    <string name="verify_region_none">ترجیح می‌دهم نگویم</string>
+
+    <string name="verify_hidden_entered_title">این کد پنهان بود</string>
+    <string name="verify_hidden_entered_body">کد زیر لایه‌ی خراشیدنی را هرگز به کسی ندهید؛ هر کس آن را داشته باشد می‌تواند این واحد را مصرف‌شده ثبت کند. برای استعلام از QR آشکار استفاده کنید.</string>
+
+    <string name="verify_contradicted_title">شواهد با بلاکچین نمی‌خواند</string>
+    <string name="verify_contradicted_body">گوشی شما اثبات ارائه‌شده توسط سرور را با بلاکچین مقایسه کرد و این دو با هم تطابق ندارند. این محصول را مشکوک در نظر بگیرید.</string>
+
+    <string name="verify_risk_title">ریسک کپی برچسب</string>
+    <string name="verify_risk_low">کم</string>
+    <string name="verify_risk_medium">متوسط</string>
+    <string name="verify_risk_high">زیاد</string>
+    <string name="verify_risk_score">امتیاز %1$d از ۱۰۰</string>
+    <string name="verify_risk_none">در سابقه‌ی اسکن این برچسب نشانه‌ی هشداری دیده نشد.</string>
+    <string name="verify_scan_count">%1$d بار اسکن شده</string>
+    <string name="risk_reason_many_devices">این برچسب با گوشی‌های متعدد و متفاوتی اسکن شده است.</string>
+    <string name="risk_reason_scanned_after_consumption">برچسب پس از مصرف واحد دوباره اسکن شده است.</string>
+    <string name="risk_reason_foreign_region">در استانی دور از داروخانه‌ی نگهدارنده اسکن شده است.</string>
+    <string name="risk_reason_region_spread">اسکن‌ها از چند استان مختلف انجام شده‌اند.</string>
+
+    <string name="verify_evidence_title">شواهد بلاکچینی</string>
+    <string name="verify_check_proof">اثبات مرکل روی همین گوشی بررسی شد</string>
+    <string name="verify_check_root">ریشه با بلاکچین یکسان است</string>
+    <string name="verify_check_consumed">وضعیت مصرف با بلاکچین یکسان است</string>
+    <string name="verify_check_pass">تأیید</string>
+    <string name="verify_check_fail">رد</string>
+    <string name="verify_check_skipped">بررسی نشد</string>
+    <string name="verify_merkle_root">ریشه‌ی مرکل بچ</string>
+    <string name="verify_unit_key">کلید عمومی واحد</string>
+    <string name="verify_proof_length">طول اثبات</string>
+    <string name="verify_register_tx">تراکنش ثبت</string>
+
+    <string name="verify_consumed_title">سابقه‌ی مصرف</string>
+    <string name="verify_consumer">مصرف‌کننده</string>
+    <string name="verify_consume_tx">تراکنش</string>
+    <string name="verify_consumed_at">زمان ثبت</string>
+
+    <string name="verify_consume_cta_title">این واحد را خریدید؟</string>
+    <string name="verify_consume_cta_body">لایه‌ی محافظ را بتراشید و کد پنهان را اسکن کنید تا مصرف ثبت شود. این کار رایگان است و جلوی فروش دوباره‌ی نسخه‌ی کپی را می‌گیرد.</string>
+    <string name="verify_consume_cta">خریدم، ثبت مصرف</string>
 </resources>

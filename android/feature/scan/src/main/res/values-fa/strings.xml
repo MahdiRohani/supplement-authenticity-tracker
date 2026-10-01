@@ -2,6 +2,8 @@
 <resources>
     <string name="scan_title">اسکن QR</string>
     <string name="scan_hint">کد QR روی برچسب را داخل کادر قرار دهید</string>
+    <string name="scan_hidden_title">اسکن کد پنهان</string>
+    <string name="scan_hidden_hint">لایه‌ی محافظ را بتراشید و کد زیر آن را اسکن کنید</string>
     <string name="scan_permission_title">دسترسی به دوربین لازم است</string>
     <string name="scan_permission_required">دوربین فقط برای خواندن کد QR روی برچسب محصول استفاده می‌شود. چیزی ضبط یا ارسال نمی‌شود.</string>
     <string name="scan_grant_permission">اجازه دسترسی به دوربین</string>

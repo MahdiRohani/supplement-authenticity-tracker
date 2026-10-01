@@ -10,9 +10,11 @@
     </plurals>
     <string name="stock_refresh">Refresh</string>
     <string name="stock_empty">No units in stock</string>
-    <string name="stock_empty_hint_distributor">Units the manufacturer transfers to you will appear here.</string>
-    <string name="stock_empty_hint_pharmacy">Units a distributor delivers to you will appear here.</string>
-    <string name="stock_unit_fallback">Unit #%1$s</string>
-    <string name="stock_item_batch">Batch %1$s</string>
+    <string name="stock_empty_hint_distributor">Unit ranges the manufacturer transfers to you will appear here.</string>
+    <string name="stock_empty_hint_pharmacy">Unit ranges a distributor delivers to you will appear here.</string>
+    <string name="stock_batch_fallback">Batch #%1$s</string>
+    <string name="stock_segment_subtitle">Batch #%1$s · lot %2$s</string>
+    <string name="stock_segment_range">Units %1$d–%2$d</string>
+    <string name="stock_transfer">Transfer some or all</string>
     <string name="stock_owner_missing">Owner address required</string>
 </resources>

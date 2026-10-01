@@ -22,4 +22,54 @@
     <string name="verify_how_step1">Scan the QR code on the product label, or type its ID.</string>
     <string name="verify_how_step2">We check its record and ownership chain on the blockchain.</string>
     <string name="verify_how_step3">Already used or unknown? Don\'t take it, and report it.</string>
+
+    <string name="verify_unit">Unit</string>
+    <string name="verify_unit_value">Batch #%1$s · unit #%2$d</string>
+    <string name="verify_manufacturer">Manufacturer</string>
+    <string name="verify_custodian">Held by</string>
+    <string name="verify_custodian_region">%1$s · %2$s</string>
+    <string name="verify_lot">Lot</string>
+
+    <string name="verify_region_title">Your province</string>
+    <string name="verify_region_hint">Optional. Helps detect labels copied to other cities; no location access is used.</string>
+    <string name="verify_region_none">Prefer not to say</string>
+
+    <string name="verify_hidden_entered_title">That was the hidden code</string>
+    <string name="verify_hidden_entered_body">Never share the code under the scratch-off. Anyone holding it can mark this unit as used. Verify with the open QR instead.</string>
+
+    <string name="verify_contradicted_title">Evidence does not match the blockchain</string>
+    <string name="verify_contradicted_body">Your phone checked the server\'s proof against the blockchain and they disagree. Treat this product as suspicious.</string>
+
+    <string name="verify_risk_title">Clone risk</string>
+    <string name="verify_risk_low">Low</string>
+    <string name="verify_risk_medium">Medium</string>
+    <string name="verify_risk_high">High</string>
+    <string name="verify_risk_score">Score %1$d / 100</string>
+    <string name="verify_risk_none">No warning signs in this label\'s scan history.</string>
+    <string name="verify_scan_count">Scanned %1$d times</string>
+    <string name="risk_reason_many_devices">The same label was scanned from many different phones.</string>
+    <string name="risk_reason_scanned_after_consumption">The label was scanned again after the unit was consumed.</string>
+    <string name="risk_reason_foreign_region">Scanned in a province far from the pharmacy holding it.</string>
+    <string name="risk_reason_region_spread">Scans come from several different provinces.</string>
+
+    <string name="verify_evidence_title">Blockchain evidence</string>
+    <string name="verify_check_proof">Merkle proof checked on this phone</string>
+    <string name="verify_check_root">Root matches the blockchain</string>
+    <string name="verify_check_consumed">Consumed state matches the blockchain</string>
+    <string name="verify_check_pass">Passed</string>
+    <string name="verify_check_fail">Failed</string>
+    <string name="verify_check_skipped">Not checked</string>
+    <string name="verify_merkle_root">Batch Merkle root</string>
+    <string name="verify_unit_key">Unit public key</string>
+    <string name="verify_proof_length">Proof length</string>
+    <string name="verify_register_tx">Registration tx</string>
+
+    <string name="verify_consumed_title">Consumption record</string>
+    <string name="verify_consumer">Consumed by</string>
+    <string name="verify_consume_tx">Transaction</string>
+    <string name="verify_consumed_at">Recorded at</string>
+
+    <string name="verify_consume_cta_title">Bought this unit?</string>
+    <string name="verify_consume_cta_body">Scratch the seal and scan the hidden code to record that it was used. It is free and keeps anyone from reselling a copy.</string>
+    <string name="verify_consume_cta">I bought it, record use</string>
 </resources>

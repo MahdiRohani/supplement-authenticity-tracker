@@ -1,14 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="consume_title">Sell and consume</string>
-    <string name="consume_subtitle">Mark a unit as opened at the point of sale using the secret under its scratch-off.</string>
-    <string name="consume_irreversible">This can\'t be undone. Once consumed, anyone verifying this unit will see it as already used.</string>
-    <string name="consume_product_id_label">Product ID</string>
-    <string name="consume_secret_label">Scratch-off secret</string>
+    <string name="consume_title">Record use</string>
+    <string name="consume_subtitle">Bought a unit? Scan the hidden code under its scratch-off to mark it as used. No account and no fees.</string>
+    <string name="consume_irreversible">This can\'t be undone. Once recorded, anyone verifying this unit will see it as already used, so a refilled copy is exposed.</string>
+    <string name="consume_expected">You verified batch #%1$s · unit #%2$d. Scan the hidden code of that same package.</string>
+    <string name="consume_scan_hidden">Scan hidden code</string>
+    <string name="consume_secret_label">Hidden code</string>
     <string name="consume_secret_hint">Revealed by scratching the seal on the package</string>
-    <string name="consume_action">Confirm consume</string>
-    <string name="consume_done_message">Unit #%1$s is now marked as consumed. Any refill will be detected.</string>
+    <string name="consume_unit">Unit</string>
+    <string name="consume_unit_value">Batch #%1$s · unit #%2$d</string>
+    <string name="consume_mismatch">This hidden code belongs to a different unit than the one you verified. Don\'t record use for a package you didn\'t buy.</string>
+    <string name="consume_action">Confirm use</string>
+    <string name="consume_privacy_title">How this stays private and free</string>
+    <string name="consume_privacy_body">Your phone signs the request with the unit\'s one-time key and an anonymous address created on this device. A relayer pays the blockchain fee; the secret never leaves your phone.</string>
+    <string name="consume_done_message">Batch #%1$s · unit #%2$d is now recorded as used. Any refill will be detected.</string>
     <string name="consume_result_tx">Transaction</string>
-    <string name="consume_result_actor">Recorded by</string>
-    <string name="consume_success">Consumed · %1$s</string>
+    <string name="consume_result_consumer">Your anonymous address</string>
+    <string name="consume_result_relayer">Fee paid by</string>
+    <string name="consume_result_block">Block</string>
+    <string name="consume_success">Recorded · unit %1$s</string>
 </resources>

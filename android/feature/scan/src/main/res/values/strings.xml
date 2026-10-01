@@ -2,6 +2,8 @@
 <resources>
     <string name="scan_title">Scan QR</string>
     <string name="scan_hint">Fit the QR code on the label inside the frame</string>
+    <string name="scan_hidden_title">Scan hidden code</string>
+    <string name="scan_hidden_hint">Scratch the seal, then scan the code underneath</string>
     <string name="scan_permission_title">Camera access needed</string>
     <string name="scan_permission_required">The camera is only used to read the QR code on the product label. Nothing is recorded or uploaded.</string>
     <string name="scan_grant_permission">Allow camera</string>

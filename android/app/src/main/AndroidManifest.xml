@@ -39,6 +39,7 @@
                     android:scheme="https"
                     android:host="supplementtracker.aut.ir"
                     android:pathPrefix="/verify" />
+                <data android:pathPrefix="/u/" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

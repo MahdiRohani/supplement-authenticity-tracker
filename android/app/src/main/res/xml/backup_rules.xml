@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+   Auto Backup rules for API 23–30; data_extraction_rules.xml covers API 31+.
+   The consumer key and the scan device id are per-install by design: restoring
+   them on another phone would merge two devices in clone detection.
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <exclude domain="sharedpref" path="consumer_identity.xml" />
+    <exclude domain="sharedpref" path="scan_context.xml" />
 </full-backup-content>

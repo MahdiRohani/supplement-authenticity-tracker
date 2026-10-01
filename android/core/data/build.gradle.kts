@@ -63,6 +63,8 @@ dependencies {
     testImplementation(libs.junit)
     // android.jar only ships stubs of org.json; JVM tests need the real parser.
     testImplementation(libs.org.json)
+    testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(project(":core:blockchain"))
 }
 
 tasks.withType<Test>().configureEach {

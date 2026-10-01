@@ -1,17 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="manufacturer_register_title">ثبت یک واحد</string>
-    <string name="manufacturer_register_subtitle">یک واحد مکمل را روی بلاکچین ثبت کنید و رمز برچسب آن را بگیرید.</string>
+    <string name="manufacturer_register_title">ثبت بچ تولید</string>
+    <string name="manufacturer_register_subtitle">یک بچ تولید کامل را با یک ریشه‌ی مرکل روی بلاکچین ثبت کنید و برای هر واحد برچسب دولایه چاپ کنید.</string>
     <string name="product_name_label">نام محصول</string>
-    <string name="batch_label">کد بچ</string>
+    <string name="batch_label">شماره سری (Lot)</string>
+    <string name="register_size_label">تعداد واحد</string>
+    <string name="register_size_hint">بین ۱ تا %1$d واحد. کل بچ با یک تراکنش ثبت می‌شود.</string>
+    <string name="register_expires_label">تاریخ انقضا (اختیاری)</string>
+    <string name="register_expires_hint">به قالب YYYY-MM-DD</string>
     <string name="register_action">ثبت روی بلاکچین</string>
-    <string name="register_done_title">ثبت شد</string>
-    <string name="register_done_message">واحد #%1$s اکنون روی بلاکچین است.</string>
-    <string name="register_unit">واحد مکمل</string>
-    <string name="result_id">شناسه روی زنجیره</string>
-    <string name="result_cid">CID فراداده</string>
-    <string name="result_secret">رمز برچسب</string>
-    <string name="result_secret_warning">فقط یک‌بار نمایش داده می‌شود. قبل از پنهان کردن، آن را زیر لایه خراشیدنی برچسب چاپ کنید.</string>
-    <string name="hide_secret_action">چاپ کردم — پنهان کردن رمز</string>
-    <string name="register_success">ثبت شد · %1$s</string>
+    <string name="register_how_title">چه اتفاقی می‌افتد</string>
+    <string name="register_how_body">برای هر واحد یک جفت‌کلید یک‌بارمصرف ساخته می‌شود. فقط ریشه‌ی مرکل کلیدهای عمومی روی زنجیره می‌رود؛ QR آشکار واحد را معرفی می‌کند و QR پنهان زیر لایه‌ی خراشیدنی کلید خصوصی آن را برای خریدار نگه می‌دارد.</string>
+    <string name="register_done_title">بچ ثبت شد</string>
+    <string name="register_done_message">%1$d واحد با شناسه‌ی بچ #%2$s روی بلاکچین ثبت شد.</string>
+    <string name="register_unit">بچ مکمل</string>
+    <string name="result_id">شناسه‌ی بچ</string>
+    <string name="result_root">ریشه‌ی مرکل</string>
+    <string name="result_cid">CID مانیفست</string>
+    <string name="result_tx">تراکنش</string>
+    <string name="result_not_pinned">مانیفست روی IPFS سنجاق نشد؛ اما هش آن روی زنجیره ثبت است.</string>
+    <string name="result_secret">کلیدهای واحدها روی همین گوشی است</string>
+    <string name="result_secret_warning">کدهای پنهان %1$d واحد فقط همین‌جا وجود دارد و دوباره نمایش داده نمی‌شود. پیش از حذف کلیدها، PDF برچسب‌ها را بگیرید و چاپ کنید.</string>
+    <string name="export_labels_action">خروجی PDF برچسب‌ها</string>
+    <string name="hide_secret_action">چاپ کردم، کلیدها حذف شوند</string>
+    <string name="keys_discarded">کلیدهای واحدها حذف شد. نه این برنامه و نه سرور نمی‌توانند کدهای پنهان را دوباره بسازند.</string>
+    <string name="register_another">ثبت بچ دیگر</string>
+    <string name="register_success">بچ #%1$s ثبت شد (%2$d واحد)</string>
 </resources>

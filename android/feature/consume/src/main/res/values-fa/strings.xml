@@ -1,14 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="consume_title">فروش و مصرف</string>
-    <string name="consume_subtitle">با رمز زیر لایه خراشیدنی، واحد را در محل فروش «باز شده» علامت بزنید.</string>
-    <string name="consume_irreversible">این کار برگشت‌پذیر نیست. پس از مصرف، هر کسی این واحد را استعلام کند آن را مصرف‌شده می‌بیند.</string>
-    <string name="consume_product_id_label">شناسه محصول</string>
-    <string name="consume_secret_label">رمز خراشیدنی</string>
+    <string name="consume_title">ثبت مصرف</string>
+    <string name="consume_subtitle">واحدی خریدید؟ کد پنهان زیر لایه‌ی خراشیدنی را اسکن کنید تا مصرف آن ثبت شود؛ بدون حساب کاربری و بدون هزینه.</string>
+    <string name="consume_irreversible">این کار برگشت‌پذیر نیست. پس از ثبت، هر کسی این واحد را استعلام کند آن را مصرف‌شده می‌بیند و نسخه‌ی پرشده‌ی دوباره لو می‌رود.</string>
+    <string name="consume_expected">شما بچ #%1$s · واحد #%2$d را استعلام کردید. کد پنهان همان بسته را اسکن کنید.</string>
+    <string name="consume_scan_hidden">اسکن کد پنهان</string>
+    <string name="consume_secret_label">کد پنهان</string>
     <string name="consume_secret_hint">با خراشیدن پلمپ روی بسته نمایان می‌شود</string>
+    <string name="consume_unit">واحد</string>
+    <string name="consume_unit_value">بچ #%1$s · واحد #%2$d</string>
+    <string name="consume_mismatch">این کد پنهان متعلق به واحد دیگری است، نه واحدی که استعلام کردید. برای بسته‌ای که نخریده‌اید مصرف ثبت نکنید.</string>
     <string name="consume_action">تأیید مصرف</string>
-    <string name="consume_done_message">واحد #%1$s مصرف‌شده علامت خورد. هر پر کردن مجدد شناسایی می‌شود.</string>
+    <string name="consume_privacy_title">چرا خصوصی و رایگان است</string>
+    <string name="consume_privacy_body">گوشی شما درخواست را با کلید یک‌بارمصرف همان واحد و یک آدرس ناشناس که روی همین دستگاه ساخته شده امضا می‌کند. هزینه‌ی تراکنش را رله‌کننده می‌پردازد و کد پنهان هرگز از گوشی خارج نمی‌شود.</string>
+    <string name="consume_done_message">مصرف بچ #%1$s · واحد #%2$d ثبت شد. هر پر کردن مجدد شناسایی می‌شود.</string>
     <string name="consume_result_tx">تراکنش</string>
-    <string name="consume_result_actor">ثبت‌کننده</string>
-    <string name="consume_success">مصرف شد · %1$s</string>
+    <string name="consume_result_consumer">آدرس ناشناس شما</string>
+    <string name="consume_result_relayer">پرداخت‌کننده‌ی کارمزد</string>
+    <string name="consume_result_block">بلاک</string>
+    <string name="consume_success">ثبت شد · واحد %1$s</string>
 </resources>

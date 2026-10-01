@@ -85,7 +85,7 @@ Services: `postgres`, `ipfs` (Kubo), `backend` on port `3000`.
 6. **Load check:** with backend up, `PRODUCT_ID=1 ./scripts/load-verify.sh` (max request &lt; 3s).
 7. **CI:** GitHub Actions runs contracts, Slither, backend (gofmt, `go vet`, `go test -race` with Postgres), Hardhat+Postgres integration (flags/reports/labels PDF), and Android `assembleLocalDebug` + `lintLocalDebug`.
 8. **Common failures:** pending `chainProductId` means mint skipped (check RPC/keys); IPFS stub only when `ALLOW_IPFS_STUB=true` or non-production.
-9. **Admin web:** `cd admin-web && python3 -m http.server 8080` against `http://127.0.0.1:3000/v1`.
+9. **Admin web:** `cd admin-web && python3 -m http.server 8080` against the API origin `http://127.0.0.1:3000` (v1 health plus v2 batches, segments, recall and clone suspects).
 10. **Gasless consume:** see `docs/meta-transactions.md` (`POST /v1/meta/consume`).
 
 ## Versioning
