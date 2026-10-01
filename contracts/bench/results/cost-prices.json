@@ -1,0 +1,210 @@
+{
+  "takenAt": "2026-10-01T15:33:25.547Z",
+  "ethUsd": {
+    "median": 2677.7,
+    "sources": {
+      "coinbase": 2677.275,
+      "coingecko": 2681.7,
+      "kraken": 2677.7
+    }
+  },
+  "ethereum": {
+    "block": 26098374,
+    "blocksSampled": 7168,
+    "medianGwei": 0.209806373,
+    "p90Gwei": 1,
+    "medianBaseFeeGwei": 0.123310593,
+    "medianTipGwei": 0.092392515
+  },
+  "base": {
+    "block": 52039670,
+    "blocksSampled": 1024,
+    "l2GasPriceGwei": 0.006071417
+  },
+  "arbitrum": {
+    "block": 510701965,
+    "baseFeeGwei": 0.02018
+  },
+  "dataFeesWei": {
+    "S0:register:1": {
+      "base": "10595071967",
+      "arbitrumL1Gas": "9706"
+    },
+    "S0:register:10": {
+      "base": "33485238695",
+      "arbitrumL1Gas": "22945"
+    },
+    "S0:register:50": {
+      "base": "136072201532",
+      "arbitrumL1Gas": "81803"
+    },
+    "S0:hop1": {
+      "base": "4643570887",
+      "arbitrumL1Gas": "4860"
+    },
+    "S0:hop2": {
+      "base": "4643570887",
+      "arbitrumL1Gas": "4704"
+    },
+    "S0:consume": {
+      "base": "4643570887",
+      "arbitrumL1Gas": "4860"
+    },
+    "S1:register": {
+      "base": "10025139851",
+      "arbitrumL1Gas": "9178"
+    },
+    "S1:hop1": {
+      "base": "4711900201",
+      "arbitrumL1Gas": "2830"
+    },
+    "S1:hop2": {
+      "base": "4711900201",
+      "arbitrumL1Gas": "2830"
+    },
+    "S1:consume": {
+      "base": "9989032525",
+      "arbitrumL1Gas": "4939"
+    },
+    "S2:1:register": {
+      "base": "10308565595",
+      "arbitrumL1Gas": "4829"
+    },
+    "S2:1:hop1": {
+      "base": "4774851602",
+      "arbitrumL1Gas": "2890"
+    },
+    "S2:1:hop2": {
+      "base": "4797335441",
+      "arbitrumL1Gas": "2901"
+    },
+    "S2:1:consume_cold": {
+      "base": "9875550075",
+      "arbitrumL1Gas": "4801"
+    },
+    "S2:1:consume_warm": {
+      "base": "9875550075",
+      "arbitrumL1Gas": "4861"
+    },
+    "S2:10:register": {
+      "base": "10357106607",
+      "arbitrumL1Gas": "4836"
+    },
+    "S2:10:hop1": {
+      "base": "4913175107",
+      "arbitrumL1Gas": "2883"
+    },
+    "S2:10:hop2": {
+      "base": "4926116206",
+      "arbitrumL1Gas": "2878"
+    },
+    "S2:10:split": {
+      "base": "4926116206",
+      "arbitrumL1Gas": "2863"
+    },
+    "S2:10:consume_cold": {
+      "base": "14549796532",
+      "arbitrumL1Gas": "6204"
+    },
+    "S2:10:consume_warm": {
+      "base": "14508589570",
+      "arbitrumL1Gas": "6219"
+    },
+    "S2:100:register": {
+      "base": "10635135135",
+      "arbitrumL1Gas": "4815"
+    },
+    "S2:100:hop1": {
+      "base": "4926116206",
+      "arbitrumL1Gas": "2898"
+    },
+    "S2:100:hop2": {
+      "base": "4926116206",
+      "arbitrumL1Gas": "2898"
+    },
+    "S2:100:split": {
+      "base": "4926116206",
+      "arbitrumL1Gas": "2892"
+    },
+    "S2:100:consume_cold": {
+      "base": "19284450497",
+      "arbitrumL1Gas": "7823"
+    },
+    "S2:100:consume_warm": {
+      "base": "17988586371",
+      "arbitrumL1Gas": "7465"
+    },
+    "S2:1000:register": {
+      "base": "10134864395",
+      "arbitrumL1Gas": "4836"
+    },
+    "S2:1000:hop1": {
+      "base": "4694394486",
+      "arbitrumL1Gas": "2881"
+    },
+    "S2:1000:hop2": {
+      "base": "4694394486",
+      "arbitrumL1Gas": "2901"
+    },
+    "S2:1000:split": {
+      "base": "4752209010",
+      "arbitrumL1Gas": "2877"
+    },
+    "S2:1000:consume_cold": {
+      "base": "23179156069",
+      "arbitrumL1Gas": "9005"
+    },
+    "S2:1000:consume_warm": {
+      "base": "23457421668",
+      "arbitrumL1Gas": "8850"
+    },
+    "S2:10000:register": {
+      "base": "10259681847",
+      "arbitrumL1Gas": "4836"
+    },
+    "S2:10000:hop1": {
+      "base": "4752209010",
+      "arbitrumL1Gas": "2896"
+    },
+    "S2:10000:hop2": {
+      "base": "4734625634",
+      "arbitrumL1Gas": "2896"
+    },
+    "S2:10000:split": {
+      "base": "4734625634",
+      "arbitrumL1Gas": "2901"
+    },
+    "S2:10000:consume_cold": {
+      "base": "27331142551",
+      "arbitrumL1Gas": "10075"
+    },
+    "S2:10000:consume_warm": {
+      "base": "27489563125",
+      "arbitrumL1Gas": "10081"
+    },
+    "S2:100000:register": {
+      "base": "10221720587",
+      "arbitrumL1Gas": "4833"
+    },
+    "S2:100000:hop1": {
+      "base": "4824199880",
+      "arbitrumL1Gas": "2888"
+    },
+    "S2:100000:hop2": {
+      "base": "4824199880",
+      "arbitrumL1Gas": "2901"
+    },
+    "S2:100000:split": {
+      "base": "4824199880",
+      "arbitrumL1Gas": "2860"
+    },
+    "S2:100000:consume_cold": {
+      "base": "33175004670",
+      "arbitrumL1Gas": "11726"
+    },
+    "S2:100000:consume_warm": {
+      "base": "33134650238",
+      "arbitrumL1Gas": "11666"
+    }
+  }
+}
