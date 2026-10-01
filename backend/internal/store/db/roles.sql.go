@@ -27,8 +27,36 @@ func (q *Queries) DeleteRoleBinding(ctx context.Context, arg DeleteRoleBindingPa
 	return result.RowsAffected(), nil
 }
 
+const getPartyProfile = `-- name: GetPartyProfile :one
+SELECT "address", "role", "displayName", "region" FROM "RoleBinding"
+WHERE "address" = $1
+ORDER BY ("role" = 'Pharmacy') DESC, ("displayName" IS NOT NULL) DESC, "role" ASC
+LIMIT 1
+`
+
+type GetPartyProfileRow struct {
+	Address     string
+	Role        SupplyRole
+	DisplayName *string
+	Region      *string
+}
+
+// The profile shown for a custodian: a Pharmacy binding wins, then any
+// binding with a display name.
+func (q *Queries) GetPartyProfile(ctx context.Context, address string) (GetPartyProfileRow, error) {
+	row := q.db.QueryRow(ctx, getPartyProfile, address)
+	var i GetPartyProfileRow
+	err := row.Scan(
+		&i.Address,
+		&i.Role,
+		&i.DisplayName,
+		&i.Region,
+	)
+	return i, err
+}
+
 const listRoleBindings = `-- name: ListRoleBindings :many
-SELECT id, address, role, "createdAt", "updatedAt" FROM "RoleBinding" ORDER BY "role" ASC, "address" ASC
+SELECT id, address, role, "createdAt", "updatedAt", "displayName", region FROM "RoleBinding" ORDER BY "role" ASC, "address" ASC
 `
 
 func (q *Queries) ListRoleBindings(ctx context.Context) ([]RoleBinding, error) {
@@ -46,6 +74,8 @@ func (q *Queries) ListRoleBindings(ctx context.Context) ([]RoleBinding, error) {
 			&i.Role,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DisplayName,
+			&i.Region,
 		); err != nil {
 			return nil, err
 		}
@@ -58,7 +88,7 @@ func (q *Queries) ListRoleBindings(ctx context.Context) ([]RoleBinding, error) {
 }
 
 const listRoleBindingsForAddress = `-- name: ListRoleBindingsForAddress :many
-SELECT id, address, role, "createdAt", "updatedAt" FROM "RoleBinding" WHERE "address" = $1 ORDER BY "role" ASC
+SELECT id, address, role, "createdAt", "updatedAt", "displayName", region FROM "RoleBinding" WHERE "address" = $1 ORDER BY "role" ASC
 `
 
 func (q *Queries) ListRoleBindingsForAddress(ctx context.Context, address string) ([]RoleBinding, error) {
@@ -76,6 +106,8 @@ func (q *Queries) ListRoleBindingsForAddress(ctx context.Context, address string
 			&i.Role,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DisplayName,
+			&i.Region,
 		); err != nil {
 			return nil, err
 		}
@@ -91,7 +123,7 @@ const upsertRoleBinding = `-- name: UpsertRoleBinding :one
 INSERT INTO "RoleBinding" ("id", "address", "role", "createdAt", "updatedAt")
 VALUES ($1, $2, $3, $4, $4)
 ON CONFLICT ("address", "role") DO UPDATE SET "address" = "RoleBinding"."address"
-RETURNING id, address, role, "createdAt", "updatedAt"
+RETURNING id, address, role, "createdAt", "updatedAt", "displayName", region
 `
 
 type UpsertRoleBindingParams struct {
@@ -116,6 +148,51 @@ func (q *Queries) UpsertRoleBinding(ctx context.Context, arg UpsertRoleBindingPa
 		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DisplayName,
+		&i.Region,
+	)
+	return i, err
+}
+
+const upsertRoleBindingProfile = `-- name: UpsertRoleBindingProfile :one
+INSERT INTO "RoleBinding" ("id", "address", "role", "displayName", "region", "createdAt", "updatedAt")
+VALUES ($1, $2, $3, $4, $5, $6, $6)
+ON CONFLICT ("address", "role") DO UPDATE SET
+    "displayName" = COALESCE(EXCLUDED."displayName", "RoleBinding"."displayName"),
+    "region" = COALESCE(EXCLUDED."region", "RoleBinding"."region"),
+    "updatedAt" = EXCLUDED."updatedAt"
+RETURNING id, address, role, "createdAt", "updatedAt", "displayName", region
+`
+
+type UpsertRoleBindingProfileParams struct {
+	ID          string
+	Address     string
+	Role        SupplyRole
+	DisplayName *string
+	Region      *string
+	Now         time.Time
+}
+
+// Unlike UpsertRoleBinding, a repeated bind updates the profile fields that
+// were provided and keeps the others.
+func (q *Queries) UpsertRoleBindingProfile(ctx context.Context, arg UpsertRoleBindingProfileParams) (RoleBinding, error) {
+	row := q.db.QueryRow(ctx, upsertRoleBindingProfile,
+		arg.ID,
+		arg.Address,
+		arg.Role,
+		arg.DisplayName,
+		arg.Region,
+		arg.Now,
+	)
+	var i RoleBinding
+	err := row.Scan(
+		&i.ID,
+		&i.Address,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DisplayName,
+		&i.Region,
 	)
 	return i, err
 }

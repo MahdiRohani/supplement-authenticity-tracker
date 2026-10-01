@@ -1,0 +1,38 @@
+{
+  "model": {
+    "seed": 7,
+    "unitsPerClass": 5000,
+    "regions": 31,
+    "regionZipfExponent": 1,
+    "horizonDays": 90,
+    "pharmacistScanProbability": 0.5,
+    "shelfScansMean": 0.3,
+    "buyerScanAtPurchaseProbability": 0.8,
+    "consumeProbability": 0.7,
+    "buyerRescansMean": 0.6,
+    "familyDeviceProbability": 0.15,
+    "travelProbability": 0.05,
+    "cloneCounts": [
+      1,
+      2,
+      3,
+      5,
+      10,
+      20
+    ],
+    "cloneLocalRegionProbability": 0.3,
+    "cloneBuyerRescansMean": 0.3,
+    "ownerRegionKnownProbability": 0.9,
+    "scanRegionPresentProbability": 0.85
+  },
+  "risk": {
+    "DeviceThreshold": 3,
+    "DeviceWeight": 0.25,
+    "PostConsumeWeight": 0.45,
+    "RegionWeight": 0.3,
+    "RegionSpread": 1,
+    "MaxRuleWeight": 0.95,
+    "MediumThreshold": 0.3,
+    "HighThreshold": 0.6
+  }
+}

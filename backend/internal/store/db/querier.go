@@ -9,30 +9,75 @@ import (
 )
 
 type Querier interface {
+	CountBatches(ctx context.Context, manufacturer *string) (int64, error)
 	CountProducts(ctx context.Context, arg CountProductsParams) (int64, error)
+	CountSegments(ctx context.Context, arg CountSegmentsParams) (int64, error)
 	CreateAuditLog(ctx context.Context, arg CreateAuditLogParams) error
 	CreateCounterfeitReport(ctx context.Context, arg CreateCounterfeitReportParams) (CounterfeitReport, error)
 	CreateOwnershipEvent(ctx context.Context, arg CreateOwnershipEventParams) error
 	CreateProduct(ctx context.Context, arg CreateProductParams) (Product, error)
 	DeleteRoleBinding(ctx context.Context, arg DeleteRoleBindingParams) (int64, error)
 	FindProduct(ctx context.Context, key string) (Product, error)
+	FindSegmentForUnit(ctx context.Context, arg FindSegmentForUnitParams) (Segment, error)
+	GetBatch(ctx context.Context, batchID int64) (Batch, error)
+	GetIndexerCursor(ctx context.Context, name string) (IndexerCursor, error)
+	// The profile shown for a custodian: a Pharmacy binding wins, then any
+	// binding with a display name.
+	GetPartyProfile(ctx context.Context, address string) (GetPartyProfileRow, error)
 	GetProductByChainID(ctx context.Context, chainProductID string) (Product, error)
+	GetSegment(ctx context.Context, segmentID int64) (Segment, error)
+	GetUnit(ctx context.Context, arg GetUnitParams) (Unit, error)
 	IncrementAnalyticsCounter(ctx context.Context, arg IncrementAnalyticsCounterParams) (IncrementAnalyticsCounterRow, error)
+	InsertCustodyEvent(ctx context.Context, arg InsertCustodyEventParams) error
+	InsertScanEvent(ctx context.Context, arg InsertScanEventParams) error
+	InsertUnits(ctx context.Context, arg InsertUnitsParams) (int64, error)
+	InvalidateSegment(ctx context.Context, arg InvalidateSegmentParams) (int64, error)
 	ListAnalyticsCounters(ctx context.Context) ([]ListAnalyticsCountersRow, error)
+	ListBatchSegments(ctx context.Context, batchID int64) ([]Segment, error)
+	ListBatches(ctx context.Context, arg ListBatchesParams) ([]Batch, error)
 	ListCounterfeitReports(ctx context.Context, maxRows int32) ([]CounterfeitReport, error)
 	ListOwnershipEvents(ctx context.Context, productID string) ([]ListOwnershipEventsRow, error)
 	ListProducts(ctx context.Context, arg ListProductsParams) ([]ListProductsRow, error)
 	ListProductsByBatch(ctx context.Context, batchCode *string) ([]ListProductsByBatchRow, error)
 	ListRoleBindings(ctx context.Context) ([]RoleBinding, error)
 	ListRoleBindingsForAddress(ctx context.Context, address string) ([]RoleBinding, error)
+	ListSegments(ctx context.Context, arg ListSegmentsParams) ([]Segment, error)
+	ListSuspiciousUnits(ctx context.Context, arg ListSuspiciousUnitsParams) ([]ListSuspiciousUnitsRow, error)
+	ListUnitCustody(ctx context.Context, arg ListUnitCustodyParams) ([]CustodyEvent, error)
+	ListUnits(ctx context.Context, arg ListUnitsParams) ([]ListUnitsRow, error)
+	// Consumption is one-shot: only the first write for a unit counts towards
+	// the batch total, whichever of the API or the indexer gets there first.
+	MarkUnitConsumed(ctx context.Context, arg MarkUnitConsumedParams) (int64, error)
+	MoveSegment(ctx context.Context, arg MoveSegmentParams) (int64, error)
 	OwnershipEventExists(ctx context.Context, arg OwnershipEventExistsParams) (bool, error)
+	// Segment writes carry the (blockNumber, logIndex) of the chain event they
+	// apply and are ignored when the row already reflects that event or a later one.
+	PutSegment(ctx context.Context, arg PutSegmentParams) error
+	SetBatchInvalid(ctx context.Context, arg SetBatchInvalidParams) (int64, error)
+	SetIndexerCursor(ctx context.Context, arg SetIndexerCursorParams) error
 	SetProductChainIdentity(ctx context.Context, arg SetProductChainIdentityParams) (Product, error)
 	SetProductStatus(ctx context.Context, arg SetProductStatusParams) (int64, error)
+	// A scan is stored before it is scored so its own signal counts.
+	SetScanRisk(ctx context.Context, arg SetScanRiskParams) error
+	// A split always moves the front of a segment, so "start" only grows. The
+	// shrink is therefore not position-guarded: it must still apply when a later
+	// move of the same segment was projected first (API receipt ahead of the
+	// indexer), and GREATEST keeps replays harmless.
+	ShrinkSegment(ctx context.Context, arg ShrinkSegmentParams) (int64, error)
+	// Aggregates the clone-detection signals of one unit (see internal/risk,
+	// whose Signals/FromHistory compute the same values in memory).
+	UnitScanSignals(ctx context.Context, arg UnitScanSignalsParams) (UnitScanSignalsRow, error)
+	// Chain fields are immutable; name and lot code only come from the API, so a
+	// later indexer upsert must not erase them.
+	UpsertBatch(ctx context.Context, arg UpsertBatchParams) (Batch, error)
 	UpsertProductOwner(ctx context.Context, arg UpsertProductOwnerParams) (string, error)
 	UpsertProductStatus(ctx context.Context, arg UpsertProductStatusParams) error
 	UpsertRegisteredProduct(ctx context.Context, arg UpsertRegisteredProductParams) error
 	// Existing bindings are returned untouched, matching Prisma's `upsert` with an empty update.
 	UpsertRoleBinding(ctx context.Context, arg UpsertRoleBindingParams) (RoleBinding, error)
+	// Unlike UpsertRoleBinding, a repeated bind updates the profile fields that
+	// were provided and keeps the others.
+	UpsertRoleBindingProfile(ctx context.Context, arg UpsertRoleBindingProfileParams) (RoleBinding, error)
 }
 
 var _ Querier = (*Queries)(nil)

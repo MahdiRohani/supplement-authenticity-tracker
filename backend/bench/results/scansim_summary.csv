@@ -1,0 +1,9 @@
+detector,params,runs,precision_mean,precision_std,recall_mean,recall_std,f1_mean,f1_std,fpr_mean,fpr_std
+proposed,"noisy-or, threshold=0.60",10,0.9816,0.0016,0.8224,0.0039,0.8950,0.0027,0.0154,0.0013
+status-only,any scan after consumption,10,0.6421,0.0046,0.6726,0.0058,0.6570,0.0046,0.3749,0.0062
+scan-count,total scans > 3,10,0.8816,0.0040,0.8707,0.0030,0.8761,0.0031,0.1170,0.0043
+scan-count,total scans > 5,10,0.9879,0.0019,0.6543,0.0034,0.7872,0.0028,0.0080,0.0013
+device-count,distinct devices > 3,10,0.9630,0.0042,0.7901,0.0048,0.8680,0.0043,0.0303,0.0034
+ablation,without many_devices,10,0.9801,0.0018,0.7465,0.0042,0.8475,0.0030,0.0151,0.0013
+ablation,without scanned_after_consumption,10,0.9998,0.0003,0.5503,0.0045,0.7099,0.0038,0.0001,0.0001
+ablation,without region rules,10,0.9856,0.0019,0.6537,0.0036,0.7860,0.0028,0.0095,0.0012

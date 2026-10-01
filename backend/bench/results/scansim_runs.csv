@@ -1,0 +1,81 @@
+seed,detector,params,tp,fp,tn,fn,precision,recall,f1,fpr
+7,proposed,"noisy-or, threshold=0.60",4139,77,4923,861,0.9817,0.8278,0.8982,0.0154
+7,status-only,any scan after consumption,3429,1890,3110,1571,0.6447,0.6858,0.6646,0.3780
+7,scan-count,total scans > 3,4364,563,4437,636,0.8857,0.8728,0.8792,0.1126
+7,scan-count,total scans > 5,3295,34,4966,1705,0.9898,0.6590,0.7912,0.0068
+7,device-count,distinct devices > 3,3969,117,4883,1031,0.9714,0.7938,0.8737,0.0234
+7,ablation,without many_devices,3748,77,4923,1252,0.9799,0.7496,0.8494,0.0154
+7,ablation,without scanned_after_consumption,2758,0,5000,2242,1.0000,0.5516,0.7110,0.0000
+7,ablation,without region rules,3263,49,4951,1737,0.9852,0.6526,0.7851,0.0098
+8,proposed,"noisy-or, threshold=0.60",4104,82,4918,896,0.9804,0.8208,0.8935,0.0164
+8,status-only,any scan after consumption,3354,1854,3146,1646,0.6440,0.6708,0.6571,0.3708
+8,scan-count,total scans > 3,4349,565,4435,651,0.8850,0.8698,0.8773,0.1130
+8,scan-count,total scans > 5,3282,33,4967,1718,0.9900,0.6564,0.7894,0.0066
+8,device-count,distinct devices > 3,3956,145,4855,1044,0.9646,0.7912,0.8694,0.0290
+8,ablation,without many_devices,3708,79,4921,1292,0.9791,0.7416,0.8440,0.0158
+8,ablation,without scanned_after_consumption,2740,1,4999,2260,0.9996,0.5480,0.7079,0.0002
+8,ablation,without region rules,3307,48,4952,1693,0.9857,0.6614,0.7916,0.0096
+9,proposed,"noisy-or, threshold=0.60",4122,80,4920,878,0.9810,0.8244,0.8959,0.0160
+9,status-only,any scan after consumption,3334,1894,3106,1666,0.6377,0.6668,0.6519,0.3788
+9,scan-count,total scans > 3,4353,587,4413,647,0.8812,0.8706,0.8759,0.1174
+9,scan-count,total scans > 5,3286,49,4951,1714,0.9853,0.6572,0.7885,0.0098
+9,device-count,distinct devices > 3,3945,156,4844,1055,0.9620,0.7890,0.8669,0.0312
+9,ablation,without many_devices,3710,80,4920,1290,0.9789,0.7420,0.8441,0.0160
+9,ablation,without scanned_after_consumption,2785,0,5000,2215,1.0000,0.5570,0.7155,0.0000
+9,ablation,without region rules,3272,45,4955,1728,0.9864,0.6544,0.7868,0.0090
+10,proposed,"noisy-or, threshold=0.60",4115,79,4921,885,0.9812,0.8230,0.8951,0.0158
+10,status-only,any scan after consumption,3342,1862,3138,1658,0.6422,0.6684,0.6550,0.3724
+10,scan-count,total scans > 3,4339,598,4402,661,0.8789,0.8678,0.8733,0.1196
+10,scan-count,total scans > 5,3275,47,4953,1725,0.9859,0.6550,0.7871,0.0094
+10,device-count,distinct devices > 3,3931,177,4823,1069,0.9569,0.7862,0.8632,0.0354
+10,ablation,without many_devices,3737,76,4924,1263,0.9801,0.7474,0.8481,0.0152
+10,ablation,without scanned_after_consumption,2745,2,4998,2255,0.9993,0.5490,0.7087,0.0004
+10,ablation,without region rules,3269,55,4945,1731,0.9835,0.6538,0.7854,0.0110
+11,proposed,"noisy-or, threshold=0.60",4083,74,4926,917,0.9822,0.8166,0.8918,0.0148
+11,status-only,any scan after consumption,3356,1855,3145,1644,0.6440,0.6712,0.6573,0.3710
+11,scan-count,total scans > 3,4343,618,4382,657,0.8754,0.8686,0.8720,0.1236
+11,scan-count,total scans > 5,3235,43,4957,1765,0.9869,0.6470,0.7816,0.0086
+11,device-count,distinct devices > 3,3925,158,4842,1075,0.9613,0.7850,0.8643,0.0316
+11,ablation,without many_devices,3706,72,4928,1294,0.9809,0.7412,0.8444,0.0144
+11,ablation,without scanned_after_consumption,2738,0,5000,2262,1.0000,0.5476,0.7077,0.0000
+11,ablation,without region rules,3234,49,4951,1766,0.9851,0.6468,0.7809,0.0098
+12,proposed,"noisy-or, threshold=0.60",4126,79,4921,874,0.9812,0.8252,0.8965,0.0158
+12,status-only,any scan after consumption,3372,1903,3097,1628,0.6392,0.6744,0.6564,0.3806
+12,scan-count,total scans > 3,4340,612,4388,660,0.8764,0.8680,0.8722,0.1224
+12,scan-count,total scans > 5,3254,45,4955,1746,0.9864,0.6508,0.7842,0.0090
+12,device-count,distinct devices > 3,3949,154,4846,1051,0.9625,0.7898,0.8676,0.0308
+12,ablation,without many_devices,3744,78,4922,1256,0.9796,0.7488,0.8488,0.0156
+12,ablation,without scanned_after_consumption,2788,0,5000,2212,1.0000,0.5576,0.7160,0.0000
+12,ablation,without region rules,3272,45,4955,1728,0.9864,0.6544,0.7868,0.0090
+13,proposed,"noisy-or, threshold=0.60",4124,65,4935,876,0.9845,0.8248,0.8976,0.0130
+13,status-only,any scan after consumption,3394,1826,3174,1606,0.6502,0.6788,0.6642,0.3652
+13,scan-count,total scans > 3,4389,567,4433,611,0.8856,0.8778,0.8817,0.1134
+13,scan-count,total scans > 5,3278,33,4967,1722,0.9900,0.6556,0.7888,0.0066
+13,device-count,distinct devices > 3,4009,132,4868,991,0.9681,0.8018,0.8771,0.0264
+13,ablation,without many_devices,3761,65,4935,1239,0.9830,0.7522,0.8523,0.0130
+13,ablation,without scanned_after_consumption,2736,0,5000,2264,1.0000,0.5472,0.7073,0.0000
+13,ablation,without region rules,3272,45,4955,1728,0.9864,0.6544,0.7868,0.0090
+14,proposed,"noisy-or, threshold=0.60",4127,68,4932,873,0.9838,0.8254,0.8977,0.0136
+14,status-only,any scan after consumption,3349,1900,3100,1651,0.6380,0.6698,0.6535,0.3800
+14,scan-count,total scans > 3,4346,573,4427,654,0.8835,0.8692,0.8763,0.1146
+14,scan-count,total scans > 5,3273,34,4966,1727,0.9897,0.6546,0.7880,0.0068
+14,device-count,distinct devices > 3,3937,163,4837,1063,0.9602,0.7874,0.8653,0.0326
+14,ablation,without many_devices,3740,65,4935,1260,0.9829,0.7480,0.8495,0.0130
+14,ablation,without scanned_after_consumption,2768,1,4999,2232,0.9996,0.5536,0.7126,0.0002
+14,ablation,without region rules,3272,35,4965,1728,0.9894,0.6544,0.7878,0.0070
+15,proposed,"noisy-or, threshold=0.60",4100,81,4919,900,0.9806,0.8200,0.8931,0.0162
+15,status-only,any scan after consumption,3359,1840,3160,1641,0.6461,0.6718,0.6587,0.3680
+15,scan-count,total scans > 3,4362,603,4397,638,0.8785,0.8724,0.8755,0.1206
+15,scan-count,total scans > 5,3275,38,4962,1725,0.9885,0.6550,0.7879,0.0076
+15,device-count,distinct devices > 3,3940,164,4836,1060,0.9600,0.7880,0.8656,0.0328
+15,ablation,without many_devices,3755,79,4921,1245,0.9794,0.7510,0.8501,0.0158
+15,ablation,without scanned_after_consumption,2718,1,4999,2282,0.9996,0.5436,0.7042,0.0002
+15,ablation,without region rules,3264,48,4952,1736,0.9855,0.6528,0.7854,0.0096
+16,proposed,"noisy-or, threshold=0.60",4080,86,4914,920,0.9794,0.8160,0.8902,0.0172
+16,status-only,any scan after consumption,3340,1920,3080,1660,0.6350,0.6680,0.6511,0.3840
+16,scan-count,total scans > 3,4349,563,4437,651,0.8854,0.8698,0.8775,0.1126
+16,scan-count,total scans > 5,3264,45,4955,1736,0.9864,0.6528,0.7857,0.0090
+16,device-count,distinct devices > 3,3942,151,4849,1058,0.9631,0.7884,0.8670,0.0302
+16,ablation,without many_devices,3715,86,4914,1285,0.9774,0.7430,0.8442,0.0172
+16,ablation,without scanned_after_consumption,2741,0,5000,2259,1.0000,0.5482,0.7082,0.0000
+16,ablation,without region rules,3259,58,4942,1741,0.9825,0.6518,0.7837,0.0116
