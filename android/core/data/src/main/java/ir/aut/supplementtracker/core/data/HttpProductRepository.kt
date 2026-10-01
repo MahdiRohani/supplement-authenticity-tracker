@@ -1,7 +1,5 @@
 package ir.aut.supplementtracker.core.data
 
-import ir.aut.supplementtracker.core.domain.DomainError
-import ir.aut.supplementtracker.core.domain.ErrorMapper
 import ir.aut.supplementtracker.core.domain.ProductRepository
 import ir.aut.supplementtracker.core.model.ConsumeRequest
 import ir.aut.supplementtracker.core.model.ConsumeResult
@@ -23,13 +21,11 @@ import ir.aut.supplementtracker.core.model.VerifyResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.IOException
 
 class HttpProductRepository(
     private val client: OkHttpClient = OkHttpClient(),
@@ -45,7 +41,7 @@ class HttpProductRepository(
                         request.manufacturerAddress?.let { put("manufacturerAddress", it) }
                     }
                     .toString()
-            val json = executeJson(
+            val json = client.executeJson(
                 Request.Builder()
                     .url("${baseUrl}products")
                     .post(payload.toRequestBody(JSON_MEDIA))
@@ -71,7 +67,7 @@ class HttpProductRepository(
                         request.manufacturerAddress?.let { put("manufacturerAddress", it) }
                     }
                     .toString()
-            val json = executeJson(
+            val json = client.executeJson(
                 Request.Builder()
                     .url("${baseUrl}products/batch")
                     .post(payload.toRequestBody(JSON_MEDIA))
@@ -94,7 +90,7 @@ class HttpProductRepository(
             query.owner?.takeIf { it.isNotBlank() }?.let { urlBuilder.addQueryParameter("owner", it) }
             query.status?.takeIf { it.isNotBlank() }?.let { urlBuilder.addQueryParameter("status", it) }
             query.q?.takeIf { it.isNotBlank() }?.let { urlBuilder.addQueryParameter("q", it) }
-            val json = executeJson(
+            val json = client.executeJson(
                 Request.Builder()
                     .url(urlBuilder.build())
                     .get()
@@ -112,7 +108,7 @@ class HttpProductRepository(
     override suspend fun transfer(request: TransferRequest): TransferResult =
         withContext(Dispatchers.IO) {
             val payload = JSONObject().put("toAddress", request.toAddress).toString()
-            val json = executeJson(
+            val json = client.executeJson(
                 Request.Builder()
                     .url("${baseUrl}products/${request.productId}/transfer")
                     .post(payload.toRequestBody(JSON_MEDIA))
@@ -129,7 +125,7 @@ class HttpProductRepository(
     override suspend fun consume(request: ConsumeRequest): ConsumeResult =
         withContext(Dispatchers.IO) {
             val payload = JSONObject().put("secret", request.secret).toString()
-            val json = executeJson(
+            val json = client.executeJson(
                 Request.Builder()
                     .url("${baseUrl}products/${request.productId}/consume")
                     .post(payload.toRequestBody(JSON_MEDIA))
@@ -146,7 +142,7 @@ class HttpProductRepository(
 
     override suspend fun history(productId: String): OwnershipHistory =
         withContext(Dispatchers.IO) {
-            val json = executeJson(
+            val json = client.executeJson(
                 Request.Builder()
                     .url("${baseUrl}products/$productId/history")
                     .get()
@@ -164,7 +160,7 @@ class HttpProductRepository(
 
     override suspend fun verify(productId: String): VerifyResult =
         withContext(Dispatchers.IO) {
-            val json = executeJson(
+            val json = client.executeJson(
                 Request.Builder()
                     .url("${baseUrl}verify/$productId")
                     .get()
@@ -194,7 +190,7 @@ class HttpProductRepository(
 
     override suspend fun getFeatureFlags(): FeatureFlags =
         withContext(Dispatchers.IO) {
-            val json = executeJson(
+            val json = client.executeJson(
                 Request.Builder()
                     .url("${baseUrl}flags")
                     .get()
@@ -217,7 +213,7 @@ class HttpProductRepository(
                         note?.takeIf { it.isNotBlank() }?.let { put("note", it) }
                     }
                     .toString()
-            executeJson(
+            client.executeJson(
                 Request.Builder()
                     .url("${baseUrl}reports/counterfeit")
                     .post(payload.toRequestBody(JSON_MEDIA))
@@ -232,52 +228,13 @@ class HttpProductRepository(
                 "${baseUrl}products/labels.pdf".toHttpUrl().newBuilder()
                     .addQueryParameter("batch", batchCode)
                     .build()
-            executeBytes(
+            client.executeBytes(
                 Request.Builder()
                     .url(url)
                     .get()
                     .build(),
             )
         }
-
-    private fun executeJson(request: Request): JSONObject {
-        try {
-            client.newCall(request).execute().use { response ->
-                val body = response.body?.string().orEmpty()
-                if (!response.isSuccessful) {
-                    throw ErrorMapper.fromHttp(response.code, body)
-                }
-                return if (body.isBlank()) JSONObject() else JSONObject(body)
-            }
-        } catch (error: DomainError) {
-            throw error
-        } catch (error: IOException) {
-            throw DomainError.Network("Unable to resolve host or connect", error)
-        } catch (error: Throwable) {
-            throw DomainError.Unknown(error.message ?: "Request failed", error)
-        }
-    }
-
-    private fun executeBytes(request: Request): ByteArray {
-        try {
-            client.newCall(request).execute().use { response ->
-                val body = response.body?.bytes() ?: ByteArray(0)
-                if (!response.isSuccessful) {
-                    throw ErrorMapper.fromHttp(
-                        response.code,
-                        body.toString(Charsets.UTF_8),
-                    )
-                }
-                return body
-            }
-        } catch (error: DomainError) {
-            throw error
-        } catch (error: IOException) {
-            throw DomainError.Network("Unable to resolve host or connect", error)
-        } catch (error: Throwable) {
-            throw DomainError.Unknown(error.message ?: "Request failed", error)
-        }
-    }
 
     private fun JSONArray?.toOwnershipEvents(): List<OwnershipEvent> {
         if (this == null) return emptyList()
@@ -335,7 +292,4 @@ class HttpProductRepository(
         }
     }
 
-    companion object {
-        private val JSON_MEDIA = "application/json".toMediaType()
-    }
 }
