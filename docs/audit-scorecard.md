@@ -8,7 +8,7 @@ Scope: Wave 0–7 / `v1.1.0` acceptance + production-lite hardening + UI/UX poli
 | --- | --- | --- | --- | --- |
 | SupplementRegistry lifecycle | Yes | Yes | 28 Hardhat tests Pass | Yes (`npm test`, `e2e:local`) |
 | Non-upgradeable policy | Yes | `UPGRADEABLE=false`, ABI `1.3.0` | Pass | Yes |
-| Nest API verify/products/roles | Yes | Yes | Jest Pass | Yes (Docker) |
+| Go API verify/products/roles | Yes | Yes (NestJS → Go rewrite, same `/v1` contract) | `go test -race` + Postgres integration + TS parity run + Android contract test Pass | Yes (Docker) |
 | Flags / reports / analytics / meta | Yes | Yes | wave7 + smoke Pass | Yes |
 | Indexer resilience | Implied | Graceful disable on bad RPC | Smoke Pass | Yes |
 | Android 8 features + roles | Yes | Yes | assembleLocalDebug Pass | Device/emulator manual |
@@ -42,6 +42,12 @@ Scope: Wave 0–7 / `v1.1.0` acceptance + production-lite hardening + UI/UX poli
 - P2: Sepolia placeholders → `*.example.invalid` defaults + `sepolia.properties.example`
 - P2: Production env → `API_WRITE_KEY` / `ALLOW_IPFS_STUB` validated at boot + tests
 - P3: Health `version` aligned to `1.1.0`
+- Backend moved to Go (2026-09-27). The rewrite fixed these latent TS bugs:
+  - Rate limits were never enforced.
+  - Contract reverts surfaced as 500 instead of 400/409.
+  - `%` and `_` in search were treated as wildcards.
+  - A few malformed inputs returned 500 instead of 400.
+  - `/health/ready` now returns 503 when the DB is down.
 
 ## Remaining (non-blocking)
 

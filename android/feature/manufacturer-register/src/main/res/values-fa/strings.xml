@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="manufacturer_register_title">ثبت واحد مکمل</string>
+    <string name="manufacturer_register_title">ثبت یک واحد</string>
+    <string name="manufacturer_register_subtitle">یک واحد مکمل را روی بلاکچین ثبت کنید و رمز برچسب آن را بگیرید.</string>
     <string name="product_name_label">نام محصول</string>
     <string name="batch_label">کد بچ</string>
-    <string name="register_action">ثبت</string>
-    <string name="result_id">شناسه: %1$s</string>
-    <string name="result_cid">CID: %1$s</string>
-    <string name="result_secret">رمز (فقط یک‌بار): %1$s</string>
-    <string name="hide_secret_action">پنهان کردن رمز (چاپ شد)</string>
+    <string name="register_action">ثبت روی بلاکچین</string>
+    <string name="register_done_title">ثبت شد</string>
+    <string name="register_done_message">واحد #%1$s اکنون روی بلاکچین است.</string>
+    <string name="register_unit">واحد مکمل</string>
+    <string name="result_id">شناسه روی زنجیره</string>
+    <string name="result_cid">CID فراداده</string>
+    <string name="result_secret">رمز برچسب</string>
+    <string name="result_secret_warning">فقط یک‌بار نمایش داده می‌شود. قبل از پنهان کردن، آن را زیر لایه خراشیدنی برچسب چاپ کنید.</string>
+    <string name="hide_secret_action">چاپ کردم — پنهان کردن رمز</string>
     <string name="register_success">ثبت شد · %1$s</string>
 </resources>

@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="manufacturer_register_title">Register supplement unit</string>
+    <string name="manufacturer_register_title">Register a unit</string>
+    <string name="manufacturer_register_subtitle">Mint one supplement unit on-chain and get its label secret.</string>
     <string name="product_name_label">Product name</string>
     <string name="batch_label">Batch code</string>
-    <string name="register_action">Register</string>
-    <string name="result_id">ID: %1$s</string>
-    <string name="result_cid">CID: %1$s</string>
-    <string name="result_secret">Secret (show once): %1$s</string>
-    <string name="hide_secret_action">Hide secret (printed)</string>
+    <string name="register_action">Register on-chain</string>
+    <string name="register_done_title">Registered</string>
+    <string name="register_done_message">Unit #%1$s is now on the blockchain.</string>
+    <string name="register_unit">Supplement unit</string>
+    <string name="result_id">On-chain ID</string>
+    <string name="result_cid">Metadata CID</string>
+    <string name="result_secret">Label secret</string>
+    <string name="result_secret_warning">Shown only once. Print it under the scratch-off on the label before hiding it.</string>
+    <string name="hide_secret_action">I\'ve printed it — hide secret</string>
     <string name="register_success">Registered · %1$s</string>
 </resources>

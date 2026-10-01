@@ -54,7 +54,8 @@ services:
       FF_META_TX_CONSUME: ${FF_META_TX_CONSUME:-true}
       FF_SUBGRAPH: ${FF_SUBGRAPH:-false}
       PORT: 3000
-      NODE_ENV: development
+      APP_ENV: development
+      AUTO_MIGRATE: "true"
     volumes:
       - ./packages/abis:/app/packages/abis:ro
     depends_on:

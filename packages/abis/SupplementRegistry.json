@@ -4,6 +4,7 @@
   "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
   "chainId": 31337,
   "network": "hardhat",
+  "deployBlock": 1,
   "abi": [
     {
       "inputs": [
@@ -439,6 +440,19 @@
           "internalType": "bytes32",
           "name": "",
           "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "UPGRADEABLE",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
         }
       ],
       "stateMutability": "view",

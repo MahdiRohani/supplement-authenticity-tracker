@@ -11,4 +11,24 @@
     <string name="error_owner_required">Owner address required</string>
     <string name="error_history_failed">Could not load history</string>
     <string name="cd_logout">Log out</string>
+    <string name="cd_status">Status: %1$s</string>
+    <string name="cd_copy">Copy %1$s</string>
+    <string name="cd_copied">%1$s copied</string>
+
+    <string name="status_authentic">Authentic</string>
+    <string name="status_authentic_desc">Registered on-chain and never opened. Safe to use.</string>
+    <string name="status_created">Registered</string>
+    <string name="status_created_desc">Registered by the manufacturer; not shipped yet.</string>
+    <string name="status_transferred">In transit</string>
+    <string name="status_transferred_desc">Moving through the supply chain.</string>
+    <string name="status_at_pos">At pharmacy</string>
+    <string name="status_at_pos_desc">Delivered to a pharmacy and ready for sale.</string>
+    <string name="status_consumed">Already used</string>
+    <string name="status_consumed_desc">This unit was opened before. Using it again would be a refill — do not trust it.</string>
+    <string name="status_invalid">Invalid</string>
+    <string name="status_invalid_desc">Invalidated by the manufacturer. Do not use it.</string>
+    <string name="status_not_found">Not found</string>
+    <string name="status_not_found_desc">No product has this ID. It may be counterfeit.</string>
+    <string name="status_network_error">Can\'t reach server</string>
+    <string name="status_network_error_desc">Check your connection and try again.</string>
 </resources>

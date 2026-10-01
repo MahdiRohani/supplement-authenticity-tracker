@@ -38,7 +38,8 @@ class VerifyScreenTest {
             }
         }
         composeRule.onNodeWithTag("verify_status_Authentic").assertIsDisplayed()
-        composeRule.onNodeWithText("Name: Vitamin D3").assertIsDisplayed()
+        composeRule.onNodeWithText("B-1").assertIsDisplayed()
+        composeRule.onNodeWithText("0xabc").assertIsDisplayed()
     }
 
     @Test

@@ -1,11 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ردیاب اصالت مکمل</string>
-    <string name="dev_login_title">ورود نقش توسعه</string>
+    <string name="app_tagline">قبل از اعتماد، استعلام کنید</string>
+    <string name="dev_login_title">ورود با نقش</string>
+    <string name="dev_login_subtitle">جایگاه خود در زنجیره تأمین را انتخاب کنید. هر نقش ابزارهای خودش را دارد.</string>
+    <string name="dev_login_choose_role">انتخاب نقش</string>
     <string name="dev_login_address">آدرس کیف پول</string>
-    <string name="dev_login_selected">نقش انتخاب‌شده: %1$s</string>
-    <string name="dev_login_continue">ادامه</string>
-    <string name="session_title">%1$s · %2$s…</string>
+    <string name="dev_login_address_hint">با حساب توسعه محلی همین نقش پر شده است</string>
+    <string name="dev_login_address_invalid">باید آدرسی با 0x و ۴۰ کاراکتر هگز باشد</string>
+    <string name="dev_login_continue">ادامه به‌عنوان %1$s</string>
+    <string name="dev_login_notice">ورود توسعه: رمزی بررسی نمی‌شود. بکند هر عملیات را با نقش‌های روی بلاکچین مجاز می‌کند.</string>
+    <string name="role_manufacturer">تولیدکننده</string>
+    <string name="role_manufacturer_desc">ثبت واحد و دسته، چاپ برچسب و ارسال به توزیع‌کننده.</string>
+    <string name="role_distributor">توزیع‌کننده</string>
+    <string name="role_distributor_desc">دریافت کالا از تولیدکننده و تحویل به داروخانه.</string>
+    <string name="role_pharmacy">داروخانه</string>
+    <string name="role_pharmacy_desc">نگهداری موجودی و ثبت مصرف در محل فروش.</string>
+    <string name="role_admin">مدیر</string>
+    <string name="role_admin_desc">همه ابزارها یک‌جا، برای دمو و عملیات.</string>
     <string name="nav_verify">استعلام</string>
     <string name="nav_login">ورود</string>
     <string name="nav_register">ثبت</string>

@@ -1,6 +1,6 @@
 # Supplement Authenticity Tracker
 
-Blockchain-based supplement authenticity tracking: smart contracts, IPFS metadata, NestJS indexer/API, and a multi-role Android app.
+Blockchain-based supplement authenticity tracking: smart contracts, IPFS metadata, a Go indexer/API, and a multi-role Android app.
 
 ## Repository layout
 
@@ -8,9 +8,9 @@ Blockchain-based supplement authenticity tracking: smart contracts, IPFS metadat
 |------|---------|
 | `android/` | Multi-module Android app (Compose), package `ir.aut.supplementtracker` |
 | `contracts/` | Hardhat + Solidity (`SupplementRegistry`) |
-| `backend/` | NestJS indexer/API + Prisma + IPFS adapter |
+| `backend/` | Go indexer/API (pgx + sqlc + goose, go-ethereum) + IPFS adapter |
 | `packages/abis/` | Shared ABI + `deployments.json` multi-chain map |
-| `subgraph/` | Optional The Graph scaffold (Nest indexer remains primary) |
+| `subgraph/` | Optional The Graph scaffold (Go indexer remains primary) |
 | `admin-web/` | Minimal static ops panel |
 | `docs/meta-transactions.md` | Relayer meta-tx / EIP-712 consume path |
 | `docs/architecture-decisions.md` | Locked architecture + intentional deviations |
@@ -21,7 +21,8 @@ Blockchain-based supplement authenticity tracking: smart contracts, IPFS metadat
 - Git
 - JDK 17+
 - Android Studio (Ladybug or newer recommended) with Android SDK
-- Node.js 20+ (for contracts and backend)
+- Node.js 20+ (for contracts)
+- Go 1.26+ (for the backend; not needed when running it through Docker Compose)
 
 ## Clone
 
@@ -35,6 +36,7 @@ cd supplement-authenticity-tracker
 1. Open the `android/` directory in Android Studio (not the monorepo root).
 2. Let Gradle sync finish. If prompted, set the Android SDK path (creates `android/local.properties` locally; it is gitignored).
 3. Select product flavor **`local`** (emulator → `10.0.2.2`) or **`sepolia`**, then run `:app`.
+   - On a **physical phone**, set `LOCAL_DEV_HOST` in `android/local.properties` to the dev machine's LAN IP (same Wi-Fi; start Hardhat with `--hostname 0.0.0.0`), or to `127.0.0.1` after `adb reverse tcp:3000 tcp:3000 && adb reverse tcp:8545 tcp:8545`.
    - For **sepolia**, copy keys from [`android/sepolia.properties.example`](android/sepolia.properties.example) into `android/local.properties` (`SEPOLIA_API_BASE_URL`, `SEPOLIA_RPC_URL`, `SEPOLIA_REGISTRY_ADDRESS`). Defaults use `*.example.invalid` so misconfiguration fails closed.
 
 From the command line:
@@ -67,8 +69,11 @@ Services: `postgres`, `ipfs` (Kubo), `backend` on port `3000`.
 ## Contracts and backend
 
 - Contracts: `cd contracts && npm install && npm test && npm run deploy:local`
-- Backend: see `backend/README.md` (`GET /v1/health`, `GET /v1/products`, `POST /v1/products`, `POST /v1/products/batch`, ProductRegistered indexer)
-- Env is validated with Zod at startup (see `backend/.env.example`; never commit real secrets)
+- Backend: `cd backend && cp .env.example .env && go run ./cmd/api` (tests: `go test -race ./...`); endpoints, migrations and env in `backend/README.md`
+- Env is validated at startup (see `backend/.env.example`; never commit real secrets)
+- Android ↔ API contract test (runs the app's real HTTP client against a live backend):
+  `cd android && SAT_API_BASE_URL=http://127.0.0.1:3000/v1/ ./gradlew :core:data:testLocalDebugUnitTest`
+  (add `SAT_DISTRIBUTOR` / `SAT_PHARMACY` holding the on-chain roles to also run transfer → consume → refill rejection)
 
 ## Operational runbook
 
@@ -78,7 +83,7 @@ Services: `postgres`, `ipfs` (Kubo), `backend` on port `3000`.
 4. **Relayer key rotate:** update `RELAYER_KEYS_JSON`, keep retiring keys in `RELAYER_KEYS_PREVIOUS_JSON`, then `POST /v1/admin/relayer-keys/reload` with the write key.
 5. **ABI sync:** after contract changes run deploy/export, bump `abiVersion` in `packages/abis/SupplementRegistry.json`, restart backend.
 6. **Load check:** with backend up, `PRODUCT_ID=1 ./scripts/load-verify.sh` (max request &lt; 3s).
-7. **CI:** GitHub Actions runs contracts, Slither, backend, Hardhat+Postgres integration (flags/reports/labels PDF), and Android `assembleLocalDebug` + `lintLocalDebug`.
+7. **CI:** GitHub Actions runs contracts, Slither, backend (gofmt, `go vet`, `go test -race` with Postgres), Hardhat+Postgres integration (flags/reports/labels PDF), and Android `assembleLocalDebug` + `lintLocalDebug`.
 8. **Common failures:** pending `chainProductId` means mint skipped (check RPC/keys); IPFS stub only when `ALLOW_IPFS_STUB=true` or non-production.
 9. **Admin web:** `cd admin-web && python3 -m http.server 8080` against `http://127.0.0.1:3000/v1`.
 10. **Gasless consume:** see `docs/meta-transactions.md` (`POST /v1/meta/consume`).

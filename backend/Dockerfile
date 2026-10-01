@@ -1,17 +1,18 @@
-FROM node:20-bookworm-slim
+FROM golang:1.26-alpine AS build
 
-WORKDIR /app
-
-RUN apt-get update -y \
-  && apt-get install -y --no-install-recommends openssl ca-certificates \
-  && rm -rf /var/lib/apt/lists/*
-
-COPY package.json package-lock.json ./
-COPY prisma ./prisma
-RUN npm ci && npx prisma generate
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
 
 COPY . .
-RUN npm run build
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/api ./cmd/api
+
+FROM gcr.io/distroless/static-debian12:nonroot
+
+WORKDIR /app
+COPY --from=build /out/api /app/api
 
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma db push && node dist/main.js"]
+HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=5 CMD ["/app/api", "healthcheck"]
+# Migrations are embedded and applied on start (AUTO_MIGRATE=true by default).
+ENTRYPOINT ["/app/api"]

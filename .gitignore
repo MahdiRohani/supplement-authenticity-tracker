@@ -60,8 +60,8 @@ temp/
 *.log
 logs/
 
-backend/prisma/*.db
-backend/prisma/*.db-journal
+backend/bin/
+coverage.out
 
 __pycache__/
 *.py[cod]

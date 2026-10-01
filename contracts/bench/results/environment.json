@@ -1,0 +1,31 @@
+{
+  "generatedAt": "2026-10-01T08:47:33.017Z",
+  "network": "hardhat",
+  "blockGasLimit": 60000000,
+  "hardhat": "2.29.1",
+  "node": "v20.20.2",
+  "solc": "0.8.28",
+  "optimizer": {
+    "enabled": true,
+    "runs": 200
+  },
+  "evmVersion": "paris",
+  "sizes": [
+    1,
+    10,
+    100,
+    1000,
+    10000,
+    100000
+  ],
+  "s0Chunk": 50,
+  "sample": 20,
+  "metadataCidLength": 59,
+  "notes": [
+    "Gas values are receipts' gasUsed after warm-up transactions.",
+    "S0 is measured up to n=10000 (chunks of 50); S1 up to n=1000; larger sizes are extrapolated linearly.",
+    "S0/S1 per-unit transfer and consume costs are means over a sample of units.",
+    "S2 consume_cold writes a fresh 256-unit bitmap word; consume_warm reuses one.",
+    "Lifecycle = registration + two whole-lot custody hops + consumption of every unit."
+  ]
+}

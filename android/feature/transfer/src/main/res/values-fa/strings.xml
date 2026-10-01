@@ -1,9 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="transfer_title">انتقال مالکیت</string>
+    <string name="transfer_subtitle">یک واحد را به حلقه بعدی زنجیره تأمین تحویل دهید. کارمزد را رله پرداخت می‌کند.</string>
     <string name="product_id_label">شناسه محصول</string>
     <string name="recipient_label">آدرس گیرنده</string>
-    <string name="transfer_action">انتقال از طریق رله</string>
-    <string name="transfer_result">تراکنش: %1$s</string>
+    <string name="recipient_invalid">باید آدرسی با 0x و ۴۰ کاراکتر هگز باشد</string>
+    <string name="recipient_quick_pick">انتخاب سریع</string>
+    <string name="transfer_action">انتقال</string>
+    <string name="transfer_done_title">انتقال انجام شد</string>
+    <string name="transfer_done_message">واحد #%1$s روی بلاکچین مالک جدید دارد.</string>
+    <string name="transfer_from">از</string>
+    <string name="transfer_to">به</string>
+    <string name="transfer_result">تراکنش</string>
     <string name="transfer_success">انتقال انجام شد · %1$s</string>
 </resources>

@@ -1,0 +1,26 @@
+version: "2"
+sql:
+  - engine: postgresql
+    schema: internal/store/migrations
+    queries: internal/store/queries
+    gen:
+      go:
+        package: db
+        out: internal/store/db
+        sql_package: pgx/v5
+        emit_interface: true
+        emit_pointers_for_null_types: true
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+        rename:
+          chainProductId: ChainProductID
+          productId: ProductID
+          entityId: EntityID
+          metadataCid: MetadataCID
+          chain_product_id: ChainProductID
+          product_id: ProductID
+          entity_id: EntityID
+          metadata_cid: MetadataCID
+        overrides:
+          - db_type: pg_catalog.timestamp
+            go_type: time.Time

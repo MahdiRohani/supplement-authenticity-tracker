@@ -11,4 +11,24 @@
     <string name="error_owner_required">آدرس مالک لازم است</string>
     <string name="error_history_failed">بارگذاری تاریخچه ممکن نشد</string>
     <string name="cd_logout">خروج</string>
+    <string name="cd_status">وضعیت: %1$s</string>
+    <string name="cd_copy">کپی %1$s</string>
+    <string name="cd_copied">%1$s کپی شد</string>
+
+    <string name="status_authentic">اصل</string>
+    <string name="status_authentic_desc">روی بلاکچین ثبت شده و هنوز باز نشده است. قابل اطمینان است.</string>
+    <string name="status_created">ثبت‌شده</string>
+    <string name="status_created_desc">توسط تولیدکننده ثبت شده و هنوز ارسال نشده است.</string>
+    <string name="status_transferred">در حال انتقال</string>
+    <string name="status_transferred_desc">در زنجیره تأمین در حال جابه‌جایی است.</string>
+    <string name="status_at_pos">در داروخانه</string>
+    <string name="status_at_pos_desc">به داروخانه رسیده و آماده فروش است.</string>
+    <string name="status_consumed">مصرف‌شده</string>
+    <string name="status_consumed_desc">این واحد قبلاً باز شده است. استفاده دوباره یعنی پر کردن مجدد — به آن اعتماد نکنید.</string>
+    <string name="status_invalid">نامعتبر</string>
+    <string name="status_invalid_desc">توسط تولیدکننده باطل شده است. از آن استفاده نکنید.</string>
+    <string name="status_not_found">یافت نشد</string>
+    <string name="status_not_found_desc">محصولی با این شناسه وجود ندارد. ممکن است تقلبی باشد.</string>
+    <string name="status_network_error">اتصال به سرور ممکن نیست</string>
+    <string name="status_network_error_desc">اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.</string>
 </resources>

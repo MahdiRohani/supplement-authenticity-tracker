@@ -1,6 +1,6 @@
 # Optional The Graph subgraph
 
-The NestJS indexer remains the **primary** projection for verify/history APIs.
+The Go backend indexer remains the **primary** projection for verify/history APIs.
 
 This folder is an optional Graph Protocol scaffold for environments that prefer a hosted or local Graph Node. Enable preference via `FF_SUBGRAPH=true` (clients may prefer Graph URLs when set; backend APIs stay on Postgres).
 

@@ -1,16 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="verify_title">Verify authenticity</string>
+    <string name="verify_title">Is it genuine?</string>
+    <string name="verify_guest_hint">Check any supplement against the blockchain — no account needed.</string>
     <string name="verify_input_label">Product ID or QR payload</string>
+    <string name="verify_input_support">Printed under the QR code on the label</string>
     <string name="verify_action">Verify</string>
-    <string name="verify_owner">Owner: %1$s</string>
-    <string name="verify_name">Name: %1$s</string>
-    <string name="verify_batch">Batch: %1$s</string>
-    <string name="verify_expires">Expires: %1$s</string>
-    <string name="verify_source">Source: %1$s</string>
-    <string name="verify_metadata_link">Metadata: %1$s</string>
-    <string name="verify_guest_hint">Guest verify — no login required</string>
     <string name="verify_scan_qr">Scan QR</string>
+    <string name="verify_details_title">Product details</string>
+    <string name="verify_name">Name</string>
+    <string name="verify_batch">Batch</string>
+    <string name="verify_expires">Expires</string>
+    <string name="verify_product_id">On-chain ID</string>
+    <string name="verify_owner">Current owner</string>
+    <string name="verify_metadata_link">Metadata (IPFS)</string>
+    <string name="verify_source">Source: %1$s</string>
+    <string name="verify_report_title">Something looks wrong?</string>
+    <string name="verify_report_hint">If the packaging, seal or result doesn\'t match, report it so the manufacturer can investigate.</string>
     <string name="verify_report_counterfeit">Report counterfeit</string>
     <string name="verify_report_submitted">Report submitted</string>
+    <string name="verify_how_title">How it works</string>
+    <string name="verify_how_step1">Scan the QR code on the product label, or type its ID.</string>
+    <string name="verify_how_step2">We check its record and ownership chain on the blockchain.</string>
+    <string name="verify_how_step3">Already used or unknown? Don\'t take it, and report it.</string>
 </resources>

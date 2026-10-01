@@ -1,9 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="history_title">تاریخچه مالکیت</string>
+    <string name="history_subtitle">مسیر یک واحد را از کارخانه تا قفسه داروخانه دنبال کنید.</string>
     <string name="history_product_id_label">شناسه محصول</string>
-    <string name="history_load_action">بارگذاری زمان‌خط</string>
-    <string name="history_owner">مالک: %1$s</string>
+    <string name="history_load_action">نمایش زمان‌خط</string>
+    <string name="history_unit">واحد #%1$s</string>
+    <string name="history_owner">مالک فعلی</string>
+    <string name="history_chain_title">زنجیره نگهداری</string>
+    <plurals name="history_event_count">
+        <item quantity="one">%1$d مرحله</item>
+        <item quantity="other">%1$d مرحله</item>
+    </plurals>
+    <string name="history_no_events">هنوز رویدادی از بلاکچین ثبت نشده است</string>
+    <string name="history_event_minted">ثبت توسط تولیدکننده</string>
+    <string name="history_event_transfer">انتقال مالکیت</string>
     <string name="history_event">%1$s → %2$s</string>
+    <string name="history_event_meta">بلوک %1$s · %2$s</string>
+    <string name="history_tx">هش تراکنش</string>
     <string name="history_elapsed">دریافت در %1$d میلی‌ثانیه</string>
 </resources>

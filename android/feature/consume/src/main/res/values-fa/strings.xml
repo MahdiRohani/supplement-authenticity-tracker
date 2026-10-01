@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="consume_title">مصرف واحد (رمز خراش)</string>
+    <string name="consume_title">فروش و مصرف</string>
+    <string name="consume_subtitle">با رمز زیر لایه خراشیدنی، واحد را در محل فروش «باز شده» علامت بزنید.</string>
+    <string name="consume_irreversible">این کار برگشت‌پذیر نیست. پس از مصرف، هر کسی این واحد را استعلام کند آن را مصرف‌شده می‌بیند.</string>
     <string name="consume_product_id_label">شناسه محصول</string>
-    <string name="consume_secret_label">رمز خراش / پلمب</string>
+    <string name="consume_secret_label">رمز خراشیدنی</string>
+    <string name="consume_secret_hint">با خراشیدن پلمپ روی بسته نمایان می‌شود</string>
     <string name="consume_action">تأیید مصرف</string>
-    <string name="consume_result_status">وضعیت: %1$s</string>
-    <string name="consume_result_tx">تراکنش: %1$s</string>
+    <string name="consume_done_message">واحد #%1$s مصرف‌شده علامت خورد. هر پر کردن مجدد شناسایی می‌شود.</string>
+    <string name="consume_result_tx">تراکنش</string>
+    <string name="consume_result_actor">ثبت‌کننده</string>
     <string name="consume_success">مصرف شد · %1$s</string>
 </resources>
