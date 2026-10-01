@@ -114,8 +114,8 @@ v2 tracks individual units instead of one product per transaction:
   wallet. Shipping part of a segment splits it, and custody must go
   manufacturer → distributor → pharmacy (enforced on-chain by role).
 - **Gasless one-time consumption.** The hidden label holds the unit's private
-  key. The buyer's app signs an EIP-712 `UnitConsume(batchId, index,
-  consumer, deadline)` with it, and the relayer pays gas. A unit can be
+  key. The buyer's app signs an EIP-712 `ConsumeAuthorization(batchId,
+  index, consumer, deadline)` with it, and the relayer pays gas. A unit can be
   consumed once, so a refilled box cannot be consumed again.
 - **Two-layer labels.** The public QR
   `{PUBLIC_VERIFY_BASE_URL}/{chainId}/{batchId}/{index}` is printed in the
@@ -135,7 +135,7 @@ replays arrive in: segment writes are ordered by `(block, logIndex)`.
 Endpoints (writes need the API key unless marked *public*):
 
 - `GET /v2/health`, `GET /v2/health/ready`, `GET /v2/flags` — *public*
-- `GET /v2/chains` — *public*; registry address, deploy block, EIP-712 domain and `UnitConsume` types for clients
+- `GET /v2/chains` — *public*; registry address, deploy block, EIP-712 domain and `ConsumeAuthorization` types for clients
 - `POST /v2/batches` `{ "name", "lotCode", "size", "manufacturerAddress"?, "expiresAt"? }` — returns every unit's public and secret QR **once**; a lot can be registered only once per manufacturer (409)
 - `GET /v2/batches?manufacturer=&page=&limit=`, `GET /v2/batches/:batchId` (segments + distribution by stage)
 - `GET /v2/batches/:batchId/units/:index/proof` — Merkle proof, to check a unit against the on-chain root without trusting the API

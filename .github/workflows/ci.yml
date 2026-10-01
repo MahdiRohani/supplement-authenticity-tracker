@@ -23,6 +23,14 @@ jobs:
       - run: npm run test:gas
         env:
           REPORT_GAS: "true"
+      - name: In-process lifecycle scripts (v2 batch/split/consume/recall, v1)
+        run: |
+          npm run e2e:local
+          npm run e2e:v1
+      - name: Reference vectors are reproducible
+        run: |
+          npm run vectors
+          git diff --exit-code -- ../packages/abis/test-vectors/
 
   slither:
     runs-on: ubuntu-latest
@@ -70,6 +78,7 @@ jobs:
           cache-dependency-path: backend/go.sum
       - run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
       - run: go vet ./...
+      - run: go vet -tags e2e ./e2e/
       - run: go test -race -count=1 ./...
         env:
           TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/supplement_tracker
@@ -112,6 +121,7 @@ jobs:
           sleep 3
           npx hardhat run scripts/deploy.ts --network localhost | tee /tmp/deploy.log
           echo "REGISTRY_ADDRESS=$(grep -o 'SupplementRegistry=0x[0-9a-fA-F]*' /tmp/deploy.log | cut -d= -f2)" >> "$GITHUB_ENV"
+          echo "REGISTRY_V2_ADDRESS=$(grep -o 'SupplementRegistryV2=0x[0-9a-fA-F]*' /tmp/deploy.log | cut -d= -f2)" >> "$GITHUB_ENV"
       - name: Build and start backend
         working-directory: backend
         env:
@@ -146,7 +156,7 @@ jobs:
           curl -fsS -o /tmp/labels.pdf "http://127.0.0.1:3000/v1/products/labels.pdf?batch=CI-1"
           test -s /tmp/labels.pdf
           PRODUCT_ID="$ID" BASE_URL=http://127.0.0.1:3000/v1 CONCURRENCY=10 THRESHOLD_MS=3000 bash ../scripts/load-verify.sh
-      - name: Protocol v2 end-to-end (register, split, consume, clone scans, recall)
+      - name: Protocol v2 end-to-end (100-unit batch, two partial hops, consume, refill 409, clone scans, recall)
         working-directory: backend
         env:
           E2E_API_URL: http://127.0.0.1:3000
@@ -169,5 +179,48 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - name: Unit tests, assemble and lint localDebug
-        run: ./gradlew :core:model:testDebugUnitTest :core:data:testLocalDebugUnitTest :app:assembleLocalDebug :app:lintLocalDebug :core:designsystem:assembleDebug --no-daemon
+      - name: JVM unit tests (models, use cases, HTTP client, EIP-712/Merkle vectors, screen state)
+        run: >-
+          ./gradlew --no-daemon --continue
+          :core:model:testDebugUnitTest
+          :core:domain:testDebugUnitTest
+          :core:data:testLocalDebugUnitTest
+          :core:blockchain:testLocalDebugUnitTest
+          :feature:verify:testDebugUnitTest
+          :feature:consume:testDebugUnitTest
+          :feature:transfer:testDebugUnitTest
+          :feature:manufacturer-register:testDebugUnitTest
+      - name: Assemble, lint and compile instrumented tests
+        run: >-
+          ./gradlew --no-daemon
+          :app:assembleLocalDebug
+          :app:lintLocalDebug
+          :core:designsystem:assembleDebug
+          :feature:verify:compileDebugAndroidTestKotlin
+          :core:designsystem:compileDebugAndroidTestKotlin
+
+  subgraph:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: subgraph
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install --no-audit --no-fund
+      - run: npm run codegen
+      - run: npm run build
+
+  admin-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Inline script parses
+        run: |
+          node -e 'const fs=require("fs");const html=fs.readFileSync("admin-web/index.html","utf8");const m=html.match(/<script>([\s\S]*)<\/script>/);if(!m)throw new Error("no inline script");fs.writeFileSync("/tmp/admin.js",m[1]);'
+          node --check /tmp/admin.js

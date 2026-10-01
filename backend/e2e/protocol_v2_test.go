@@ -140,6 +140,10 @@ func TestProtocolV2Lifecycle(t *testing.T) {
 		expect[map[string]any](t, call(t, "POST", "/v2/roles", party), 201)
 	}
 
+	// A 100-unit lot: the manufacturer ships units [0,40) to the distributor,
+	// which forwards [0,15) to the pharmacy. Both hops are partial, so the
+	// lot ends up in three custody segments.
+	const size = 100
 	lot := fmt.Sprintf("LOT-%d", time.Now().UnixNano())
 	reg := expect[struct {
 		BatchID        string     `json:"batchId"`
@@ -147,29 +151,74 @@ func TestProtocolV2Lifecycle(t *testing.T) {
 		MerkleRoot     string     `json:"merkleRoot"`
 		KeysRevealOnce bool       `json:"keysRevealOnce"`
 		Units          []unitCred `json:"units"`
-	}](t, call(t, "POST", "/v2/batches", map[string]any{"name": "Vitamin D3 1000IU", "lotCode": lot, "size": 10}), 201)
-	if len(reg.Units) != 10 || !reg.KeysRevealOnce {
-		t.Fatalf("registration = %+v", reg)
+	}](t, call(t, "POST", "/v2/batches", map[string]any{"name": "Vitamin D3 1000IU", "lotCode": lot, "size": size}), 201)
+	if len(reg.Units) != size || !reg.KeysRevealOnce {
+		t.Fatalf("registration: %d units, keysRevealOnce=%v", len(reg.Units), reg.KeysRevealOnce)
+	}
+	seen := map[string]bool{}
+	for i, u := range reg.Units {
+		if int(u.Index) != i || seen[u.UnitKey] || !strings.HasSuffix(u.PublicQR, fmt.Sprintf("/%d/%s/%d", chainID, reg.BatchID, i)) {
+			t.Fatalf("unit %d = %+v", i, u)
+		}
+		seen[u.UnitKey] = true
 	}
 	dup := call(t, "POST", "/v2/batches", map[string]any{"name": "Vitamin D3", "lotCode": lot, "size": 2})
 	if dup.status != 409 {
 		t.Fatalf("re-registering a lot: %d %s", dup.status, dup.body)
 	}
 
-	split := expect[struct {
+	type transferResult struct {
 		ToSegmentID string `json:"toSegmentId"`
 		Split       bool   `json:"split"`
-		Start, End  uint32
-	}](t, call(t, "POST", "/v2/segments/"+reg.SegmentID+"/transfer", map[string]any{"toAddress": distributor, "count": 4}), 201)
-	if !split.Split || split.Start != 0 || split.End != 4 {
-		t.Fatalf("split = %+v", split)
+		Status      string `json:"status"`
+		Start       uint32 `json:"start"`
+		End         uint32 `json:"end"`
 	}
-	toPharmacy := expect[struct {
-		Status string `json:"status"`
-		Split  bool   `json:"split"`
-	}](t, call(t, "POST", "/v2/segments/"+split.ToSegmentID+"/transfer", map[string]any{"toAddress": pharmacy}), 201)
-	if toPharmacy.Status != "AtPointOfSale" || toPharmacy.Split {
-		t.Fatalf("to pharmacy = %+v", toPharmacy)
+	toDistributor := expect[transferResult](t, call(t, "POST", "/v2/segments/"+reg.SegmentID+"/transfer", map[string]any{"toAddress": distributor, "count": 40}), 201)
+	if !toDistributor.Split || toDistributor.Start != 0 || toDistributor.End != 40 || toDistributor.Status != "Transferred" {
+		t.Fatalf("manufacturer -> distributor = %+v", toDistributor)
+	}
+	skipHop := call(t, "POST", "/v2/segments/"+reg.SegmentID+"/transfer", map[string]any{"toAddress": pharmacy, "count": 5})
+	if skipHop.status != 400 && skipHop.status != 409 {
+		t.Fatalf("manufacturer shipping straight to a pharmacy: %d %s", skipHop.status, skipHop.body)
+	}
+	toPharmacy := expect[transferResult](t, call(t, "POST", "/v2/segments/"+toDistributor.ToSegmentID+"/transfer", map[string]any{"toAddress": pharmacy, "count": 15}), 201)
+	if !toPharmacy.Split || toPharmacy.Start != 0 || toPharmacy.End != 15 || toPharmacy.Status != "AtPointOfSale" {
+		t.Fatalf("distributor -> pharmacy = %+v", toPharmacy)
+	}
+
+	type batchDetail struct {
+		Size          int              `json:"size"`
+		ConsumedCount int              `json:"consumedCount"`
+		Distribution  map[string]int32 `json:"distribution"`
+		Segments      []struct {
+			SegmentID string `json:"segmentId"`
+			Owner     string `json:"owner"`
+			Start     int    `json:"start"`
+			End       int    `json:"end"`
+			Status    string `json:"status"`
+		} `json:"segments"`
+	}
+	detail := expect[batchDetail](t, call(t, "GET", "/v2/batches/"+reg.BatchID, nil), 200)
+	if len(detail.Segments) != 3 || detail.Distribution["Created"] != 60 || detail.Distribution["Transferred"] != 25 ||
+		detail.Distribution["AtPointOfSale"] != 15 || detail.Distribution["consumed"] != 0 {
+		t.Fatalf("batch after two partial hops = %s", mustJSON(detail))
+	}
+	covered := 0
+	for _, s := range detail.Segments {
+		covered += s.End - s.Start
+	}
+	if covered != size {
+		t.Fatalf("segments cover %d of %d units: %s", covered, size, mustJSON(detail.Segments))
+	}
+	held := expect[struct {
+		Items []struct {
+			SegmentID string `json:"segmentId"`
+			Units     int    `json:"units"`
+		} `json:"items"`
+	}](t, call(t, "GET", "/v2/segments?owner="+pharmacy+"&batchId="+reg.BatchID, nil), 200)
+	if len(held.Items) != 1 || held.Items[0].SegmentID != toPharmacy.ToSegmentID || held.Items[0].Units != 15 {
+		t.Fatalf("pharmacy stock = %+v", held)
 	}
 
 	verifyPath := func(index int) string { return fmt.Sprintf("/v2/verify/%d/%s/%d", chainID, reg.BatchID, index) }
@@ -180,9 +229,11 @@ func TestProtocolV2Lifecycle(t *testing.T) {
 		*before.Custodian.DisplayName != "Darou Pharmacy" || before.Evidence == nil || before.Evidence.MerkleRoot != reg.MerkleRoot {
 		t.Fatalf("verify before sale = %s", mustJSON(before))
 	}
-	inTransit := expect[verifyResult](t, call(t, "GET", verifyPath(5), nil, buyer...), 200)
-	if inTransit.Authenticity != protocol.InTransit {
-		t.Fatalf("unit still at the manufacturer = %+v", inTransit)
+	for _, index := range []int{20, 70} {
+		inTransit := expect[verifyResult](t, call(t, "GET", verifyPath(index), nil, buyer...), 200)
+		if inTransit.Authenticity != protocol.InTransit {
+			t.Fatalf("unit %d not yet at a pharmacy = %+v", index, inTransit)
+		}
 	}
 
 	secret, err := protocol.ParseSecretQR(reg.Units[2].SecretQR)
@@ -218,9 +269,12 @@ func TestProtocolV2Lifecycle(t *testing.T) {
 	if r := consume(2, secret.Key); r.status != 409 {
 		t.Fatalf("refill attempt: %d %s", r.status, r.body)
 	}
-	notForSale, _ := protocol.ParseSecretQR(reg.Units[6].SecretQR)
-	if r := consume(6, notForSale.Key); r.status != 409 {
-		t.Fatalf("consume before reaching a pharmacy: %d %s", r.status, r.body)
+	notForSale, _ := protocol.ParseSecretQR(reg.Units[20].SecretQR)
+	if r := consume(20, notForSale.Key); r.status != 409 {
+		t.Fatalf("consume while still at the distributor: %d %s", r.status, r.body)
+	}
+	if d := expect[batchDetail](t, call(t, "GET", "/v2/batches/"+reg.BatchID, nil), 200); d.ConsumedCount != 1 || d.Distribution["consumed"] != 1 {
+		t.Fatalf("batch after one consumption = %s", mustJSON(d))
 	}
 
 	after := expect[verifyResult](t, call(t, "GET", verifyPath(2), nil, buyer...), 200)
