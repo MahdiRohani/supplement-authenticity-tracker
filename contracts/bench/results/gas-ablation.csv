@@ -1,0 +1,5 @@
+n,bitmap_word,proof_length,consume_signed,consume_reveal,signature_overhead
+1000,cold,10,86549,80453,6096
+1000,warm,10,52401,46269,6132
+100000,cold,16,91053,84985,6068
+100000,warm,17,57648,51570,6078
