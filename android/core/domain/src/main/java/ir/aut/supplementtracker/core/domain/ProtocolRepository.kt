@@ -7,6 +7,7 @@ import ir.aut.supplementtracker.core.model.ConsumeAuthorization
 import ir.aut.supplementtracker.core.model.Eip712Domain
 import ir.aut.supplementtracker.core.model.NewBatchRequest
 import ir.aut.supplementtracker.core.model.Page
+import ir.aut.supplementtracker.core.model.Party
 import ir.aut.supplementtracker.core.model.ProtocolInfo
 import ir.aut.supplementtracker.core.model.RegisteredBatch
 import ir.aut.supplementtracker.core.model.ScanContext
@@ -41,6 +42,9 @@ interface ProtocolRepository {
 
     /** Labels PDF; the backend only prints secret QRs whose keys are committed on-chain. */
     suspend fun renderLabels(batchId: String, secretQrs: List<String>): ByteArray
+
+    /** Bound wallets (and their public profiles) for transfer recipient chips. */
+    suspend fun listParties(address: String? = null): List<Party>
 }
 
 /** Signs the EIP-712 `ConsumeAuthorization` with the unit key from the hidden label. */

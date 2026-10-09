@@ -2,6 +2,7 @@ package roles
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"unicode/utf8"
 
@@ -132,6 +133,31 @@ func (s *PartyService) Bind(ctx context.Context, in BindInput) (BoundParty, erro
 		return BoundParty{}, err
 	}
 	return BoundParty{Party: toParty(row), OnChain: grant}, nil
+}
+
+// Resync grants the on-chain role of every stored supply-chain binding after
+// the indexer finds a fresh chain (a restarted dev node), where all earlier
+// grants are gone. GrantRole skips roles already held. Admin bindings are
+// left out so the registry admin role is only ever granted explicitly.
+// Bindings made with onChain:false are granted too: the table does not
+// record that choice, and resets only happen outside production.
+func (s *PartyService) Resync(ctx context.Context) error {
+	if s.granter == nil {
+		return nil
+	}
+	rows, err := s.store.ListRoleBindings(ctx)
+	if err != nil {
+		return err
+	}
+	for _, r := range rows {
+		if r.Role == db.SupplyRoleAdmin {
+			continue
+		}
+		if _, err := s.granter.GrantRole(ctx, string(r.Role), r.Address); err != nil {
+			return fmt.Errorf("grant %s to %s: %w", r.Role, r.Address, err)
+		}
+	}
+	return nil
 }
 
 func toParty(r db.RoleBinding) Party {

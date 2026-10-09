@@ -8,6 +8,7 @@ import ir.aut.supplementtracker.core.model.ConsumeAuthorization
 import ir.aut.supplementtracker.core.model.Eip712Domain
 import ir.aut.supplementtracker.core.model.NewBatchRequest
 import ir.aut.supplementtracker.core.model.Page
+import ir.aut.supplementtracker.core.model.Party
 import ir.aut.supplementtracker.core.model.ProtocolInfo
 import ir.aut.supplementtracker.core.model.RegisteredBatch
 import ir.aut.supplementtracker.core.model.RiskAssessment
@@ -245,6 +246,10 @@ private class FakeProtocol : ProtocolRepository {
     }
 
     override suspend fun renderLabels(batchId: String, secretQrs: List<String>) = ByteArray(0)
+
+    override suspend fun listParties(address: String?) =
+        listOf(Party("0x70997970c51812dc3a010c7d01b50e0d17dc79c8", "Distributor", "Pakhsh Co", "tehran"))
+            .filter { address == null || it.address.equals(address, ignoreCase = true) }
 
     private fun batch(id: String) = Batch(id, "0xm", 10, 0, false, name = "Vitamin D3", lotCode = "LOT-$id")
 

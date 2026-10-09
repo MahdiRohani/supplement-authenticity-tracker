@@ -29,6 +29,12 @@ A database created by the previous NestJS/Prisma backend is adopted in place:
 if the `Product` table exists but goose has never run, the initial migration is
 recorded as applied instead of re-created, and existing data is kept.
 
+Outside production the v2 indexer rebuilds its Postgres projection when the
+Hardhat (or other) chain resets under a live API: batches, segments, units,
+custody history, scan events and the indexer cursor are truncated, then every
+stored Distributor/Pharmacy/Manufacturer binding is re-granted on-chain so
+transfers keep working without a manual `POST /v2/roles`.
+
 Env is validated at startup and every problem is reported at once. In
 `APP_ENV=production` (`NODE_ENV` is read as a fallback) `API_WRITE_KEY` is
 mandatory and `ALLOW_IPFS_STUB` must be false. Never commit a real `.env`.

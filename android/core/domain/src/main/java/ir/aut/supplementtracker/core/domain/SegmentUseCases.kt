@@ -1,5 +1,6 @@
 package ir.aut.supplementtracker.core.domain
 
+import ir.aut.supplementtracker.core.model.Party
 import ir.aut.supplementtracker.core.model.Segment
 import ir.aut.supplementtracker.core.model.SegmentStatus
 import ir.aut.supplementtracker.core.model.SegmentTransferRequest
@@ -28,6 +29,12 @@ class ListCustodySegmentsUseCase(private val repository: ProtocolRepository) {
             }
             .sortedWith(compareByDescending<Segment> { it.batchId.toBigInteger() }.thenBy { it.start })
     }
+}
+
+/** Supply-chain parties bound through `/v2/roles`, used as transfer recipients. */
+class ListPartiesUseCase(private val repository: ProtocolRepository) {
+    suspend operator fun invoke(address: String? = null): List<Party> =
+        repository.listParties(address?.takeIf { it.isNotBlank() })
 }
 
 /** Moves the first [SegmentTransferRequest.count] units of a segment; the rest stay put. */

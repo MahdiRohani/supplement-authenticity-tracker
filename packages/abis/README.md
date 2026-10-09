@@ -11,6 +11,8 @@ Artifact fields: `contractName`, `abiVersion`, `address`, `chainId`, `network`, 
 
 `deployments.json` maps `chainId → { network, contractName, abiVersion, address, deployBlock, contracts }`. The top-level fields describe v1 so existing clients and `GET /v1/chains` keep working; `contracts` lists every deployed registry with its own `address`, `abiVersion` and `deployBlock` (the block an indexer should start from).
 
+Hardhat (`31337`) is filled by `npm run deploy:local`. Sepolia (`11155111`) ships with empty addresses until you run `npm run deploy:sepolia`; the backend leaves v2 writes disabled while the V2 address is blank. The Android `sepolia` flavor reads the live V2 address from `GET /v2/chains` and only needs `SEPOLIA_REGISTRY_ADDRESS` for legacy v1 verify.
+
 `test-vectors/supplement-registry-v2.json` holds reference Merkle leaves, roots, proofs and EIP-712 `ConsumeAuthorization` signatures (test keys only). The Go backend and Android app test their v2 implementations against it. Regenerate with `cd contracts && npm run vectors`; a contracts test fails if the file drifts.
 
-Bump `abiVersion` on any ABI-breaking or additive public interface change. Keep backend `REGISTRY_ABI_PATH` and the Android chain verifier in sync with the artifact they use.
+Bump `abiVersion` on any ABI-breaking or additive public interface change. Keep backend `REGISTRY_ABI_PATH` / `REGISTRY_V2_ABI_PATH` and the Android chain verifier in sync with the artifact they use.

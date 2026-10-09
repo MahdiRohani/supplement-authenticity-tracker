@@ -71,3 +71,5 @@ venv/
 junit.xml
 test-results/
 playwright-report/
+
+repomix-output.xml

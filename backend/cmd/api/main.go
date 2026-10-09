@@ -157,11 +157,13 @@ func run() error {
 			DefaultManufacturer: product.DefaultManufacturer,
 			SnapshotTTL:         cfg.VerifyCacheTTL,
 		})
+	parties := roles.NewPartyService(st, registryV2)
 	if chainDeps.v2 != nil {
 		indexerV2 := chain.NewIndexerV2(chainDeps.client, chainDeps.v2, protocolSvc.Projector(), st, log, chain.IndexerV2Options{
 			StartBlock:    chainDeps.v2StartBlock,
 			Confirmations: uint64(cfg.IndexerConfirmations),
 			AllowReset:    !cfg.IsProduction(),
+			OnReset:       parties.Resync,
 		})
 		go indexerV2.Run(ctx)
 	} else {
@@ -185,7 +187,7 @@ func run() error {
 		Analytics: analytics.NewService(st, cfg.Flags.AnalyticsEnabled),
 		EIP712:    chain.NewEIP712(v1Address),
 		Protocol:  protocolSvc,
-		Parties:   roles.NewPartyService(st, registryV2),
+		Parties:   parties,
 		ReloadKeys: func(ctx context.Context) ([]string, error) {
 			return reloadKeys(ctx, "api")
 		},

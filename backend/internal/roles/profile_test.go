@@ -11,10 +11,13 @@ import (
 )
 
 type profileStore struct {
-	upserts []db.UpsertRoleBindingProfileParams
+	upserts  []db.UpsertRoleBindingProfileParams
+	bindings []db.RoleBinding
 }
 
-func (*profileStore) ListRoleBindings(context.Context) ([]db.RoleBinding, error) { return nil, nil }
+func (s *profileStore) ListRoleBindings(context.Context) ([]db.RoleBinding, error) {
+	return s.bindings, nil
+}
 
 func (*profileStore) ListRoleBindingsForAddress(context.Context, string) ([]db.RoleBinding, error) {
 	return nil, nil
@@ -66,6 +69,30 @@ func TestBindGrantsOnChainBeforeStoringTheProfile(t *testing.T) {
 	}
 	if got := *st.upserts[0].Region; got != "tehran-province" {
 		t.Fatalf("region = %q", got)
+	}
+}
+
+func TestResyncRegrantsSupplyRolesButNotAdmin(t *testing.T) {
+	ctx := context.Background()
+	st := &profileStore{bindings: []db.RoleBinding{
+		{Address: "0xd1", Role: db.SupplyRoleDistributor},
+		{Address: "0xa1", Role: db.SupplyRoleAdmin},
+		{Address: "0xp1", Role: db.SupplyRolePharmacy},
+	}}
+	g := &granter{}
+	if err := NewPartyService(st, g).Resync(ctx); err != nil {
+		t.Fatal(err)
+	}
+	want := [][2]string{{"Distributor", "0xd1"}, {"Pharmacy", "0xp1"}}
+	if len(g.calls) != len(want) || g.calls[0] != want[0] || g.calls[1] != want[1] {
+		t.Fatalf("grants = %v", g.calls)
+	}
+
+	if err := NewPartyService(st, &granter{err: errors.New("registry not deployed")}).Resync(ctx); err == nil {
+		t.Fatal("a failed grant must be reported so the indexer retries")
+	}
+	if err := NewPartyService(st, nil).Resync(ctx); err != nil {
+		t.Fatalf("no granter: %v", err)
 	}
 }
 

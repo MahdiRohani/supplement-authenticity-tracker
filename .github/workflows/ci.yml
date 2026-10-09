@@ -190,6 +190,9 @@ jobs:
           :feature:consume:testDebugUnitTest
           :feature:transfer:testDebugUnitTest
           :feature:manufacturer-register:testDebugUnitTest
+          :feature:stock:testDebugUnitTest
+          :feature:history:testDebugUnitTest
+          :feature:manufacturer-dashboard:testDebugUnitTest
       - name: Assemble, lint and compile instrumented tests
         run: >-
           ./gradlew --no-daemon

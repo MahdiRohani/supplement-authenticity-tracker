@@ -1,5 +1,10 @@
-# Copy keys into android/local.properties (gitignored) before building sepolia flavor.
+# Copy keys into android/local.properties (gitignored) before building the sepolia flavor.
 # Defaults use *.example.invalid so a misconfigured build cannot silently hit a fake host.
+#
+# Protocol v2 does not need SEPOLIA_REGISTRY_V2_ADDRESS in the APK: the app reads the
+# live SupplementRegistryV2 address and EIP-712 domain from GET /v2/chains. Record both
+# addresses in packages/abis/deployments.json after deploy so the backend (and this
+# SEPOLIA_REGISTRY_ADDRESS for legacy v1 verify) agree with the chain.
 
 SEPOLIA_API_BASE_URL=https://your-api.example.com/v1/
 SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_KEY

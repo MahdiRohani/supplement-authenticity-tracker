@@ -5,6 +5,7 @@ import ir.aut.supplementtracker.core.domain.ErrorMapper
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
 
@@ -18,6 +19,24 @@ internal fun OkHttpClient.executeJson(request: Request): JSONObject {
                 throw ErrorMapper.fromHttp(response.code, body)
             }
             return if (body.isBlank()) JSONObject() else JSONObject(body)
+        }
+    } catch (error: DomainError) {
+        throw error
+    } catch (error: IOException) {
+        throw DomainError.Network("Unable to resolve host or connect", error)
+    } catch (error: Throwable) {
+        throw DomainError.Unknown(error.message ?: "Request failed", error)
+    }
+}
+
+internal fun OkHttpClient.executeJsonArray(request: Request): JSONArray {
+    try {
+        newCall(request).execute().use { response ->
+            val body = response.body?.string().orEmpty()
+            if (!response.isSuccessful) {
+                throw ErrorMapper.fromHttp(response.code, body)
+            }
+            return if (body.isBlank()) JSONArray() else JSONArray(body)
         }
     } catch (error: DomainError) {
         throw error

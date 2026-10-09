@@ -6,6 +6,7 @@ import ir.aut.supplementtracker.core.model.BatchDetail
 import ir.aut.supplementtracker.core.model.ConsumeAuthorization
 import ir.aut.supplementtracker.core.model.NewBatchRequest
 import ir.aut.supplementtracker.core.model.Page
+import ir.aut.supplementtracker.core.model.Party
 import ir.aut.supplementtracker.core.model.ProtocolInfo
 import ir.aut.supplementtracker.core.model.RegisteredBatch
 import ir.aut.supplementtracker.core.model.ScanContext
@@ -115,6 +116,12 @@ class HttpProtocolRepository(
         withContext(Dispatchers.IO) {
             val body = JSONObject().put("batchId", batchId).put("secretQrs", JSONArray(secretQrs))
             client.executeBytes(post("labels/render", body))
+        }
+
+    override suspend fun listParties(address: String?): List<Party> =
+        withContext(Dispatchers.IO) {
+            val url = url("roles", "address" to address)
+            ProtocolJson.parties(client.executeJsonArray(Request.Builder().url(url).get().build()))
         }
 
     private fun get(path: String): Request = Request.Builder().url("$baseUrl$path").get().build()

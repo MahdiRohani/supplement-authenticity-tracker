@@ -113,6 +113,22 @@ class HttpProtocolRepositoryTest {
     }
 
     @Test
+    fun listPartiesParsesTheBareArrayFromV2Roles() = runBlocking {
+        server.enqueue(
+            json(
+                """[{"id":"1","address":"0x70997970c51812dc3a010c7d01b50e0d17dc79c8","role":"Distributor",
+                    "displayName":"Pakhsh Co","region":"tehran","createdAt":"t","updatedAt":"t"},
+                   {"id":"2","address":"0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc","role":"Pharmacy",
+                    "displayName":"Darou Pharmacy","region":"tehran","createdAt":"t","updatedAt":"t"}]""",
+            ),
+        )
+        val parties = repository.listParties()
+        assertEquals("/v2/roles", server.takeRequest().path)
+        assertEquals(listOf("Distributor", "Pharmacy"), parties.map { it.role })
+        assertEquals("Darou Pharmacy", parties[1].displayName)
+    }
+
+    @Test
     fun infoIsFetchedOnce() = runBlocking {
         server.enqueue(json(CHAINS))
         val first = repository.info()

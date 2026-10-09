@@ -32,7 +32,6 @@ android {
                 "API_BASE_URL",
                 "\"http://${localProp("LOCAL_DEV_HOST", "10.0.2.2")}:3000/v1/\"",
             )
-            buildConfigField("String", "SIGNING_MODE", "\"managed\"")
         }
         create("sepolia") {
             dimension = "env"
@@ -41,7 +40,6 @@ android {
                 "API_BASE_URL",
                 "\"${localProp("SEPOLIA_API_BASE_URL", "https://api.sepolia.example.invalid/v1/")}\"",
             )
-            buildConfigField("String", "SIGNING_MODE", "\"relayer\"")
         }
     }
     compileOptions {

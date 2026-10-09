@@ -197,6 +197,9 @@ func TestV2UnitsSegmentsAndRecall(t *testing.T) {
 	if err := st.SetIndexerCursor(ctx, db.SetIndexerCursorParams{Name: "c", LastBlock: 16, BlockHash: "0xh", Now: time.Now().UTC()}); err != nil {
 		t.Fatal(err)
 	}
+	if err := st.InsertScanEvent(ctx, db.InsertScanEventParams{ID: cuid.New(), BatchID: 1, Index: 5, DeviceHash: "d", StatusAtScan: "Authentic", Now: time.Now().UTC()}); err != nil {
+		t.Fatal(err)
+	}
 	if err := st.ResetV2Projection(ctx, "c"); err != nil {
 		t.Fatal(err)
 	}
@@ -205,6 +208,10 @@ func TestV2UnitsSegmentsAndRecall(t *testing.T) {
 	}
 	if count, _ := st.CountBatches(ctx, nil); count != 0 {
 		t.Fatalf("batches after reset = %d", count)
+	}
+	var scans int
+	if err := st.Pool.QueryRow(ctx, `SELECT count(*) FROM "ScanEvent"`).Scan(&scans); err != nil || scans != 0 {
+		t.Fatalf("scans after reset = %d, %v", scans, err)
 	}
 }
 

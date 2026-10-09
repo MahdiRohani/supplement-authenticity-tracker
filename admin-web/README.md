@@ -22,6 +22,9 @@ The **API key** field is sent as `X-Api-Key`. With `API_WRITE_KEY` set on the ba
 | Batches | `GET /v2/batches?page&limit&manufacturer`, expand: `GET /v2/batches/:id` (stage distribution and custody segments) |
 | Recall | `POST /v2/batches/:id/recall` with `{ "segmentId"?, "reason"? }` (whole batch or one segment) |
 | Clone suspects | `GET /v2/scans/suspicious?sinceHours&minRisk&limit` |
+| Roles | `GET /v2/roles`, `POST /v2/roles` `{ address, role, displayName?, region? }` — grants the role on SupplementRegistryV2 and stores the public profile buyers see |
 | Counterfeit reports | `GET /v2/reports/counterfeit?limit=20` (v2 reports carry the unit path `chain/batch/index`) |
 
 Each section loads independently, so a backend without `SupplementRegistryV2` (v2 routes answer 503) still shows the v1 health and the error inline. All server values are HTML-escaped before rendering.
+
+Serve on a port other than 8080 when Docker Compose IPFS is up — Kubo's gateway already binds that port. `python3 -m http.server 8081` is the usual choice.

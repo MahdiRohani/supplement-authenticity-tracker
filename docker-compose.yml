@@ -34,15 +34,23 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/supplement_tracker?schema=public
-      RPC_URL: ${RPC_URL:-}
+      # Hardhat on the host must listen on all interfaces: `npx hardhat node --hostname 0.0.0.0`.
+      RPC_URL: ${RPC_URL:-http://host.docker.internal:8545}
+      CHAIN_ID: ${CHAIN_ID:-31337}
       REGISTRY_ADDRESS: ${REGISTRY_ADDRESS:-}
       REGISTRY_ABI_PATH: /app/packages/abis/SupplementRegistry.json
+      REGISTRY_V2_ADDRESS: ${REGISTRY_V2_ADDRESS:-}
+      REGISTRY_V2_ABI_PATH: /app/packages/abis/SupplementRegistryV2.json
       DEPLOYMENTS_PATH: /app/packages/abis/deployments.json
+      PUBLIC_VERIFY_BASE_URL: ${PUBLIC_VERIFY_BASE_URL:-https://supplementtracker.aut.ir/u}
+      SCAN_HASH_SALT: ${SCAN_HASH_SALT:-dev-only-change-me}
+      MAX_BATCH_UNITS: ${MAX_BATCH_UNITS:-5000}
+      API_WRITE_KEY: ${API_WRITE_KEY:-}
       IPFS_API_URL: http://ipfs:5001
       IPFS_GATEWAY_URL: http://ipfs:8080/ipfs
       ALLOW_IPFS_STUB: ${ALLOW_IPFS_STUB:-true}
       VERIFY_CACHE_TTL_MS: 15000
-      VERIFY_RATE_LIMIT: 60
+      VERIFY_RATE_LIMIT: ${VERIFY_RATE_LIMIT:-60}
       CONSUME_RATE_LIMIT: 20
       RATE_LIMIT_WINDOW_MS: 60000
       RELAYER_KEYS_JSON: ${RELAYER_KEYS_JSON:-{"0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266":"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80","0x70997970c51812dc3a010c7d01b50e0d17dc79c8":"0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d","0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc":"0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"}}

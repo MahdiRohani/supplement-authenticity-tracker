@@ -77,19 +77,24 @@ Deep links:
 ./scripts/demo.sh
 ```
 
-Starts contract e2e, Docker Compose (Postgres + IPFS + Backend), and a sample register/list HTTP call.
+Starts Hardhat (listening on `0.0.0.0:8545`), deploys v1 + v2, brings up Postgres + IPFS via Docker Compose, runs the Go API on the host, grants Distributor/Pharmacy roles, registers a 5-unit batch, and prints sample public/secret QRs. Hardhat and the API stay running; PIDs are in `/tmp/sat-demo.pids`.
 
 ## Docker Compose
 
 ```bash
+# Full stack (Hardhat must already be up on the host with --hostname 0.0.0.0)
 docker compose up -d --build
+
+# Or just the dependencies, then run the API on the host:
+docker compose up -d postgres ipfs
+cd backend && cp .env.example .env && go run ./cmd/api
 ```
 
-Services: `postgres`, `ipfs` (Kubo), `backend` on port `3000`.
+Services: `postgres`, `ipfs` (Kubo on 5001/8080), `backend` on port `3000`. The backend container mounts `packages/abis` and is wired for Protocol v2 (`REGISTRY_V2_ABI_PATH`, `RPC_URL=http://host.docker.internal:8545`, `CHAIN_ID=31337`).
 
 ## Contracts and backend
 
-- Contracts: `cd contracts && npm install && npm test && npm run deploy:local`
+- Contracts: `cd contracts && npm install && npm test && npx hardhat node --hostname 0.0.0.0` (other terminal) then `npm run deploy:local`
 - Backend: `cd backend && cp .env.example .env && go run ./cmd/api` (tests: `go test -race ./...`); endpoints, migrations and env in `backend/README.md`
 - Env is validated at startup (see `backend/.env.example`; never commit real secrets)
 - Android ↔ API contract test (runs the app's real HTTP client against a live backend):
@@ -101,13 +106,14 @@ Services: `postgres`, `ipfs` (Kubo), `backend` on port `3000`.
 
 ## Operational runbook
 
-1. **Local stack:** `./scripts/demo.sh` or `docker compose up -d --build` plus `cd contracts && npm run node` and deploy.
-2. **Health:** `curl http://127.0.0.1:3000/v1/health` (expects `status=ok|degraded`) and `/v1/health/ready`. For v2, `curl http://127.0.0.1:3000/v2/health` (`protocol=configured` once `REGISTRY_V2_ADDRESS` is set).
-3. **Write auth:** set `API_WRITE_KEY` and send `x-api-key` on POST/PUT/DELETE (GET verify stays public). Empty key is allowed only outside production.
-4. **Relayer key rotate:** update `RELAYER_KEYS_JSON`, keep retiring keys in `RELAYER_KEYS_PREVIOUS_JSON`, then `POST /v1/admin/relayer-keys/reload` with the write key.
-5. **ABI sync:** after contract changes run deploy/export, bump `abiVersion` in `packages/abis/SupplementRegistry.json` / `SupplementRegistryV2.json`, regenerate vectors with `npm run vectors`, restart backend.
-6. **Load check:** with backend up, `PRODUCT_ID=1 ./scripts/load-verify.sh` (max request &lt; 3s).
-7. **CI:** GitHub Actions runs:
+1. **Local stack:** `./scripts/demo.sh`, or `npx hardhat node --hostname 0.0.0.0` + deploy + `docker compose up -d --build` (or host-run API).
+2. **Health:** `curl http://127.0.0.1:3000/v1/health` (expects `status=ok|degraded`) and `/v1/health/ready`. For v2, `curl http://127.0.0.1:3000/v2/health` (`protocol=configured` once the V2 ABI/address resolve).
+3. **Roles:** before the first transfer, grant Distributor/Pharmacy via the admin panel **Roles** section, `POST /v2/roles`, or the demo script. Outside production a Hardhat restart re-grants stored roles automatically.
+4. **Write auth:** set `API_WRITE_KEY` and send `x-api-key` on POST/PUT/DELETE (GET verify stays public). Empty key is allowed only outside production.
+5. **Relayer key rotate:** update `RELAYER_KEYS_JSON`, keep retiring keys in `RELAYER_KEYS_PREVIOUS_JSON`, then `POST /v1/admin/relayer-keys/reload` with the write key.
+6. **ABI sync:** after contract changes run deploy/export, bump `abiVersion` in `packages/abis/SupplementRegistry.json` / `SupplementRegistryV2.json`, regenerate vectors with `npm run vectors`, restart backend.
+7. **Load check:** with backend up, `PRODUCT_ID=1 ./scripts/load-verify.sh` (max request &lt; 3s).
+8. **CI:** GitHub Actions runs:
    - contracts: tests, the v1/v2 Hardhat end-to-end scripts, and a test-vector determinism check;
    - Slither;
    - backend: gofmt, `go vet` including the `e2e` tag, and `go test -race` with Postgres;
@@ -115,10 +121,11 @@ Services: `postgres`, `ipfs` (Kubo), `backend` on port `3000`.
    - Android: unit tests for all modules, `assembleLocalDebug`, `lintLocalDebug`, and the androidTest compile;
    - subgraph codegen/build;
    - an admin-web script syntax check.
-8. **Common failures:** pending `chainProductId` means mint skipped (check RPC/keys); IPFS stub only when `ALLOW_IPFS_STUB=true` or non-production.
-9. **Admin web:** `cd admin-web && python3 -m http.server 8080` against the API origin `http://127.0.0.1:3000` (v1 health plus v2 batches, segments, recall and clone suspects).
-10. **Gasless consume:** see `docs/meta-transactions.md` (v2 `POST /v2/consume` with a unit-key `ConsumeAuthorization`; v1 `POST /v1/meta/consume`).
-11. **Recall:** `POST /v2/batches/{batchId}/recall` (optionally with a `segmentId`) with the write key, or the admin web panel. Verify shows `Recalled` right away.
+9. **Common failures:** pending `chainProductId` means mint skipped (check RPC/keys); IPFS stub only when `ALLOW_IPFS_STUB=true` or non-production. After a Hardhat restart the v2 indexer rebuilds its projection (and clears stale scans) outside production.
+10. **Admin web:** `cd admin-web && python3 -m http.server 8081` against the API origin `http://127.0.0.1:3000` (use 8081 so it does not collide with the IPFS gateway on 8080). Covers health, batches, segments, recall, roles, clone suspects and reports.
+11. **Gasless consume:** see `docs/meta-transactions.md` (v2 `POST /v2/consume` with a unit-key `ConsumeAuthorization`; v1 `POST /v1/meta/consume`).
+12. **Recall:** `POST /v2/batches/{batchId}/recall` (optionally with a `segmentId`) with the write key, or the admin web panel. Verify shows `Recalled` right away.
+13. **Sepolia:** deploy with `cd contracts && npm run deploy:sepolia`, copy the printed addresses into `packages/abis/deployments.json` under `11155111`, set `android/local.properties` from `android/sepolia.properties.example`, and point the backend at the Sepolia RPC. The app reads the live V2 address from `GET /v2/chains`.
 
 ## Versioning
 

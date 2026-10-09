@@ -70,6 +70,7 @@ import ir.aut.supplementtracker.core.domain.GetOwnershipHistoryUseCase
 import ir.aut.supplementtracker.core.domain.GetUnitHistoryUseCase
 import ir.aut.supplementtracker.core.domain.ListBatchesUseCase
 import ir.aut.supplementtracker.core.domain.ListCustodySegmentsUseCase
+import ir.aut.supplementtracker.core.domain.ListPartiesUseCase
 import ir.aut.supplementtracker.core.domain.RegisterUnitBatchUseCase
 import ir.aut.supplementtracker.core.domain.RenderBatchLabelsUseCase
 import ir.aut.supplementtracker.core.domain.ReportCounterfeitUseCase
@@ -77,9 +78,12 @@ import ir.aut.supplementtracker.core.domain.TransferSegmentUseCase
 import ir.aut.supplementtracker.core.domain.VerifyProductUseCase
 import ir.aut.supplementtracker.core.domain.VerifyUnitUseCase
 import ir.aut.supplementtracker.core.model.FeatureFlags
+import ir.aut.supplementtracker.core.model.Party
 import ir.aut.supplementtracker.core.model.SupplyRole
 import ir.aut.supplementtracker.core.model.UnitRef
 import ir.aut.supplementtracker.core.model.UserSession
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import ir.aut.supplementtracker.feature.consume.ConsumeScreen
 import ir.aut.supplementtracker.feature.consume.ConsumeUiEffect
 import ir.aut.supplementtracker.feature.consume.ConsumeViewModel
@@ -179,6 +183,7 @@ class MainActivity : ComponentActivity() {
         val listBatches = ListBatchesUseCase(protocol)
         val getBatchDetail = GetBatchDetailUseCase(protocol)
         val listSegments = ListCustodySegmentsUseCase(protocol)
+        val listParties = ListPartiesUseCase(protocol)
         val transferSegment = TransferSegmentUseCase(protocol)
         val getUnitHistory = GetUnitHistoryUseCase(protocol)
         val verifyDeps =
@@ -196,6 +201,7 @@ class MainActivity : ComponentActivity() {
                 val snackbarHostState = remember { SnackbarHostState() }
                 var session by remember { mutableStateOf(sessionStore.read()) }
                 var featureFlags by remember { mutableStateOf(FeatureFlags()) }
+                var parties by remember { mutableStateOf<List<Party>>(emptyList()) }
                 var draftRole by remember {
                     mutableStateOf(session?.role ?: SupplyRole.Manufacturer)
                 }
@@ -210,6 +216,11 @@ class MainActivity : ComponentActivity() {
 
                 LaunchedEffect(Unit) {
                     featureFlags = runCatching { getFeatureFlags() }.getOrElse { FeatureFlags() }
+                }
+                LaunchedEffect(session) {
+                    parties = withContext(Dispatchers.IO) {
+                        runCatching { listParties() }.getOrElse { emptyList() }
+                    }
                 }
 
                 val destinations = remember(session) { destinationsFor(session) }
@@ -536,19 +547,13 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             }
-                            val suggestionRoles = listOf(SupplyRole.Distributor, SupplyRole.Pharmacy)
                             TransferScreen(
                                 state = transferState,
                                 onEvent = transferVm::onEvent,
-                                recipientSuggestions = suggestionRoles
-                                    .map { role ->
-                                        RecipientSuggestion(
-                                            label = stringResource(role.labelRes),
-                                            address = defaultSessionFor(role).address,
-                                            icon = role.icon,
-                                        )
-                                    }
-                                    .filterNot { it.address.equals(session?.address, ignoreCase = true) },
+                                recipientSuggestions = recipientSuggestions(
+                                    parties = parties,
+                                    selfAddress = session?.address,
+                                ),
                             )
                         }
                         composable(
@@ -796,3 +801,41 @@ private fun homeRouteFor(role: SupplyRole): String =
         SupplyRole.Manufacturer, SupplyRole.Admin -> AppRoutes.DASHBOARD
         SupplyRole.Distributor, SupplyRole.Pharmacy -> AppRoutes.STOCK
     }
+
+/**
+ * Transfer chips come from `/v2/roles` so Sepolia (and any other network) shows
+ * the wallets that actually hold Distributor / Pharmacy, not Hardhat defaults.
+ * When the API is unreachable the Hardhat demo wallets are offered as a fallback
+ * so a fresh local install can still move product before the first role bind.
+ */
+@Composable
+private fun recipientSuggestions(
+    parties: List<Party>,
+    selfAddress: String?,
+): List<RecipientSuggestion> {
+    val fromApi =
+        parties
+            .filter { it.role.equals("Distributor", true) || it.role.equals("Pharmacy", true) }
+            .distinctBy { it.address.lowercase() }
+            .map { party ->
+                val role = SupplyRole.entries.firstOrNull { it.name.equals(party.role, true) }
+                RecipientSuggestion(
+                    label = party.displayName?.takeIf { it.isNotBlank() }
+                        ?: role?.let { stringResource(it.labelRes) }
+                        ?: party.role.orEmpty().ifBlank { party.address },
+                    address = party.address,
+                    icon = role?.icon,
+                )
+            }
+    val suggestions =
+        fromApi.ifEmpty {
+            listOf(SupplyRole.Distributor, SupplyRole.Pharmacy).map { role ->
+                RecipientSuggestion(
+                    label = stringResource(role.labelRes),
+                    address = defaultSessionFor(role).address,
+                    icon = role.icon,
+                )
+            }
+        }
+    return suggestions.filterNot { it.address.equals(selfAddress, ignoreCase = true) }
+}

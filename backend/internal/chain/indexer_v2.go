@@ -37,7 +37,10 @@ type IndexerV2Options struct {
 	// AllowReset rebuilds the projection when the indexed chain disappears
 	// (a restarted dev node or a deep reorg). Otherwise indexing stops.
 	AllowReset bool
-	Interval   time.Duration
+	// OnReset runs after a reset and is retried on every poll until it
+	// succeeds; the new chain may not have the registry deployed yet.
+	OnReset  func(context.Context) error
+	Interval time.Duration
 }
 
 // IndexerV2 projects SupplementRegistryV2 events into Postgres. Unlike the
@@ -52,11 +55,14 @@ type IndexerV2 struct {
 	opts      IndexerV2Options
 	name      string
 
-	loaded   bool
-	next     uint64
-	halted   error
-	topics   []common.Hash
-	handlers map[common.Hash]func(context.Context, types.Log, map[string]any) error
+	loaded bool
+	next   uint64
+	// lastHash is the hash of block next-1 once something has been indexed.
+	lastHash     string
+	resetPending bool
+	halted       error
+	topics       []common.Hash
+	handlers     map[common.Hash]func(context.Context, types.Log, map[string]any) error
 }
 
 func NewIndexerV2(backend Backend, contract *Contract, projector *Projector, cursors CursorStore, log *slog.Logger, opts IndexerV2Options) *IndexerV2 {
@@ -153,9 +159,23 @@ func (ix *IndexerV2) Poll(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("block number: %w", err)
 	}
+	if ix.loaded {
+		changed, err := ix.chainChanged(ctx, latest)
+		if err != nil {
+			return err
+		}
+		ix.loaded = !changed
+	}
 	if !ix.loaded {
 		if err := ix.loadCursor(ctx, latest); err != nil {
 			return err
+		}
+	}
+	if ix.resetPending && ix.opts.OnReset != nil {
+		if err := ix.opts.OnReset(ctx); err != nil {
+			ix.log.Warn("post-reset hook failed; retrying next poll", "err", err)
+		} else {
+			ix.resetPending = false
 		}
 	}
 	if latest < ix.opts.Confirmations {
@@ -181,8 +201,29 @@ func (ix *IndexerV2) Poll(ctx context.Context) error {
 			return fmt.Errorf("save cursor: %w", err)
 		}
 		ix.next = to + 1
+		ix.lastHash = header.Hash().Hex()
 	}
 	return nil
+}
+
+// chainChanged reports whether the last indexed block left the chain while
+// the indexer was running, e.g. a dev node restarted under a live API.
+func (ix *IndexerV2) chainChanged(ctx context.Context, latest uint64) (bool, error) {
+	if ix.lastHash == "" {
+		return false, nil
+	}
+	last := ix.next - 1
+	if last > latest {
+		return true, nil
+	}
+	header, err := ix.backend.HeaderByNumber(ctx, new(big.Int).SetUint64(last))
+	if errors.Is(err, ethereum.NotFound) {
+		return true, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("header %d: %w", last, err)
+	}
+	return !strings.EqualFold(header.Hash().Hex(), ix.lastHash), nil
 }
 
 // loadCursor resumes after the saved block when that block is still part of
@@ -192,6 +233,7 @@ func (ix *IndexerV2) loadCursor(ctx context.Context, latest uint64) error {
 	switch {
 	case errors.Is(err, pgx.ErrNoRows):
 		ix.next = ix.opts.StartBlock
+		ix.lastHash = ""
 		ix.loaded = true
 		return nil
 	case err != nil:
@@ -209,6 +251,7 @@ func (ix *IndexerV2) loadCursor(ctx context.Context, latest uint64) error {
 	}
 	if !stale {
 		ix.next = last + 1
+		ix.lastHash = cursor.BlockHash
 		ix.loaded = true
 		return nil
 	}
@@ -222,6 +265,8 @@ func (ix *IndexerV2) loadCursor(ctx context.Context, latest uint64) error {
 		return err
 	}
 	ix.next = ix.opts.StartBlock
+	ix.lastHash = ""
+	ix.resetPending = true
 	ix.loaded = true
 	return nil
 }

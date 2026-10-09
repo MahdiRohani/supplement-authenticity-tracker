@@ -47,7 +47,6 @@ android {
                 "REGISTRY_ADDRESS",
                 "\"0x5FbDB2315678afecb367f032d93F642f64180aa3\"",
             )
-            buildConfigField("String", "SIGNING_MODE", "\"managed\"")
         }
         create("sepolia") {
             dimension = "env"
@@ -61,12 +60,12 @@ android {
                 "RPC_URL",
                 "\"${localProp("SEPOLIA_RPC_URL", "https://rpc.sepolia.example.invalid")}\"",
             )
+            // v1 verify fallback. Protocol v2 registry address comes from GET /v2/chains.
             buildConfigField(
                 "String",
                 "REGISTRY_ADDRESS",
                 "\"${localProp("SEPOLIA_REGISTRY_ADDRESS", "0x0000000000000000000000000000000000000000")}\"",
             )
-            buildConfigField("String", "SIGNING_MODE", "\"relayer\"")
         }
     }
 

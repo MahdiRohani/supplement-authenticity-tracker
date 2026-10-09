@@ -192,6 +192,8 @@ internal object ProtocolJson {
             blockNumber = json.optLong("blockNumber"),
         )
 
+    fun parties(json: JSONArray): List<Party> = json.objects().map(::party)
+
     private fun party(json: JSONObject): Party =
         Party(
             address = json.getString("address"),
