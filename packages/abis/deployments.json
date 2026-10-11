@@ -3,18 +3,18 @@
     "network": "localhost",
     "contractName": "SupplementRegistry",
     "abiVersion": "1.3.0",
-    "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-    "deployBlock": 1,
+    "address": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+    "deployBlock": 6,
     "contracts": {
       "SupplementRegistry": {
         "abiVersion": "1.3.0",
-        "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-        "deployBlock": 1
+        "address": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+        "deployBlock": 6
       },
       "SupplementRegistryV2": {
         "abiVersion": "2.0.0",
-        "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-        "deployBlock": 2
+        "address": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
+        "deployBlock": 7
       }
     }
   },
