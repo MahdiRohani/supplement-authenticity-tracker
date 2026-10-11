@@ -65,7 +65,8 @@ type Querier interface {
 	// indexer), and GREATEST keeps replays harmless.
 	ShrinkSegment(ctx context.Context, arg ShrinkSegmentParams) (int64, error)
 	// Aggregates the clone-detection signals of one unit (see internal/risk,
-	// whose Signals/FromHistory compute the same values in memory).
+	// whose Signals/FromHistory compute the same values in memory) and the scan
+	// history shown to the buyer, relative to the scanning device.
 	UnitScanSignals(ctx context.Context, arg UnitScanSignalsParams) (UnitScanSignalsRow, error)
 	// Chain fields are immutable; name and lot code only come from the API, so a
 	// later indexer upsert must not erase them.

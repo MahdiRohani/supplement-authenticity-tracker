@@ -309,7 +309,6 @@ type ScanEvent struct {
 	BatchID      int64
 	Index        int32
 	DeviceHash   string
-	Region       *string
 	StatusAtScan string
 	RiskScore    float64
 	CreatedAt    time.Time

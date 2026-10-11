@@ -32,31 +32,24 @@ import (
 type Model struct {
 	Seed        uint64  `json:"seed"`
 	Units       int     `json:"unitsPerClass"`
-	Regions     int     `json:"regions"`
-	RegionZipfS float64 `json:"regionZipfExponent"`
 	HorizonDays float64 `json:"horizonDays"`
 
-	PharmacistScanP    float64 `json:"pharmacistScanProbability"`
-	ShelfScansMean     float64 `json:"shelfScansMean"`
-	BuyerScanP         float64 `json:"buyerScanAtPurchaseProbability"`
-	ConsumeP           float64 `json:"consumeProbability"`
-	RescansMean        float64 `json:"buyerRescansMean"`
-	FamilyDeviceP      float64 `json:"familyDeviceProbability"`
-	TravelP            float64 `json:"travelProbability"`
-	CloneCounts        []int   `json:"cloneCounts"`
-	CloneLocalP        float64 `json:"cloneLocalRegionProbability"`
-	CloneBuyerRescans  float64 `json:"cloneBuyerRescansMean"`
-	OwnerRegionKnownP  float64 `json:"ownerRegionKnownProbability"`
-	ScanRegionPresentP float64 `json:"scanRegionPresentProbability"`
+	PharmacistScanP   float64 `json:"pharmacistScanProbability"`
+	ShelfScansMean    float64 `json:"shelfScansMean"`
+	BuyerScanP        float64 `json:"buyerScanAtPurchaseProbability"`
+	ConsumeP          float64 `json:"consumeProbability"`
+	RescansMean       float64 `json:"buyerRescansMean"`
+	FamilyDeviceP     float64 `json:"familyDeviceProbability"`
+	CloneCounts       []int   `json:"cloneCounts"`
+	CloneBuyerRescans float64 `json:"cloneBuyerRescansMean"`
 }
 
 func defaultModel() Model {
 	return Model{
-		Seed: 7, Units: 5000, Regions: 31, RegionZipfS: 1.0, HorizonDays: 90,
+		Seed: 7, Units: 5000, HorizonDays: 90,
 		PharmacistScanP: 0.5, ShelfScansMean: 0.3, BuyerScanP: 0.8, ConsumeP: 0.7,
-		RescansMean: 0.6, FamilyDeviceP: 0.15, TravelP: 0.05,
-		CloneCounts: []int{1, 2, 3, 5, 10, 20}, CloneLocalP: 0.3, CloneBuyerRescans: 0.3,
-		OwnerRegionKnownP: 0.9, ScanRegionPresentP: 0.85,
+		RescansMean: 0.6, FamilyDeviceP: 0.15,
+		CloneCounts: []int{1, 2, 3, 5, 10, 20}, CloneBuyerRescans: 0.3,
 	}
 }
 
@@ -66,44 +59,20 @@ type scan struct {
 }
 
 type unit struct {
-	cloned      bool
-	clones      int
-	ownerRegion string
-	consumedAt  *time.Time
-	scans       []scan
+	cloned     bool
+	clones     int
+	consumedAt *time.Time
+	scans      []scan
 }
 
 type sim struct {
-	m       Model
-	rng     *rand.Rand
-	regions []string
-	weights []float64
-	epoch   time.Time
+	m     Model
+	rng   *rand.Rand
+	epoch time.Time
 }
 
 func newSim(m Model) *sim {
-	s := &sim{m: m, rng: rand.New(rand.NewPCG(m.Seed, m.Seed^0x9e3779b97f4a7c15)), epoch: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)}
-	total := 0.0
-	for i := range m.Regions {
-		s.regions = append(s.regions, fmt.Sprintf("region-%02d", i))
-		w := 1 / math.Pow(float64(i+1), m.RegionZipfS)
-		s.weights = append(s.weights, w)
-		total += w
-	}
-	for i := range s.weights {
-		s.weights[i] /= total
-	}
-	return s
-}
-
-func (s *sim) region() string {
-	x, acc := s.rng.Float64(), 0.0
-	for i, w := range s.weights {
-		if acc += w; x < acc {
-			return s.regions[i]
-		}
-	}
-	return s.regions[len(s.regions)-1]
+	return &sim{m: m, rng: rand.New(rand.NewPCG(m.Seed, m.Seed^0x9e3779b97f4a7c15)), epoch: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)}
 }
 
 func (s *sim) poisson(mean float64) int {
@@ -124,47 +93,36 @@ func (s *sim) uniform(lo, hi float64) float64 { return lo + s.rng.Float64()*(hi-
 
 func (s *sim) chance(p float64) bool { return s.rng.Float64() < p }
 
-func (s *sim) add(u *unit, device, region string, day float64, clone bool) {
-	if !s.chance(s.m.ScanRegionPresentP) {
-		region = ""
-	}
-	u.scans = append(u.scans, scan{Scan: risk.Scan{Device: device, Region: region, At: s.at(day)}, clone: clone})
+func (s *sim) add(u *unit, device string, day float64, clone bool) {
+	u.scans = append(u.scans, scan{Scan: risk.Scan{Device: device, At: s.at(day)}, clone: clone})
 }
 
 // genuine simulates the life of a real unit: shelf scans at the pharmacy,
 // the buyer's scan at purchase, consumption, and re-scans afterwards.
 func (s *sim) genuine(id int) unit {
-	owner := s.region()
-	u := unit{ownerRegion: owner}
-	if !s.chance(s.m.OwnerRegionKnownP) {
-		u.ownerRegion = ""
-	}
+	var u unit
 	shelf := s.uniform(0, s.m.HorizonDays/3)
 	sale := shelf + s.uniform(1, s.m.HorizonDays/3)
 	if s.chance(s.m.PharmacistScanP) {
-		s.add(&u, fmt.Sprintf("pharm-%d", id), owner, shelf, false)
+		s.add(&u, fmt.Sprintf("pharm-%d", id), shelf, false)
 	}
 	for i := range s.poisson(s.m.ShelfScansMean) {
-		s.add(&u, fmt.Sprintf("shelf-%d-%d", id, i), owner, s.uniform(shelf, sale), false)
+		s.add(&u, fmt.Sprintf("shelf-%d-%d", id, i), s.uniform(shelf, sale), false)
 	}
 	buyer := fmt.Sprintf("buyer-%d", id)
 	if s.chance(s.m.BuyerScanP) {
-		s.add(&u, buyer, owner, sale, false)
+		s.add(&u, buyer, sale, false)
 	}
 	if !s.chance(s.m.ConsumeP) {
 		return u
 	}
 	consumed := s.at(sale + 0.01)
 	u.consumedAt = &consumed
-	home := owner
-	if s.chance(s.m.TravelP) {
-		home = s.region()
-	}
 	for range s.poisson(s.m.RescansMean) {
-		s.add(&u, buyer, home, s.uniform(sale+0.02, s.m.HorizonDays), false)
+		s.add(&u, buyer, s.uniform(sale+0.02, s.m.HorizonDays), false)
 	}
 	if s.chance(s.m.FamilyDeviceP) {
-		s.add(&u, fmt.Sprintf("family-%d", id), home, s.uniform(sale+0.02, s.m.HorizonDays), false)
+		s.add(&u, fmt.Sprintf("family-%d", id), s.uniform(sale+0.02, s.m.HorizonDays), false)
 	}
 	return u
 }
@@ -174,16 +132,11 @@ func (s *sim) genuine(id int) unit {
 func (s *sim) cloned(id, k int) unit {
 	u := s.genuine(id)
 	u.cloned, u.clones = true, k
-	owner := u.ownerRegion
 	for c := range k {
-		region := s.region()
-		if owner != "" && s.chance(s.m.CloneLocalP) {
-			region = owner
-		}
 		device := fmt.Sprintf("victim-%d-%d", id, c)
 		day := s.uniform(0, s.m.HorizonDays)
 		for r := range 1 + s.poisson(s.m.CloneBuyerRescans) {
-			s.add(&u, device, region, day+float64(r)*s.uniform(0.1, 5), true)
+			s.add(&u, device, day+float64(r)*s.uniform(0.1, 5), true)
 		}
 	}
 	return u
@@ -230,7 +183,7 @@ func replay(u unit, cfg risk.Config, thresholds []float64) outcome {
 		if u.consumedAt != nil && !sc.At.Before(*u.consumedAt) {
 			consumed = u.consumedAt
 		}
-		score := risk.Assess(risk.FromHistory(history, consumed, u.ownerRegion), cfg).Score
+		score := risk.Assess(risk.FromHistory(history, consumed), cfg).Score
 		out.peak = math.Max(out.peak, score)
 		for i, th := range thresholds {
 			if out.firstAt[i] < 0 && score >= th {
@@ -315,7 +268,7 @@ func detectorsFor(cfg risk.Config) []detector {
 		for i, sc := range u.scans {
 			hist[i] = sc.Scan
 		}
-		return risk.FromHistory(hist, u.consumedAt, u.ownerRegion)
+		return risk.FromHistory(hist, u.consumedAt)
 	}
 	ablate := func(name string, mutate func(*risk.Config)) detector {
 		c := cfg
@@ -336,7 +289,6 @@ func detectorsFor(cfg risk.Config) []detector {
 		}},
 		ablate("without many_devices", func(c *risk.Config) { c.DeviceWeight = 0 }),
 		ablate("without scanned_after_consumption", func(c *risk.Config) { c.PostConsumeWeight = 0 }),
-		ablate("without region rules", func(c *risk.Config) { c.RegionWeight = 0 }),
 	}
 }
 
@@ -371,7 +323,6 @@ func main() {
 	m := defaultModel()
 	flag.Uint64Var(&m.Seed, "seed", m.Seed, "random seed")
 	flag.IntVar(&m.Units, "units", m.Units, "units per class (genuine and cloned)")
-	flag.Float64Var(&m.CloneLocalP, "local", m.CloneLocalP, "probability a counterfeit is sold in the custodian's region")
 	flag.Float64Var(&m.FamilyDeviceP, "family", m.FamilyDeviceP, "probability a second household device scans a genuine unit")
 	runs := flag.Int("runs", 10, "independent seeds (seed, seed+1, ...) for mean/std of the detector comparison")
 	outDir := flag.String("out", "bench/results", "output directory")

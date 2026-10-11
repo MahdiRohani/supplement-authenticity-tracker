@@ -41,12 +41,12 @@ class ProtocolUseCasesTest {
         val anchor = FakeAnchor(ChainAnchor(ROOT.uppercase().replace("0X", "0x"), consumed = false, recalled = false))
         val verify = VerifyUnitUseCase(
             repo,
-            scanContext = { ScanContext("device-1", "tehran") },
+            scanContext = { ScanContext("device-1") },
             proofVerifier = { _, _, _, root -> root == ROOT },
             anchorReader = anchor,
         )
         val result = verify(unit)
-        assertEquals(ScanContext("device-1", "tehran"), repo.lastContext)
+        assertEquals(ScanContext("device-1"), repo.lastContext)
         assertEquals(true, result.check.proofValid)
         assertEquals(true, result.check.rootMatchesChain)
         assertEquals(true, result.check.consumedMatchesChain)
@@ -58,7 +58,7 @@ class ProtocolUseCasesTest {
     fun verifyFlagsEvidenceThatContradictsTheChain() = runBlocking {
         val verify = VerifyUnitUseCase(
             repo,
-            scanContext = { ScanContext("d", null) },
+            scanContext = { ScanContext("d") },
             proofVerifier = { _, _, _, _ -> true },
             anchorReader = FakeAnchor(ChainAnchor("0x" + "11".repeat(32), consumed = true, recalled = false)),
         )
@@ -72,7 +72,7 @@ class ProtocolUseCasesTest {
     fun verifyDegradesToUncheckedWhenTheChainIsUnreachable() = runBlocking {
         val verify = VerifyUnitUseCase(
             repo,
-            scanContext = { ScanContext("d", null) },
+            scanContext = { ScanContext("d") },
             anchorReader = object : ChainAnchorReader {
                 override suspend fun read(registry: String, batchId: String, index: Long): ChainAnchor =
                     throw IllegalStateException("rpc down")

@@ -11,8 +11,8 @@ import (
 )
 
 const insertScanEvent = `-- name: InsertScanEvent :exec
-INSERT INTO "ScanEvent" ("id", "batchId", "index", "deviceHash", "region", "statusAtScan", "riskScore", "createdAt")
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO "ScanEvent" ("id", "batchId", "index", "deviceHash", "statusAtScan", "riskScore", "createdAt")
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 `
 
 type InsertScanEventParams struct {
@@ -20,7 +20,6 @@ type InsertScanEventParams struct {
 	BatchID      int64
 	Index        int32
 	DeviceHash   string
-	Region       *string
 	StatusAtScan string
 	RiskScore    float64
 	Now          time.Time
@@ -32,7 +31,6 @@ func (q *Queries) InsertScanEvent(ctx context.Context, arg InsertScanEventParams
 		arg.BatchID,
 		arg.Index,
 		arg.DeviceHash,
-		arg.Region,
 		arg.StatusAtScan,
 		arg.RiskScore,
 		arg.Now,
@@ -116,7 +114,7 @@ func (q *Queries) SetScanRisk(ctx context.Context, arg SetScanRiskParams) error 
 
 const unitScanSignals = `-- name: UnitScanSignals :one
 WITH s AS (
-    SELECT "deviceHash", "region", "createdAt" FROM "ScanEvent"
+    SELECT "deviceHash", "createdAt" FROM "ScanEvent"
     WHERE "batchId" = $3 AND "index" = $4
 ),
 before_consume AS (
@@ -130,16 +128,15 @@ SELECT
     (SELECT count(DISTINCT "deviceHash") FROM s
         WHERE "createdAt" > $1::timestamp
           AND "deviceHash" NOT IN (SELECT "deviceHash" FROM before_consume))::integer AS new_devices_after_consume,
-    (SELECT count(DISTINCT "region") FROM s WHERE "region" IS NOT NULL)::integer AS distinct_regions,
-    (SELECT count(DISTINCT "region") FROM s
-        WHERE "region" IS NOT NULL AND "region" <> $2::text)::integer AS foreign_regions
+    (SELECT count(DISTINCT "deviceHash") FROM s WHERE "deviceHash" <> $2::text)::integer AS other_devices,
+    (SELECT min("createdAt") FROM s)::timestamp AS first_scan_at
 `
 
 type UnitScanSignalsParams struct {
-	ConsumedAt  *time.Time
-	OwnerRegion *string
-	BatchID     int64
-	Index       int32
+	ConsumedAt *time.Time
+	DeviceHash string
+	BatchID    int64
+	Index      int32
 }
 
 type UnitScanSignalsRow struct {
@@ -147,16 +144,17 @@ type UnitScanSignalsRow struct {
 	DevicesBeforeConsume   int32
 	ScansAfterConsume      int32
 	NewDevicesAfterConsume int32
-	DistinctRegions        int32
-	ForeignRegions         int32
+	OtherDevices           int32
+	FirstScanAt            time.Time
 }
 
 // Aggregates the clone-detection signals of one unit (see internal/risk,
-// whose Signals/FromHistory compute the same values in memory).
+// whose Signals/FromHistory compute the same values in memory) and the scan
+// history shown to the buyer, relative to the scanning device.
 func (q *Queries) UnitScanSignals(ctx context.Context, arg UnitScanSignalsParams) (UnitScanSignalsRow, error) {
 	row := q.db.QueryRow(ctx, unitScanSignals,
 		arg.ConsumedAt,
-		arg.OwnerRegion,
+		arg.DeviceHash,
 		arg.BatchID,
 		arg.Index,
 	)
@@ -166,8 +164,8 @@ func (q *Queries) UnitScanSignals(ctx context.Context, arg UnitScanSignalsParams
 		&i.DevicesBeforeConsume,
 		&i.ScansAfterConsume,
 		&i.NewDevicesAfterConsume,
-		&i.DistinctRegions,
-		&i.ForeignRegions,
+		&i.OtherDevices,
+		&i.FirstScanAt,
 	)
 	return i, err
 }

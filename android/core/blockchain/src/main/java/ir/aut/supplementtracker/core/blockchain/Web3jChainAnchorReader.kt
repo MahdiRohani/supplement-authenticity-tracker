@@ -29,13 +29,13 @@ class Web3jChainAnchorReader(
             try {
                 val id = Uint256(BigInteger(batchId))
                 val batchWords = call(web3j, registry, Function("getBatch", listOf(id), emptyList()))
-                require(batchWords.size >= BATCH_WORDS) { "unexpected getBatch result" }
+                val head = decodeBatchHead(batchWords)
                 val consumedWords =
                     call(web3j, registry, Function("isConsumed", listOf(id, Uint32(index)), emptyList()))
                 ChainAnchor(
-                    merkleRoot = Numeric.toHexString(batchWords[0]),
+                    merkleRoot = head.merkleRoot,
                     consumed = consumedWords.firstOrNull()?.let { BigInteger(1, it).signum() != 0 } ?: false,
-                    recalled = BigInteger(1, batchWords[BATCH_INVALID_WORD]).signum() != 0,
+                    recalled = head.recalled,
                 )
             } finally {
                 web3j.shutdown()
@@ -51,13 +51,31 @@ class Web3jChainAnchorReader(
         if (response.hasError() || response.isReverted) {
             error(response.error?.message ?: response.revertReason ?: "eth_call reverted")
         }
-        val raw = Numeric.hexStringToByteArray(response.value ?: "0x")
-        return (0 until raw.size / 32).map { raw.copyOfRange(it * 32, it * 32 + 32) }
+        return words32(response.value ?: "0x")
     }
 
-    private companion object {
-        // Batch {merkleRoot, metadataHash, physicalBatchId, manufacturer, size, consumedCount, invalid}
-        const val BATCH_WORDS = 7
+    internal companion object {
+        // Batch ends with `string metadataCid`, so ABI encoding prefixes the tuple
+        // with a 0x20 offset word before merkleRoot … invalid.
+        const val TUPLE_OFFSET = 1
+        const val BATCH_HEAD_WORDS = 7
         const val BATCH_INVALID_WORD = 6
+
+        data class BatchHead(val merkleRoot: String, val recalled: Boolean)
+
+        fun words32(hex: String): List<ByteArray> {
+            val raw = Numeric.hexStringToByteArray(hex)
+            return (0 until raw.size / 32).map { raw.copyOfRange(it * 32, it * 32 + 32) }
+        }
+
+        fun decodeBatchHead(batchWords: List<ByteArray>): BatchHead {
+            require(batchWords.size >= TUPLE_OFFSET + BATCH_HEAD_WORDS) {
+                "unexpected getBatch result"
+            }
+            return BatchHead(
+                merkleRoot = Numeric.toHexString(batchWords[TUPLE_OFFSET]),
+                recalled = BigInteger(1, batchWords[TUPLE_OFFSET + BATCH_INVALID_WORD]).signum() != 0,
+            )
+        }
     }
 }

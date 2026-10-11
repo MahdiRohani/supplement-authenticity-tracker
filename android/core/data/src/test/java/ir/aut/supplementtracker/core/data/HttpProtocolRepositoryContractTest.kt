@@ -59,7 +59,7 @@ class HttpProtocolRepositoryContractTest {
         assertEquals("AtPointOfSale", toPharmacy.status)
 
         val unit = UnitRef(info.chainId, registered.batch.batchId, 0)
-        val verify = VerifyUnitUseCase(repository, { ScanContext("contract-buyer", "tehran") }, UnitMerkleVerifier())
+        val verify = VerifyUnitUseCase(repository, { ScanContext("contract-buyer") }, UnitMerkleVerifier())
         val before = verify(unit)
         assertEquals("Authentic", before.verification.authenticity)
         assertEquals(true, before.check.proofValid)
