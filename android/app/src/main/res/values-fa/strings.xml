@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">ردیاب اصالت مکمل</string>
+    <string name="app_name">اصیل</string>
     <string name="app_tagline">قبل از اعتماد، استعلام کنید</string>
     <string name="dev_login_title">ورود با نقش</string>
     <string name="dev_login_subtitle">جایگاه خود در زنجیره تأمین را انتخاب کنید. هر نقش ابزارهای خودش را دارد.</string>
