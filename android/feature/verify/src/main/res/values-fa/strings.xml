@@ -30,10 +30,6 @@
     <string name="verify_custodian_region">%1$s · %2$s</string>
     <string name="verify_lot">شماره سری</string>
 
-    <string name="verify_region_title">استان شما</string>
-    <string name="verify_region_hint">اختیاری است و به کشف برچسب‌های کپی‌شده در شهرهای دیگر کمک می‌کند؛ به موقعیت مکانی دسترسی گرفته نمی‌شود.</string>
-    <string name="verify_region_none">ترجیح می‌دهم نگویم</string>
-
     <string name="verify_hidden_entered_title">این کد پنهان بود</string>
     <string name="verify_hidden_entered_body">کد زیر لایه‌ی خراشیدنی را هرگز به کسی ندهید؛ هر کس آن را داشته باشد می‌تواند این واحد را مصرف‌شده ثبت کند. برای استعلام از QR آشکار استفاده کنید.</string>
 
@@ -49,8 +45,12 @@
     <string name="verify_scan_count">%1$d بار اسکن شده</string>
     <string name="risk_reason_many_devices">این برچسب با گوشی‌های متعدد و متفاوتی اسکن شده است.</string>
     <string name="risk_reason_scanned_after_consumption">برچسب پس از مصرف واحد دوباره اسکن شده است.</string>
-    <string name="risk_reason_foreign_region">در استانی دور از داروخانه‌ی نگهدارنده اسکن شده است.</string>
-    <string name="risk_reason_region_spread">اسکن‌ها از چند استان مختلف انجام شده‌اند.</string>
+
+    <string name="verify_history_title">تاریخچه‌ی اسکن</string>
+    <string name="verify_history_other_devices">گوشی‌های دیگری که این برچسب را اسکن کرده‌اند</string>
+    <string name="verify_history_first_scan">اولین اسکن</string>
+    <string name="verify_history_only_you">تا الان فقط همین گوشی این برچسب را اسکن کرده است.</string>
+    <string name="verify_history_hint">یک اسکن توسط داروخانه هنگام فروش طبیعی است. اگر قوطی را تازه و پلمب‌شده خریده‌اید و گوشی‌های دیگر مدت‌ها قبل از خرید شما این برچسب را اسکن کرده‌اند، ممکن است برچسب کپی شده باشد؛ از داروخانه بپرسید یا گزارش دهید.</string>
 
     <string name="verify_evidence_title">شواهد بلاکچینی</string>
     <string name="verify_check_proof">اثبات مرکل روی همین گوشی بررسی شد</string>

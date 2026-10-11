@@ -307,10 +307,10 @@ func (f fixture) toPharmacy(t *testing.T, segmentID string, count int64) protoco
 	return f.transfer(t, shipped.ToSegmentID, pharmacy, 0)
 }
 
-func (f fixture) verify(t *testing.T, batchID string, index int, device, region string) protocol.VerifyResult {
+func (f fixture) verify(t *testing.T, batchID string, index int, device string) protocol.VerifyResult {
 	t.Helper()
 	res, err := f.svc.Verify(context.Background(), protocol.VerifyInput{
-		ChainID: fmt.Sprint(chainID), BatchID: batchID, Index: fmt.Sprint(index), Device: device, Region: region,
+		ChainID: fmt.Sprint(chainID), BatchID: batchID, Index: fmt.Sprint(index), Device: device,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -499,13 +499,15 @@ func TestVerifyStatusesAndCloneDetection(t *testing.T) {
 	reg := f.register(t, 8)
 	f.toPharmacy(t, reg.SegmentID, 4)
 
-	atMaker := f.verify(t, reg.BatchID, 6, "buyer", "tehran")
+	atMaker := f.verify(t, reg.BatchID, 6, "buyer")
 	if atMaker.Authenticity != protocol.InTransit || atMaker.Custodian == nil || atMaker.Custodian.Address != maker {
 		t.Fatalf("unit at the manufacturer = %+v", atMaker)
 	}
-	sale := f.verify(t, reg.BatchID, 2, "buyer", "Tehran")
+	sale := f.verify(t, reg.BatchID, 2, "buyer")
 	if sale.Authenticity != protocol.Authentic || sale.Risk.Level != risk.LevelLow || sale.ScanCount != 1 ||
-		*sale.Custodian.DisplayName != "Darou Pharmacy" || *sale.Product.Manufacturer.DisplayName != "Sina Nutrition" ||
+		sale.ScanHistory == nil || sale.ScanHistory.OtherDevices != 0 || sale.ScanHistory.FirstScanAt == "" ||
+		*sale.Custodian.DisplayName != "Darou Pharmacy" || *sale.Custodian.Region != "tehran" ||
+		*sale.Product.Manufacturer.DisplayName != "Sina Nutrition" ||
 		sale.Evidence == nil || sale.Evidence.MerkleRoot != reg.MerkleRoot {
 		t.Fatalf("verify at the pharmacy = %+v", sale)
 	}
@@ -513,24 +515,26 @@ func TestVerifyStatusesAndCloneDetection(t *testing.T) {
 	if _, err := f.svc.Consume(ctx, f.consumeInput(t, reg.BatchID, 2, secretKey(t, reg.Units[2]), time.Now().Add(time.Minute))); err != nil {
 		t.Fatal(err)
 	}
-	after := f.verify(t, reg.BatchID, 2, "buyer", "tehran")
-	if after.Authenticity != protocol.Consumed || after.Risk.Level != risk.LevelLow || after.Consumption == nil {
+	after := f.verify(t, reg.BatchID, 2, "buyer")
+	if after.Authenticity != protocol.Consumed || after.Risk.Level != risk.LevelLow || after.Consumption == nil ||
+		after.ScanHistory.FirstScanAt != sale.ScanHistory.FirstScanAt {
 		t.Fatalf("buyer re-scan = %+v", after)
 	}
 	var clone protocol.VerifyResult
-	for i, region := range []string{"tabriz", "mashhad", "shiraz"} {
-		clone = f.verify(t, reg.BatchID, 2, fmt.Sprintf("clone-%d", i), region)
+	for i := range 3 {
+		clone = f.verify(t, reg.BatchID, 2, fmt.Sprintf("clone-%d", i))
 	}
-	if clone.Authenticity != protocol.Consumed || clone.Risk.Level != risk.LevelHigh || clone.ScanCount != 5 {
+	if clone.Authenticity != protocol.Consumed || clone.Risk.Level != risk.LevelHigh || clone.ScanCount != 5 ||
+		clone.ScanHistory.OtherDevices != 3 {
 		t.Fatalf("clone scans = %+v", clone)
 	}
 
-	var spread protocol.VerifyResult
-	for i, region := range []string{"tabriz", "mashhad", "shiraz", "yazd"} {
-		spread = f.verify(t, reg.BatchID, 3, fmt.Sprintf("dev-%d", i), region)
+	var many protocol.VerifyResult
+	for i := range 7 {
+		many = f.verify(t, reg.BatchID, 3, fmt.Sprintf("dev-%d", i))
 	}
-	if spread.Authenticity != protocol.Suspicious || spread.Risk.Level != risk.LevelHigh {
-		t.Fatalf("unsold unit scanned across the country = %+v", spread)
+	if many.Authenticity != protocol.Suspicious || many.Risk.Level != risk.LevelHigh {
+		t.Fatalf("unsold unit scanned by many phones = %+v", many)
 	}
 
 	suspicious, err := f.svc.ListSuspicious(ctx, protocol.SuspiciousQuery{})
@@ -561,10 +565,10 @@ func TestRecallBlocksSaleAndConsumption(t *testing.T) {
 	if err != nil || res.Scope != "segment" {
 		t.Fatalf("segment recall = %+v, %v", res, err)
 	}
-	if v := f.verify(t, reg.BatchID, 0, "buyer", ""); v.Authenticity != protocol.Recalled {
+	if v := f.verify(t, reg.BatchID, 0, "buyer"); v.Authenticity != protocol.Recalled {
 		t.Fatalf("recalled segment verifies as %s", v.Authenticity)
 	}
-	if v := f.verify(t, reg.BatchID, 4, "buyer", ""); v.Authenticity != protocol.InTransit {
+	if v := f.verify(t, reg.BatchID, 4, "buyer"); v.Authenticity != protocol.InTransit {
 		t.Fatalf("the rest of the batch is unaffected, got %s", v.Authenticity)
 	}
 	_, err = f.svc.Consume(ctx, f.consumeInput(t, reg.BatchID, 0, secretKey(t, reg.Units[0]), time.Now().Add(time.Minute)))
@@ -575,7 +579,7 @@ func TestRecallBlocksSaleAndConsumption(t *testing.T) {
 	if _, err := f.svc.Recall(ctx, protocol.RecallInput{BatchID: reg.BatchID}); err != nil {
 		t.Fatal(err)
 	}
-	if v := f.verify(t, reg.BatchID, 4, "buyer", ""); v.Authenticity != protocol.Recalled || !v.Recalled {
+	if v := f.verify(t, reg.BatchID, 4, "buyer"); v.Authenticity != protocol.Recalled || !v.Recalled {
 		t.Fatalf("recalled batch verifies as %s", v.Authenticity)
 	}
 

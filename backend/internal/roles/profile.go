@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -12,7 +13,6 @@ import (
 	"github.com/MahdiRohani/supplement-authenticity-tracker/backend/internal/chain"
 	"github.com/MahdiRohani/supplement-authenticity-tracker/backend/internal/cuid"
 	"github.com/MahdiRohani/supplement-authenticity-tracker/backend/internal/jsonx"
-	"github.com/MahdiRohani/supplement-authenticity-tracker/backend/internal/risk"
 	"github.com/MahdiRohani/supplement-authenticity-tracker/backend/internal/store/db"
 )
 
@@ -22,8 +22,7 @@ type ProfileStore interface {
 }
 
 // Party is a v2 role binding with the public profile shown to buyers who
-// scan a unit held by this wallet. Region also anchors the clone-detection
-// rule that flags scans far from the custodian.
+// scan a unit held by this wallet.
 type Party struct {
 	ID          string  `json:"id"`
 	Address     string  `json:"address"`
@@ -104,7 +103,7 @@ func (s *PartyService) Bind(ctx context.Context, in BindInput) (BoundParty, erro
 		displayName = &name
 	}
 	if region != nil {
-		if region = risk.NormalizeRegion(*region); region == nil {
+		if region = normalizeRegion(*region); region == nil {
 			return BoundParty{}, apperr.BadRequest("region must contain letters or digits")
 		}
 	}
@@ -170,4 +169,26 @@ func toParty(r db.RoleBinding) Party {
 		CreatedAt:   jsonx.ISOTime(r.CreatedAt),
 		UpdatedAt:   jsonx.ISOTime(r.UpdatedAt),
 	}
+}
+
+// normalizeRegion folds a coarse region name (city or province) into the
+// lowercase slug the Android app maps to a localized label; nil when empty.
+func normalizeRegion(raw string) *string {
+	region := strings.Map(func(r rune) rune {
+		switch {
+		case unicode.IsLetter(r) || unicode.IsDigit(r) || r == '-':
+			return r
+		case unicode.IsSpace(r) || r == '_':
+			return '-'
+		default:
+			return -1
+		}
+	}, strings.ToLower(strings.TrimSpace(raw)))
+	if region == "" {
+		return nil
+	}
+	if r := []rune(region); len(r) > 64 {
+		region = string(r[:64])
+	}
+	return &region
 }

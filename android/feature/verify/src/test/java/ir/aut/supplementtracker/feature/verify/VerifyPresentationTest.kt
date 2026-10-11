@@ -43,15 +43,22 @@ class VerifyPresentationTest {
     }
 
     @Test
-    fun regionSlugsMatchTheBackendNormalisation() {
+    fun provinceSlugsMatchTheBackendNormalisation() {
         val slug = Regex("^[a-z0-9-]+$")
-        assertEquals(31, ScanRegions.size)
-        assertEquals(ScanRegions.size, ScanRegions.map { it.slug }.toSet().size)
-        ScanRegions.forEach { assertTrue(it.slug, slug.matches(it.slug)) }
+        assertEquals(31, Provinces.size)
+        assertEquals(Provinces.size, Provinces.map { it.slug }.toSet().size)
+        Provinces.forEach { assertTrue(it.slug, slug.matches(it.slug)) }
         assertEquals("تهران", regionLabel("Tehran", persian = true))
         assertEquals("Isfahan", regionLabel("isfahan", persian = false))
         assertEquals("some-city", regionLabel("some-city", persian = true))
         assertNull(regionLabel(" ", persian = false))
+    }
+
+    @Test
+    fun parsesBackendScanTimestampsAsUtc() {
+        assertEquals(1_727_773_200_123L, parseUtcMillis("2024-10-01T09:00:00.123Z"))
+        assertNull(parseUtcMillis("2024-10-01"))
+        assertNull(parseUtcMillis(""))
     }
 
     private fun unit(authenticity: String, check: IndependentCheck, consumed: Boolean = false) =

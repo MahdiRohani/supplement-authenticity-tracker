@@ -112,6 +112,10 @@ type verifyResult struct {
 			Code string `json:"code"`
 		} `json:"reasons"`
 	} `json:"risk"`
+	ScanHistory *struct {
+		OtherDevices int    `json:"otherDevices"`
+		FirstScanAt  string `json:"firstScanAt"`
+	} `json:"scanHistory"`
 	Evidence *struct {
 		MerkleRoot string   `json:"merkleRoot"`
 		Leaf       string   `json:"leaf"`
@@ -222,7 +226,7 @@ func TestProtocolV2Lifecycle(t *testing.T) {
 	}
 
 	verifyPath := func(index int) string { return fmt.Sprintf("/v2/verify/%d/%s/%d", chainID, reg.BatchID, index) }
-	buyer := []string{"X-Device-Id", "buyer-phone", "X-Scan-Region", "tehran", "Cache-Control", "no-cache"}
+	buyer := []string{"X-Device-Id", "buyer-phone", "Cache-Control", "no-cache"}
 
 	before := expect[verifyResult](t, call(t, "GET", verifyPath(2), nil, buyer...), 200)
 	if before.Authenticity != protocol.Authentic || before.Custodian == nil || before.Custodian.Address != pharmacy ||
@@ -282,11 +286,12 @@ func TestProtocolV2Lifecycle(t *testing.T) {
 		t.Fatalf("buyer re-scan after use = %s", mustJSON(after))
 	}
 	var clone verifyResult
-	for i, region := range []string{"mashhad", "shiraz", "tabriz"} {
-		clone = expect[verifyResult](t, call(t, "GET", verifyPath(2), nil, "X-Device-Id", fmt.Sprintf("clone-%d", i), "X-Scan-Region", region), 200)
+	for i := range 3 {
+		clone = expect[verifyResult](t, call(t, "GET", verifyPath(2), nil, "X-Device-Id", fmt.Sprintf("clone-%d", i)), 200)
 	}
-	if clone.Authenticity != protocol.Consumed || clone.Risk.Level != "high" {
-		t.Fatalf("copied label scanned elsewhere = %s", mustJSON(clone))
+	if clone.Authenticity != protocol.Consumed || clone.Risk.Level != "high" ||
+		clone.ScanHistory == nil || clone.ScanHistory.OtherDevices != 3 || clone.ScanHistory.FirstScanAt == "" {
+		t.Fatalf("copied label scanned by other phones = %s", mustJSON(clone))
 	}
 	suspicious := expect[struct {
 		Items []struct {

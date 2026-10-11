@@ -10,7 +10,7 @@ v2 (`SupplementRegistryV2`, HTTP `/v2`) runs alongside v1 and changes how units 
 - **Splittable custody segments.** Custody moves as ranges of units. A partial shipment splits a segment, and the contract enforces Manufacturer → Distributor → Pharmacy.
 - **Gasless, unit-key consume.** Each unit has its own secp256k1 key, hidden under a scratch-off secret QR. The buyer's app signs an EIP-712 `ConsumeAuthorization`, and the relayer submits it through `POST /v2/consume`. A second consume (refill) is rejected on-chain.
 - **Two-layer label.** A public QR (`https://…/u/{chain}/{batch}/{index}`) is used for verification. A secret QR (`satk2:…`) is used only for consumption.
-- **Clone detection.** Scans are scored with device, post-consumption and region rules, and a cloned public label turns the verdict into `Suspicious`.
+- **Clone detection.** Scans are scored with device and post-consumption rules, and a cloned public label turns the verdict into `Suspicious`. The buyer also sees the label's scan history (other devices, first scan time).
 - **Recall.** A batch or a single segment can be invalidated on-chain. Verify then shows `Recalled`, and consume is refused.
 
 Start with [`docs/protocol-v2.md`](docs/protocol-v2.md) for the specification, [`docs/threat-model.md`](docs/threat-model.md) for the threat model, and [`docs/evaluation.md`](docs/evaluation.md) for the measured results. In those measurements, the full on-chain lifecycle costs a unit about 77% less gas than in v1.

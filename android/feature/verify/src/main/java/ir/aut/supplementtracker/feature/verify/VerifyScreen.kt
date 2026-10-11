@@ -1,19 +1,17 @@
 package ir.aut.supplementtracker.feature.verify
 
+import android.text.format.DateUtils
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -21,10 +19,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -53,6 +47,7 @@ import ir.aut.supplementtracker.core.designsystem.localizedErrorMessage
 import ir.aut.supplementtracker.core.model.IndependentCheck
 import ir.aut.supplementtracker.core.model.RiskAssessment
 import ir.aut.supplementtracker.core.model.RiskReasonCode
+import ir.aut.supplementtracker.core.model.ScanHistory
 import ir.aut.supplementtracker.core.model.UnitVerification
 import ir.aut.supplementtracker.core.model.VerifiedUnit
 import ir.aut.supplementtracker.core.model.VerifyResult
@@ -107,12 +102,6 @@ fun VerifyScreen(
                     )
                 }
             }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            RegionPicker(
-                region = state.region,
-                enabled = !state.isLoading,
-                onSelected = { onEvent(VerifyUiEvent.RegionSelected(it)) },
-            )
         }
 
         if (state.hiddenLabelEntered) {
@@ -183,62 +172,6 @@ fun VerifyScreen(
 private fun isPersian(): Boolean = LocalConfiguration.current.locales[0].language == "fa"
 
 @Composable
-private fun RegionPicker(
-    region: String?,
-    enabled: Boolean,
-    onSelected: (String?) -> Unit,
-) {
-    val persian = isPersian()
-    var expanded by remember { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(SupplementSpacing.Xs)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SupplementSpacing.Sm),
-        ) {
-            Text(
-                text = stringResource(R.string.verify_region_title),
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.weight(1f),
-            )
-            Box {
-                SupplementButton(
-                    text = regionLabel(region, persian) ?: stringResource(R.string.verify_region_none),
-                    onClick = { expanded = true },
-                    enabled = enabled,
-                    variant = SupplementButtonVariant.Outlined,
-                    fillWidth = false,
-                    modifier = Modifier.testTag("verify_region"),
-                )
-                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.verify_region_none)) },
-                        onClick = {
-                            expanded = false
-                            onSelected(null)
-                        },
-                    )
-                    ScanRegions.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text(option.label(persian)) },
-                            onClick = {
-                                expanded = false
-                                onSelected(option.slug)
-                            },
-                        )
-                    }
-                }
-            }
-        }
-        Text(
-            text = stringResource(R.string.verify_region_hint),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
 private fun UnitDetails(
     unit: VerifiedUnit,
     canRecordConsumption: Boolean,
@@ -256,6 +189,7 @@ private fun UnitDetails(
         }
         ProductCard(v)
         RiskCard(risk = v.risk, scanCount = v.scanCount)
+        v.scanHistory?.let { ScanHistoryCard(it) }
         if (canRecordConsumption) {
             NoticeCard(
                 title = stringResource(R.string.verify_consume_cta_title),
@@ -390,10 +324,35 @@ private fun riskReasonText(code: String): String? =
     when (code) {
         RiskReasonCode.MANY_DEVICES -> stringResource(R.string.risk_reason_many_devices)
         RiskReasonCode.SCANNED_AFTER_CONSUMPTION -> stringResource(R.string.risk_reason_scanned_after_consumption)
-        RiskReasonCode.FOREIGN_REGION -> stringResource(R.string.risk_reason_foreign_region)
-        RiskReasonCode.REGION_SPREAD -> stringResource(R.string.risk_reason_region_spread)
         else -> null
     }
+
+@Composable
+private fun ScanHistoryCard(history: ScanHistory) {
+    val firstScan = parseUtcMillis(history.firstScanAt)?.let {
+        DateUtils.getRelativeTimeSpanString(it, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString()
+    } ?: history.firstScanAt
+    SupplementCard(modifier = Modifier.testTag("verify_scan_history")) {
+        SectionHeader(title = stringResource(R.string.verify_history_title))
+        InfoRow(
+            label = stringResource(R.string.verify_history_other_devices),
+            value = history.otherDevices.toString(),
+            icon = SupplementIcons.Scan,
+        )
+        InfoRow(
+            label = stringResource(R.string.verify_history_first_scan),
+            value = firstScan,
+            icon = SupplementIcons.Time,
+        )
+        Text(
+            text = stringResource(
+                if (history.otherDevices == 0) R.string.verify_history_only_you else R.string.verify_history_hint,
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
 
 @Composable
 private fun EvidenceCard(v: UnitVerification, check: IndependentCheck) {

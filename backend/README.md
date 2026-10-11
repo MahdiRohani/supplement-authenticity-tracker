@@ -127,11 +127,11 @@ v2 tracks individual units instead of one product per transaction:
   `{PUBLIC_VERIFY_BASE_URL}/{chainId}/{batchId}/{index}` is printed in the
   open. The secret QR `satk2:{chainId}:{batchId}:{index}:{key}` sits under a
   scratch-off layer.
-- **Clone detection.** Every public scan is stored with a keyed device hash
-  and a coarse region, then scored by `internal/risk`: a noisy-OR over
-  *many devices before sale*, *new devices after consumption* and *regions
-  away from the custodian*. High risk turns `Authentic`/`InTransit` into
-  `Suspicious`.
+- **Clone detection.** Every public scan is stored with a keyed device hash,
+  then scored by `internal/risk`: a noisy-OR over *many devices before sale*
+  and *new devices after consumption*. High risk turns
+  `Authentic`/`InTransit` into `Suspicious`. The verdict also carries the
+  scan history (other devices, first scan time) for the buyer to judge.
 - **Recall** of a whole batch or of one segment.
 
 The v2 indexer backfills from the contract's deploy block and persists its
@@ -150,7 +150,7 @@ Endpoints (writes need the API key unless marked *public*):
 - `GET /v2/segments?owner=&batchId=&status=`, `GET /v2/segments/:segmentId`
 - `POST /v2/segments/:segmentId/transfer` `{ "toAddress", "count"? }` — `count` ships the first *count* units; omitted or 0 ships the whole segment
 - `POST /v2/consume` `{ "chainId"?, "batchId", "index", "consumer", "deadline", "signature" }` — *public*, rate-limited; signature, Merkle proof and custody are checked before relaying
-- `GET /v2/verify/:chainId/:batchId/:index` — *public*, rate-limited; records the scan (`X-Device-Id`, `X-Scan-Region` or `?region=`) and returns status, custodian profile, risk with reasons, and on-chain evidence. Outside production `Cache-Control: no-cache` bypasses the snapshot cache.
+- `GET /v2/verify/:chainId/:batchId/:index` — *public*, rate-limited; records the scan (`X-Device-Id`) and returns status, custodian profile, risk with reasons, scan history (`otherDevices`, `firstScanAt`), and on-chain evidence. Outside production `Cache-Control: no-cache` bypasses the snapshot cache.
 - `POST /v2/labels/render` `{ "batchId", "secretQrs": [...] }` — A4 PDF, 8 two-layer labels per page; each key is checked against the committed unit key (`FF_LABELS_PDF`)
 - `GET /v2/scans/suspicious?sinceHours=&minRisk=&limit=` — units whose scans reached the risk threshold
 - `GET /v2/roles?address=`, `POST /v2/roles` `{ "address", "role", "displayName"?, "region"?, "onChain"? }` — grants the role on SupplementRegistryV2 with a managed admin key (default) and stores the public profile shown to buyers; `DELETE /v2/roles/:address/:role` removes only the off-chain binding (revoking the on-chain role is an admin transaction)

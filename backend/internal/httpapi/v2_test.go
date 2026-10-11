@@ -232,7 +232,7 @@ func TestV2ConsumeIsPublicAndWritesNeedTheKey(t *testing.T) {
 
 func TestV2VerifyPassesScanContext(t *testing.T) {
 	h, p, _ := v2Harness(t, nil)
-	rec := h.do(t, call{target: "/v2/verify/31337/12/3?region=shiraz", noKey: true, headers: map[string]string{
+	rec := h.do(t, call{target: "/v2/verify/31337/12/3", noKey: true, headers: map[string]string{
 		"X-Device-Id": "phone-1", "User-Agent": "SupplementApp/2", "Cache-Control": "no-cache", "X-Forwarded-For": "5.6.7.8",
 	}})
 	if rec.Code != 200 || rec.Header().Get("Cache-Control") != "no-store" {
@@ -240,12 +240,12 @@ func TestV2VerifyPassesScanContext(t *testing.T) {
 	}
 	v := p.verifies[0]
 	if v.ChainID != "31337" || v.BatchID != "12" || v.Index != "3" || v.Device != "phone-1" || v.UserAgent != "SupplementApp/2" ||
-		v.Region != "shiraz" || !v.Fresh || v.ClientIP == "" {
+		!v.Fresh || v.ClientIP == "" {
 		t.Fatalf("verify input = %+v", v)
 	}
-	h.do(t, call{target: "/v2/verify/31337/12/3?region=shiraz", headers: map[string]string{"X-Scan-Region": "Tehran"}})
-	if v := p.verifies[1]; v.Region != "Tehran" || v.Fresh {
-		t.Fatalf("header region must win and caching applies by default: %+v", v)
+	h.do(t, call{target: "/v2/verify/31337/12/3"})
+	if v := p.verifies[1]; v.Fresh {
+		t.Fatalf("caching applies by default: %+v", v)
 	}
 
 	prod, pp, _ := v2Harness(t, func(cfg *config.Config, _ *Deps) { cfg.Env = "production" })

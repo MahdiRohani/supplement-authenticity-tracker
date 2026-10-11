@@ -85,7 +85,6 @@ class HttpProtocolRepository(
                 Request.Builder()
                     .url("${baseUrl}verify/${unit.path}")
                     .header("X-Device-Id", context.deviceId)
-                    .apply { context.region?.takeIf { it.isNotBlank() }?.let { header("X-Scan-Region", it) } }
                     .get()
                     .build()
             ProtocolJson.verification(client.executeJson(request), unit)

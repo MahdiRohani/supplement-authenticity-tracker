@@ -27,8 +27,6 @@ object RiskLevel {
 object RiskReasonCode {
     const val MANY_DEVICES = "many_devices"
     const val SCANNED_AFTER_CONSUMPTION = "scanned_after_consumption"
-    const val FOREIGN_REGION = "foreign_region"
-    const val REGION_SPREAD = "region_spread"
 }
 
 data class Party(
@@ -166,6 +164,14 @@ data class ChainEvidence(
     val registerTxHash: String,
 )
 
+/** The label's scan record relative to this device, shown to the buyer as facts. */
+data class ScanHistory(
+    /** Distinct devices other than this one that scanned the label. */
+    val otherDevices: Int,
+    /** Earliest recorded scan, as an ISO-8601 UTC timestamp. */
+    val firstScanAt: String,
+)
+
 data class Consumption(
     val consumer: String?,
     val txHash: String,
@@ -191,6 +197,7 @@ data class UnitVerification(
     val scanCount: Int,
     val evidence: ChainEvidence?,
     val checkedAt: String,
+    val scanHistory: ScanHistory? = null,
 )
 
 /**
@@ -219,10 +226,9 @@ data class ChainAnchor(
     val recalled: Boolean,
 )
 
-/** Coarse context sent with each verification to feed clone detection. */
+/** Context sent with each verification to feed clone detection. */
 data class ScanContext(
     val deviceId: String,
-    val region: String?,
 )
 
 data class ConsumeAuthorization(

@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import ir.aut.supplementtracker.core.data.AnalyticsStore
-import ir.aut.supplementtracker.core.data.ScanContextStore
 import ir.aut.supplementtracker.core.data.VerifyCacheStore
 import ir.aut.supplementtracker.core.designsystem.components.AuthenticityStatus
 import ir.aut.supplementtracker.core.domain.DomainError
@@ -29,7 +28,6 @@ class VerifyViewModel(
     private val verifyCacheStore: VerifyCacheStore? = null,
     private val reportCounterfeit: ReportCounterfeitUseCase? = null,
     private val analyticsStore: AnalyticsStore? = null,
-    private val scanContextStore: ScanContextStore? = null,
     private val analyticsEnabled: Boolean = true,
     reportsEnabled: Boolean = true,
     scanEnabled: Boolean = true,
@@ -39,7 +37,6 @@ class VerifyViewModel(
             VerifyUiState(
                 reportsEnabled = reportsEnabled,
                 scanEnabled = scanEnabled,
-                region = scanContextStore?.region(),
             ),
         )
     val state: StateFlow<VerifyUiState> = _state.asStateFlow()
@@ -66,10 +63,6 @@ class VerifyViewModel(
                         _effects.emit(VerifyUiEffect.NavigateToScan)
                     }
                 }
-            is VerifyUiEvent.RegionSelected -> {
-                scanContextStore?.setRegion(event.region)
-                _state.update { it.copy(region = event.region) }
-            }
             VerifyUiEvent.RecordConsumption -> {
                 val current = _state.value
                 val unit = current.unit?.verification?.unit ?: return
@@ -169,7 +162,6 @@ class VerifyViewModel(
             verifyCacheStore: VerifyCacheStore? = null,
             reportCounterfeit: ReportCounterfeitUseCase? = null,
             analyticsStore: AnalyticsStore? = null,
-            scanContextStore: ScanContextStore? = null,
             analyticsEnabled: Boolean = true,
             reportsEnabled: Boolean = true,
             scanEnabled: Boolean = true,
@@ -183,7 +175,6 @@ class VerifyViewModel(
                         verifyCacheStore = verifyCacheStore,
                         reportCounterfeit = reportCounterfeit,
                         analyticsStore = analyticsStore,
-                        scanContextStore = scanContextStore,
                         analyticsEnabled = analyticsEnabled,
                         reportsEnabled = reportsEnabled,
                         scanEnabled = scanEnabled,

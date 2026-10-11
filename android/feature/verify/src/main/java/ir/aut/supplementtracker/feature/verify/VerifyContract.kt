@@ -17,8 +17,6 @@ data class VerifyUiState(
     val errorMessage: String? = null,
     val reportsEnabled: Boolean = true,
     val scanEnabled: Boolean = true,
-    /** Province slug sent as `X-Scan-Region`; null when the buyer prefers not to say. */
-    val region: String? = null,
     /** The scratch-off code was entered here; it must stay private. */
     val hiddenLabelEntered: Boolean = false,
 ) {
@@ -36,7 +34,6 @@ sealed interface VerifyUiEvent {
     data object Submit : VerifyUiEvent
     data object ReportCounterfeit : VerifyUiEvent
     data object ScanQr : VerifyUiEvent
-    data class RegionSelected(val region: String?) : VerifyUiEvent
     data object RecordConsumption : VerifyUiEvent
 }
 

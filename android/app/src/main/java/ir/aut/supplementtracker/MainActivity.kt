@@ -193,7 +193,6 @@ class MainActivity : ComponentActivity() {
                 verifyCacheStore = verifyCacheStore,
                 reportCounterfeit = reportCounterfeit,
                 analyticsStore = analyticsStore,
-                scanContextStore = scanContextStore,
             )
 
         setContent {
@@ -693,7 +692,6 @@ private class VerifyDeps(
     val verifyCacheStore: VerifyCacheStore,
     val reportCounterfeit: ReportCounterfeitUseCase,
     val analyticsStore: AnalyticsStore,
-    val scanContextStore: ScanContextStore,
 )
 
 @Composable
@@ -717,7 +715,6 @@ private fun VerifyRoute(
                 verifyCacheStore = deps.verifyCacheStore,
                 reportCounterfeit = deps.reportCounterfeit,
                 analyticsStore = deps.analyticsStore,
-                scanContextStore = deps.scanContextStore,
                 analyticsEnabled = featureFlags.analyticsEnabled,
                 reportsEnabled = featureFlags.reportsEnabled,
                 scanEnabled = featureFlags.scanEnabled,

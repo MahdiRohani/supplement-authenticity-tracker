@@ -44,7 +44,6 @@ type VerifyInput struct {
 	Device    string
 	ClientIP  string
 	UserAgent string
-	Region    string
 	// Fresh bypasses cached batch state.
 	Fresh bool
 }
@@ -65,6 +64,16 @@ type ChainEvidence struct {
 	RegisterTx string   `json:"registerTxHash"`
 }
 
+// ScanHistory is the unit's scan record relative to the scanning device,
+// shown to the buyer as facts rather than folded into a score: a box bought
+// sealed today whose label other phones scanned weeks ago was copied or
+// resold.
+type ScanHistory struct {
+	// OtherDevices counts distinct devices other than the scanning one.
+	OtherDevices int    `json:"otherDevices"`
+	FirstScanAt  string `json:"firstScanAt"`
+}
+
 type VerifyResult struct {
 	Authenticity  string          `json:"authenticity"`
 	ChainID       int64           `json:"chainId"`
@@ -79,6 +88,7 @@ type VerifyResult struct {
 	Recalled      bool            `json:"recalled"`
 	Risk          risk.Assessment `json:"risk"`
 	ScanCount     int             `json:"scanCount"`
+	ScanHistory   *ScanHistory    `json:"scanHistory"`
 	Evidence      *ChainEvidence  `json:"evidence"`
 	CheckedAt     string          `json:"checkedAt"`
 }
@@ -122,15 +132,11 @@ func (s *Service) Verify(ctx context.Context, in VerifyInput) (VerifyResult, err
 		CheckedAt: jsonx.ISOTime(s.now()),
 	}
 
-	var ownerRegion *string
 	seg, hasSegment := snap.segmentFor(index)
 	if hasSegment {
 		result.SegmentID = new(formatID(seg.SegmentID))
 		result.SegmentStatus = new(string(seg.Status))
 		result.Custodian = snap.parties[seg.Owner]
-		if result.Custodian != nil {
-			ownerRegion = result.Custodian.Region
-		}
 		result.Recalled = result.Recalled || seg.Status == db.SegmentStatusInvalid
 	}
 
@@ -147,7 +153,7 @@ func (s *Service) Verify(ctx context.Context, in VerifyInput) (VerifyResult, err
 	}
 
 	base := baseAuthenticity(result.Recalled, result.Consumed, hasSegment && seg.Status == db.SegmentStatusAtPointOfSale)
-	result.Risk, result.ScanCount = s.scoreScan(ctx, in, batchID, index, u.ConsumedAt, ownerRegion, base)
+	result.Risk, result.ScanCount, result.ScanHistory = s.scoreScan(ctx, in, batchID, index, u.ConsumedAt, base)
 	result.Authenticity = base
 	if result.Risk.Level == risk.LevelHigh && (base == Authentic || base == InTransit) {
 		result.Authenticity = Suspicious
@@ -170,38 +176,35 @@ func baseAuthenticity(recalled, consumed, atPointOfSale bool) string {
 
 // scoreScan records the scan, then scores the unit's history including it.
 // Scan bookkeeping never fails a verification: on error the result carries
-// a low, reason-less assessment.
-func (s *Service) scoreScan(ctx context.Context, in VerifyInput, batchID int64, index uint32, consumedAt *time.Time, ownerRegion *string, status string) (risk.Assessment, int) {
+// a low, reason-less assessment and no history.
+func (s *Service) scoreScan(ctx context.Context, in VerifyInput, batchID int64, index uint32, consumedAt *time.Time, status string) (risk.Assessment, int, *ScanHistory) {
 	scanID := cuid.New()
-	region := risk.NormalizeRegion(in.Region)
+	device := s.DeviceHash(in.Device, in.ClientIP, in.UserAgent)
 	err := s.store.InsertScanEvent(ctx, db.InsertScanEventParams{
 		ID:           scanID,
 		BatchID:      batchID,
 		Index:        int32(index),
-		DeviceHash:   s.DeviceHash(in.Device, in.ClientIP, in.UserAgent),
-		Region:       region,
+		DeviceHash:   device,
 		StatusAtScan: status,
 		Now:          jsonx.Now(),
 	})
 	if err != nil {
 		s.log.WarnContext(ctx, "scan event not recorded", "err", err)
-		return risk.Assess(risk.Signals{}, s.opts.Risk), 0
+		return risk.Assess(risk.Signals{}, s.opts.Risk), 0, nil
 	}
-	row, err := s.store.UnitScanSignals(ctx, db.UnitScanSignalsParams{BatchID: batchID, Index: int32(index), ConsumedAt: consumedAt, OwnerRegion: ownerRegion})
+	row, err := s.store.UnitScanSignals(ctx, db.UnitScanSignalsParams{BatchID: batchID, Index: int32(index), ConsumedAt: consumedAt, DeviceHash: device})
 	if err != nil {
 		s.log.WarnContext(ctx, "scan signals unavailable", "err", err)
-		return risk.Assess(risk.Signals{}, s.opts.Risk), 0
+		return risk.Assess(risk.Signals{}, s.opts.Risk), 0, nil
 	}
 	signals := risk.Signals{
 		TotalScans:             int(row.TotalScans),
 		DevicesBeforeConsume:   int(row.DevicesBeforeConsume),
 		ScansAfterConsume:      int(row.ScansAfterConsume),
 		NewDevicesAfterConsume: int(row.NewDevicesAfterConsume),
-		DistinctRegions:        int(row.DistinctRegions),
-		ForeignRegions:         int(row.ForeignRegions),
-		OwnerRegionKnown:       ownerRegion != nil && *ownerRegion != "",
 		Consumed:               consumedAt != nil,
 	}
+	history := &ScanHistory{OtherDevices: int(row.OtherDevices), FirstScanAt: jsonx.ISOTime(row.FirstScanAt)}
 	assessment := risk.Assess(signals, s.opts.Risk)
 	if assessment.Level == risk.LevelHigh && (status == Authentic || status == InTransit) {
 		status = Suspicious
@@ -209,7 +212,7 @@ func (s *Service) scoreScan(ctx context.Context, in VerifyInput, batchID int64, 
 	if err := s.store.SetScanRisk(ctx, db.SetScanRiskParams{ID: scanID, RiskScore: assessment.Score, StatusAtScan: status}); err != nil {
 		s.log.WarnContext(ctx, "scan risk not stored", "err", err)
 	}
-	return assessment, signals.TotalScans
+	return assessment, signals.TotalScans, history
 }
 
 // DeviceHash keys device identifiers with the deployment salt so stored

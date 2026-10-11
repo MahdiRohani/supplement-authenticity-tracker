@@ -232,19 +232,19 @@ def fig_detectors() -> None:
 def fig_ablation() -> None:
     data = rows(SIM / "scansim_summary.csv")
     order = [("proposed", "Full model"), ("without many_devices", "$-$ many devices"),
-             ("without scanned_after_consumption", "$-$ after consumption"), ("without region rules", "$-$ region rules")]
+             ("without scanned_after_consumption", "$-$ after consumption")]
     picked = []
     for key, label in order:
         r = next(r for r in data if (r["detector"] == key) or (r["detector"] == "ablation" and r["params"] == key))
         picked.append((label, float(r["f1_mean"]), float(r["f1_std"]), float(r["recall_mean"])))
-    fig, ax = plt.subplots(figsize=(WIDTH, 1.8))
+    fig, ax = plt.subplots(figsize=(WIDTH, 1.5))
     ys = range(len(picked))[::-1]
-    ax.barh(list(ys), [p[1] for p in picked], xerr=[p[2] for p in picked], color=["#1f77b4"] + ["#aec7e8"] * 3, height=0.6,
-            error_kw=dict(lw=0.5, capsize=1.5))
+    ax.barh(list(ys), [p[1] for p in picked], xerr=[p[2] for p in picked], color=["#1f77b4"] + ["#aec7e8"] * (len(picked) - 1),
+            height=0.6, error_kw=dict(lw=0.5, capsize=1.5))
     for y, p in zip(ys, picked):
         ax.text(p[1] + 0.01, y, f"F1 {p[1]:.3f} (recall {p[3]:.2f})", va="center", fontsize=6.5)
     ax.set_yticks(list(ys), [p[0] for p in picked])
-    ax.set_xlim(0.5, 1.05)
+    ax.set_xlim(0, 1.15)
     ax.set_xlabel("F1 score")
     ax.grid(True, axis="x")
     save(fig, "fig-clone-ablation")
@@ -284,7 +284,7 @@ def fig_copies() -> None:
               label="Median clone scans until flagged")
     twin.set_ylabel("Clone scans until flagged", color="#c25e00")
     twin.tick_params(axis="y", colors="#c25e00")
-    twin.set_ylim(0, 6)
+    twin.set_ylim(0, 8)
     lines = ax.get_legend_handles_labels()
     more = twin.get_legend_handles_labels()
     ax.legend(lines[0] + more[0], lines[1] + more[1], loc="lower right")

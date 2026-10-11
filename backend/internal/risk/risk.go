@@ -1,8 +1,13 @@
 // Package risk scores how likely a public label scan belongs to a cloned
 // (copied) label. A counterfeiter can photocopy the public QR of a genuine
 // unit but not its hidden one-time key, so clones show up as scan patterns:
-// many devices before the genuine unit is consumed, new devices after it was
-// consumed, and scans far from the pharmacy that holds the unit.
+// many devices before the genuine unit is consumed, and new devices after it
+// was consumed.
+//
+// Location is deliberately not a signal: a buyer's region could only be
+// self-reported and optional, and travel and online pharmacies make honest
+// scans far from the selling pharmacy common, so it mostly raised false
+// alarms for real buyers.
 //
 // The score is explainable: each rule yields a weight in [0, 1) from how far
 // its signal exceeds what a genuine unit plausibly shows, and the rules are
@@ -12,15 +17,12 @@ package risk
 import (
 	"fmt"
 	"math"
-	"strings"
 	"time"
-	"unicode"
 )
 
 // Scan is one public verification of a unit.
 type Scan struct {
 	Device string
-	Region string
 	At     time.Time
 }
 
@@ -35,17 +37,12 @@ type Signals struct {
 	// NewDevicesAfterConsume counts devices that first scanned the unit
 	// after it was consumed; the buyer re-scanning their own box is not new.
 	NewDevicesAfterConsume int
-	DistinctRegions        int
-	// ForeignRegions counts distinct regions other than the custodian's;
-	// it is only meaningful when OwnerRegionKnown.
-	ForeignRegions   int
-	OwnerRegionKnown bool
-	Consumed         bool
+	Consumed               bool
 }
 
 // FromHistory computes Signals from raw scans.
-func FromHistory(scans []Scan, consumedAt *time.Time, ownerRegion string) Signals {
-	s := Signals{TotalScans: len(scans), OwnerRegionKnown: ownerRegion != "", Consumed: consumedAt != nil}
+func FromHistory(scans []Scan, consumedAt *time.Time) Signals {
+	s := Signals{TotalScans: len(scans), Consumed: consumedAt != nil}
 	before := map[string]bool{}
 	for _, sc := range scans {
 		if consumedAt == nil || !sc.At.After(*consumedAt) {
@@ -55,8 +52,6 @@ func FromHistory(scans []Scan, consumedAt *time.Time, ownerRegion string) Signal
 	s.DevicesBeforeConsume = len(before)
 
 	newAfter := map[string]bool{}
-	regions := map[string]bool{}
-	foreign := map[string]bool{}
 	for _, sc := range scans {
 		if consumedAt != nil && sc.At.After(*consumedAt) {
 			s.ScansAfterConsume++
@@ -64,16 +59,8 @@ func FromHistory(scans []Scan, consumedAt *time.Time, ownerRegion string) Signal
 				newAfter[sc.Device] = true
 			}
 		}
-		if sc.Region != "" {
-			regions[sc.Region] = true
-			if ownerRegion != "" && sc.Region != ownerRegion {
-				foreign[sc.Region] = true
-			}
-		}
 	}
 	s.NewDevicesAfterConsume = len(newAfter)
-	s.DistinctRegions = len(regions)
-	s.ForeignRegions = len(foreign)
 	return s
 }
 
@@ -85,11 +72,6 @@ type Config struct {
 	DeviceWeight float64
 	// PostConsumeWeight is the weight of each new device after consumption.
 	PostConsumeWeight float64
-	// RegionWeight is the weight of each region outside the custodian's.
-	RegionWeight float64
-	// RegionSpread is how many regions are tolerated when the custodian's
-	// region is unknown.
-	RegionSpread int
 	// MaxRuleWeight caps a single rule so one signal alone never yields 1.
 	MaxRuleWeight float64
 	// MediumThreshold and HighThreshold map the score to a level.
@@ -102,8 +84,6 @@ func DefaultConfig() Config {
 		DeviceThreshold:   3,
 		DeviceWeight:      0.25,
 		PostConsumeWeight: 0.45,
-		RegionWeight:      0.3,
-		RegionSpread:      1,
 		MaxRuleWeight:     0.95,
 		MediumThreshold:   0.3,
 		HighThreshold:     0.6,
@@ -120,8 +100,6 @@ const (
 const (
 	ReasonManyDevices      = "many_devices"
 	ReasonScanAfterConsume = "scanned_after_consumption"
-	ReasonForeignRegion    = "foreign_region"
-	ReasonRegionSpread     = "region_spread"
 )
 
 type Reason struct {
@@ -154,13 +132,6 @@ func Assess(s Signals, cfg Config) Assessment {
 		add(ReasonScanAfterConsume, s.NewDevicesAfterConsume, cfg.PostConsumeWeight,
 			fmt.Sprintf("Scanned by %d new device(s) after this unit was already used", s.NewDevicesAfterConsume))
 	}
-	if s.OwnerRegionKnown {
-		add(ReasonForeignRegion, s.ForeignRegions, cfg.RegionWeight,
-			fmt.Sprintf("Scanned in %d region(s) other than the selling pharmacy's", s.ForeignRegions))
-	} else if spread := s.DistinctRegions - cfg.RegionSpread; spread > 0 {
-		add(ReasonRegionSpread, spread, cfg.RegionWeight,
-			fmt.Sprintf("Scanned in %d different regions", s.DistinctRegions))
-	}
 
 	keep := 1.0
 	for _, r := range reasons {
@@ -179,28 +150,6 @@ func (c Config) Level(score float64) string {
 	default:
 		return LevelLow
 	}
-}
-
-// NormalizeRegion folds a coarse region name (city or province) into the
-// comparable key used for both scans and custodian profiles; nil when empty.
-func NormalizeRegion(raw string) *string {
-	region := strings.Map(func(r rune) rune {
-		switch {
-		case unicode.IsLetter(r) || unicode.IsDigit(r) || r == '-':
-			return r
-		case unicode.IsSpace(r) || r == '_':
-			return '-'
-		default:
-			return -1
-		}
-	}, strings.ToLower(strings.TrimSpace(raw)))
-	if region == "" {
-		return nil
-	}
-	if r := []rune(region); len(r) > 64 {
-		region = string(r[:64])
-	}
-	return &region
 }
 
 // maxScore keeps rounding from presenting scan evidence as certainty.

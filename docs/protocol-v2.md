@@ -210,6 +210,8 @@ The public verdict combines on-chain state with the scan history:
 
 - the custodian's public profile (name and region);
 - the risk score, level and reasons;
+- `scanHistory`: how many devices other than the scanning one have scanned
+  the label (`otherDevices`) and when it was first scanned (`firstScanAt`);
 - `evidence`: the Merkle root, the leaf, the proof, the unit key and the
   registration tx.
 
@@ -237,7 +239,6 @@ appear as scan patterns. Every public scan stores:
   `X-Device-Id` header, or of the IP and User-Agent when there is no header,
   truncated to 128 bits. The raw identifiers are never stored, and the salt is
   mandatory in production;
-- a coarse region slug (`X-Scan-Region`, one of the 31 provinces in the app);
 - the verdict at scan time.
 
 `internal/risk` turns the history into signals and rules:
@@ -246,8 +247,6 @@ appear as scan patterns. Every public scan stores:
 | --- | --- | --- |
 | `many_devices` | distinct devices before consumption above 3 | 0.25 |
 | `scanned_after_consumption` | devices that first appear after consumption (the buyer re-scanning their own box does not count) | 0.45 |
-| `foreign_region` | regions other than the custodian pharmacy's, when known | 0.30 |
-| `region_spread` | more than 1 region, when the custodian's region is unknown | 0.30 |
 
 Each rule gives `w = min(0.95, 1 - (1 - unit)^count)`. The rules are combined
 with a noisy-OR, `score = 1 - prod(1 - w)`, capped at 0.999. The levels are
@@ -255,6 +254,14 @@ with a noisy-OR, `score = 1 - prod(1 - w)`, capped at 0.999. The levels are
 app localizes them. `GET /v2/scans/suspicious` lists units at or above a
 threshold for the admin panel. The thresholds come from the simulation in
 [`evaluation.md`](evaluation.md).
+
+Location is not a signal. The buyer's province could only be self-reported
+and optional, and honest buyers who travel or order from an online pharmacy
+scan far from the selling pharmacy, so a province rule mostly warned real
+buyers. Instead, the verdict carries the scan history (`scanHistory`) and the
+app shows it as facts. A buyer whose newly bought sealed box was already
+scanned by other phones weeks earlier can judge that themselves, even before
+the score is high.
 
 ## 7. Indexing
 

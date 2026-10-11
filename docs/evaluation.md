@@ -118,78 +118,96 @@ Measured with Node 20 on the development machine:
 `cmd/scansim` generates genuine units and units whose public label was copied
 onto fakes. Every scan is replayed through the production `internal/risk`
 code, and each unit is classified by its maximum score. The model has 5000
-units per class, 31 regions with Zipf-distributed popularity, and a 90-day
-horizon. The genuine-unit behaviour includes:
+units per class and a 90-day horizon. The genuine-unit behaviour includes:
 
 - a pharmacist scan with probability 0.5;
 - shelf scans, on average 0.3;
 - the buyer scanning at purchase with probability 0.8;
 - consumption with probability 0.7;
 - buyer re-scans, on average 0.6;
-- family devices with probability 0.15;
-- travel with probability 0.05.
+- family devices with probability 0.15.
 
-Clones come with 1, 2, 3, 5, 10 or 20 copies. A copy is sold in the
-custodian's region with probability 0.3. The full set of assumptions is
+Clones come with 1, 2, 3, 5, 10 or 20 copies. The full set of assumptions is
 recorded in `scansim_config.json`. The results are means ± standard deviation
 over 10 seeds (`scansim_summary.csv`).
+
+The score uses device and consumption signals only. An earlier version also
+scored the province a buyer could optionally pick in the app. It was removed:
+the input was optional and self-reported, and buyers who travel or order
+from an online pharmacy scan far from the selling pharmacy, so a real buyer
+could get a warning. The scan history is shown to the buyer instead (see
+"Scan history shown to the buyer" below). In the simulation, which assumed
+85% of scans carried an honest province, the province rules had added about
+17 points of recall.
 
 ### Detectors
 
 | Detector | Precision | Recall | F1 | FPR |
 | --- | ---: | ---: | ---: | ---: |
-| **Proposed** (noisy-OR, threshold 0.60) | **0.982 ± 0.002** | **0.822 ± 0.004** | **0.895 ± 0.003** | **0.015 ± 0.001** |
-| Status only (any scan after consumption) | 0.642 ± 0.005 | 0.673 ± 0.006 | 0.657 ± 0.005 | 0.375 ± 0.006 |
-| Scan count > 3 | 0.882 ± 0.004 | 0.871 ± 0.003 | 0.876 ± 0.003 | 0.117 ± 0.004 |
-| Scan count > 5 | 0.988 ± 0.002 | 0.654 ± 0.003 | 0.787 ± 0.003 | 0.008 ± 0.001 |
-| Distinct devices > 3 | 0.963 ± 0.004 | 0.790 ± 0.005 | 0.868 ± 0.004 | 0.030 ± 0.003 |
+| **Proposed** (noisy-OR, threshold 0.60) | **0.986 ± 0.002** | **0.655 ± 0.003** | **0.787 ± 0.002** | **0.010 ± 0.001** |
+| Status only (any scan after consumption) | 0.643 ± 0.006 | 0.672 ± 0.006 | 0.657 ± 0.005 | 0.373 ± 0.009 |
+| Scan count > 3 | 0.882 ± 0.004 | 0.870 ± 0.005 | 0.876 ± 0.004 | 0.117 ± 0.004 |
+| Scan count > 5 | 0.988 ± 0.002 | 0.653 ± 0.003 | 0.786 ± 0.002 | 0.008 ± 0.001 |
+| Distinct devices > 3 | 0.963 ± 0.002 | 0.788 ± 0.003 | 0.867 ± 0.002 | 0.031 ± 0.002 |
 
-The proposed detector has the best F1, and at a false-positive rate 7.6×
-lower than the strongest high-recall baseline (scan count > 3). The naive
-"scanned after it was consumed" rule, which status-only systems use, flags
-37.5% of genuine units, because buyers and their families re-scan.
+The deployed threshold is a low-false-alarm operating point: the proposed
+detector flags 1.0% of genuine units, against 3.1% for "distinct devices > 3"
+and 11.7% for "scan count > 3". Those two baselines reach a higher F1 by
+buying recall with three to twelve times more false `Suspicious` verdicts
+shown to real buyers. At a matched false-positive rate, the proposed
+detector performs like "scan count > 5". Its advantage is that each flag
+carries an explainable reason, and that it tells a buyer re-scanning their
+own consumed box apart from a new device. The naive "scanned after it was
+consumed" rule, which status-only systems use, flags 37.3% of genuine units,
+because buyers and their families re-scan.
 
 ### Ablation (one rule removed)
 
 | Variant | Precision | Recall | F1 | FPR |
 | --- | ---: | ---: | ---: | ---: |
-| Full model | 0.982 | 0.822 | 0.895 | 0.015 |
-| without `many_devices` | 0.980 | 0.747 | 0.848 | 0.015 |
-| without `scanned_after_consumption` | 1.000 | 0.550 | 0.710 | 0.000 |
-| without region rules | 0.986 | 0.654 | 0.786 | 0.010 |
+| Full model | 0.986 | 0.655 | 0.787 | 0.010 |
+| without `many_devices` | 0.982 | 0.514 | 0.675 | 0.009 |
+| without `scanned_after_consumption` | 1.000 | 0.240 | 0.387 | 0.000 |
 
-Every rule contributes. The post-consumption rule carries the most recall.
-The region rules add about 17 points of recall for a 0.6-point rise in FPR.
+Both rules contribute. The post-consumption rule carries most of the recall.
 
 ### Threshold sweep (seed 7, `scansim_thresholds.csv`)
 
 | Threshold | Precision | Recall | F1 | FPR |
 | ---: | ---: | ---: | ---: | ---: |
-| 0.30 (medium) | 0.843 | 0.957 | 0.896 | 0.178 |
-| 0.50 | 0.980 | 0.841 | 0.905 | 0.017 |
-| **0.60 (high, deployed)** | **0.982** | **0.828** | **0.898** | **0.015** |
-| 0.70 | 0.999 | 0.711 | 0.831 | 0.001 |
-| 0.80 | 1.000 | 0.596 | 0.747 | 0.000 |
+| 0.30 (medium) | 0.835 | 0.844 | 0.839 | 0.167 |
+| 0.50 | 0.983 | 0.700 | 0.818 | 0.012 |
+| **0.60 (high, deployed)** | **0.985** | **0.658** | **0.789** | **0.010** |
+| 0.70 | 1.000 | 0.533 | 0.695 | 0.000 |
+| 0.80 | 1.000 | 0.505 | 0.671 | 0.000 |
 
-0.60 was chosen over the slightly higher-F1 0.50 to keep the FPR at about
-1.5%, because a false `Suspicious` verdict is shown to a real buyer. The
-`medium` level (0.30) is only informational.
+0.60 keeps the FPR at about 1%, because a false `Suspicious` verdict is shown
+to a real buyer; 0.50 would add 4 points of recall for 0.2 points of FPR.
+The `medium` level (0.30) is only informational.
 
 ### Detection by number of copies (`scansim_by_clones.csv`)
 
 | Copies | Recall | Median clone scans until flagged |
 | ---: | ---: | ---: |
-| 1 | 0.37 | 1 |
-| 2 | 0.70 | 2 |
-| 3 | 0.90 | 3 |
-| 5 | 0.998 | 3 |
-| 10 | 1.00 | 4 |
-| 20 | 1.00 | 4 |
+| 1 | 0.11 | 1 |
+| 2 | 0.37 | 2 |
+| 3 | 0.58 | 3 |
+| 5 | 0.88 | 4 |
+| 10 | 1.00 | 6 |
+| 20 | 1.00 | 7 |
 
-A single copy is the hard case (threat T1 in
-[`threat-model.md`](threat-model.md)). Once a label is copied three or more
-times, 90% of the cloned units are flagged, typically by the third scan of a
-copy.
+A label copied only a few times is the hard case for the automatic score
+(threat T1 in [`threat-model.md`](threat-model.md)). Once a label is copied
+five or more times, 88% or more of the cloned units are flagged.
+
+### Scan history shown to the buyer
+
+Next to the score, every verification returns the unit's scan history
+relative to the scanning device: how many other devices have scanned the
+label and when it was first scanned. This targets the few-copy case. A buyer
+who just bought a sealed box and sees that other phones scanned its label
+weeks earlier has evidence of a copy, even when the score is still low. This
+relies on the buyer's judgement and is not part of the simulated detector.
 
 ## 4. Functional end-to-end check
 
@@ -211,8 +229,9 @@ Postgres and the real API binary. It drives this sequence over HTTP:
    - with the right key → `Consumed` and the consumer recorded;
    - the same unit again (refill) → 409;
    - a unit still at the distributor → 409.
-6. Scans of the consumed unit from three new devices in other regions →
-   risk `high`, and the unit appears in `/v2/scans/suspicious`.
+6. Scans of the consumed unit from three new devices → risk `high`, a scan
+   history listing three other devices, and the unit appears in
+   `/v2/scans/suspicious`.
 7. Proof, history and label PDF checks. A forged label key is rejected.
 8. Recall: the unit becomes `Recalled`, and consuming after the recall
    returns 409.

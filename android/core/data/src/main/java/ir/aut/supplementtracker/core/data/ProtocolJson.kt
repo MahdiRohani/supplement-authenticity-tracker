@@ -12,6 +12,7 @@ import ir.aut.supplementtracker.core.model.ProtocolInfo
 import ir.aut.supplementtracker.core.model.RegisteredBatch
 import ir.aut.supplementtracker.core.model.RiskAssessment
 import ir.aut.supplementtracker.core.model.RiskReason
+import ir.aut.supplementtracker.core.model.ScanHistory
 import ir.aut.supplementtracker.core.model.Segment
 import ir.aut.supplementtracker.core.model.SegmentTransferResult
 import ir.aut.supplementtracker.core.model.UnitConsumeResult
@@ -154,6 +155,9 @@ internal object ProtocolJson {
                 )
             },
             checkedAt = json.optString("checkedAt"),
+            scanHistory = json.optJSONObject("scanHistory")?.let {
+                ScanHistory(otherDevices = it.optInt("otherDevices"), firstScanAt = it.optString("firstScanAt"))
+            },
         )
     }
 

@@ -4,6 +4,7 @@ import ir.aut.supplementtracker.core.domain.DomainError
 import ir.aut.supplementtracker.core.model.ConsumeAuthorization
 import ir.aut.supplementtracker.core.model.NewBatchRequest
 import ir.aut.supplementtracker.core.model.ScanContext
+import ir.aut.supplementtracker.core.model.ScanHistory
 import ir.aut.supplementtracker.core.model.SegmentTransferRequest
 import ir.aut.supplementtracker.core.model.UnitRef
 import kotlinx.coroutines.runBlocking
@@ -45,12 +46,11 @@ class HttpProtocolRepositoryTest {
     @Test
     fun verifySendsScanContextAndParsesRiskAndEvidence() = runBlocking {
         server.enqueue(json(VERIFY_SUSPICIOUS))
-        val result = repository.verify(UnitRef(31337, "3", 7), ScanContext("device-9", "tehran"))
+        val result = repository.verify(UnitRef(31337, "3", 7), ScanContext("device-9"))
 
         val request = server.takeRequest()
         assertEquals("/v2/verify/31337/3/7", request.path)
         assertEquals("device-9", request.getHeader("X-Device-Id"))
-        assertEquals("tehran", request.getHeader("X-Scan-Region"))
 
         assertEquals("Suspicious", result.authenticity)
         assertEquals("Vitamin D3", result.productName)
@@ -58,17 +58,17 @@ class HttpProtocolRepositoryTest {
         assertEquals("tehran", result.custodian?.region)
         assertNull(result.manufacturer?.displayName)
         assertEquals("high", result.risk.level)
-        assertEquals(listOf("many_devices", "foreign_region"), result.risk.reasons.map { it.code })
+        assertEquals(listOf("many_devices", "scanned_after_consumption"), result.risk.reasons.map { it.code })
+        assertEquals(ScanHistory(otherDevices = 8, firstScanAt = "2026-08-01T09:30:00.000Z"), result.scanHistory)
         assertEquals(2, result.evidence!!.proof.size)
         assertFalse(result.consumed)
         assertNull(result.consumption)
     }
 
     @Test
-    fun verifyOmitsTheRegionHeaderWhenUnknown() = runBlocking {
-        server.enqueue(json(VERIFY_SUSPICIOUS))
-        repository.verify(UnitRef(31337, "3", 7), ScanContext("device-9", null))
-        assertNull(server.takeRequest().getHeader("X-Scan-Region"))
+    fun verifyToleratesAMissingScanHistory() = runBlocking {
+        server.enqueue(json(VERIFY_SUSPICIOUS.replace(Regex(""""scanHistory":\{[^}]*\},"""), "")))
+        assertNull(repository.verify(UnitRef(31337, "3", 7), ScanContext("device-9")).scanHistory)
     }
 
     @Test
@@ -176,8 +176,9 @@ class HttpProtocolRepositoryTest {
              "segmentId":"9","segmentStatus":"AtPointOfSale","consumed":false,"consumption":null,"recalled":false,
              "risk":{"score":0.66,"level":"high","reasons":[
                 {"code":"many_devices","weight":0.437,"message":"Scanned by 5 different devices before being sold (expected at most 3)"},
-                {"code":"foreign_region","weight":0.51,"message":"Scanned in 2 region(s) other than the selling pharmacy's"}]},
+                {"code":"scanned_after_consumption","weight":0.45,"message":"Scanned by 1 new device(s) after this unit was already used"}]},
              "scanCount":9,
+             "scanHistory":{"otherDevices":8,"firstScanAt":"2026-08-01T09:30:00.000Z"},
              "evidence":{"unitKey":"0x61c6208C4132e8E92846744881EdBA4c3C1C9110","merkleRoot":"0xr","leaf":"0xl","proof":["0xa","0xb"],"registerTxHash":"0xt"},
              "checkedAt":"2026-10-01T10:00:00.000Z"}"""
 

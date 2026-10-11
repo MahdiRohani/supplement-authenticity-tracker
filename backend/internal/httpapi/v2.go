@@ -357,10 +357,6 @@ func (s *Server) consumeV2(w http.ResponseWriter, r *request) error {
 }
 
 func (s *Server) verifyV2(w http.ResponseWriter, r *request) error {
-	region := r.Header.Get("X-Scan-Region")
-	if region == "" {
-		region = query(r, "region")
-	}
 	out, err := s.Protocol.Verify(r.Context(), protocol.VerifyInput{
 		ChainID:   r.param("chainId"),
 		BatchID:   r.param("batchId"),
@@ -368,7 +364,6 @@ func (s *Server) verifyV2(w http.ResponseWriter, r *request) error {
 		Device:    r.Header.Get("X-Device-Id"),
 		ClientIP:  clientIP(r.Request),
 		UserAgent: r.UserAgent(),
-		Region:    region,
 		Fresh:     !s.cfg.IsProduction() && strings.Contains(r.Header.Get("Cache-Control"), "no-cache"),
 	})
 	if err != nil {

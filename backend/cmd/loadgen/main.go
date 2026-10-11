@@ -205,7 +205,6 @@ func run(client *http.Client, o options, workers int, d time.Duration) result {
 					log.Fatal(err)
 				}
 				req.Header.Set("X-Device-Id", fmt.Sprintf("loadgen-%d", rng.IntN(max(1, o.devices))))
-				req.Header.Set("X-Scan-Region", fmt.Sprintf("region-%02d", rng.IntN(31)))
 				if o.fresh {
 					req.Header.Set("Cache-Control", "no-cache")
 				}

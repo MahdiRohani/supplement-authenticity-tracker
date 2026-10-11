@@ -221,21 +221,17 @@ func TestV2ScanSignalsMatchRiskFromHistory(t *testing.T) {
 	base := time.Date(2026, 10, 1, 8, 0, 0, 0, time.UTC)
 	consumedAt := base.Add(30 * time.Minute)
 	scans := []risk.Scan{
-		{Device: "pharmacist", Region: "tehran", At: base},
-		{Device: "buyer", Region: "tehran", At: base.Add(10 * time.Minute)},
+		{Device: "pharmacist", At: base},
+		{Device: "buyer", At: base.Add(10 * time.Minute)},
 		{Device: "buyer", At: consumedAt},
-		{Device: "buyer", Region: "tehran", At: base.Add(40 * time.Minute)},
-		{Device: "clone-1", Region: "mashhad", At: base.Add(50 * time.Minute)},
-		{Device: "clone-2", Region: "shiraz", At: base.Add(60 * time.Minute)},
-		{Device: "clone-2", Region: "shiraz", At: base.Add(61 * time.Minute)},
+		{Device: "buyer", At: base.Add(40 * time.Minute)},
+		{Device: "clone-1", At: base.Add(50 * time.Minute)},
+		{Device: "clone-2", At: base.Add(60 * time.Minute)},
+		{Device: "clone-2", At: base.Add(61 * time.Minute)},
 	}
 	for _, s := range scans {
-		var region *string
-		if s.Region != "" {
-			region = new(s.Region)
-		}
 		err := st.InsertScanEvent(ctx, db.InsertScanEventParams{
-			ID: cuid.New(), BatchID: 1, Index: 2, DeviceHash: s.Device, Region: region,
+			ID: cuid.New(), BatchID: 1, Index: 2, DeviceHash: s.Device,
 			StatusAtScan: "Authentic", RiskScore: 0.7, Now: s.At,
 		})
 		if err != nil {
@@ -243,38 +239,33 @@ func TestV2ScanSignalsMatchRiskFromHistory(t *testing.T) {
 		}
 	}
 	// Scans of another unit must not leak into the aggregate.
-	_ = st.InsertScanEvent(ctx, db.InsertScanEventParams{ID: cuid.New(), BatchID: 1, Index: 3, DeviceHash: "x", StatusAtScan: "Authentic", Now: base})
+	_ = st.InsertScanEvent(ctx, db.InsertScanEventParams{ID: cuid.New(), BatchID: 1, Index: 3, DeviceHash: "x", StatusAtScan: "Authentic", Now: base.Add(-time.Hour)})
 
 	for _, tc := range []struct {
 		name     string
 		consumed *time.Time
-		region   string
 	}{
-		{"consumed with owner region", &consumedAt, "tehran"},
-		{"not consumed, no region", nil, ""},
+		{"consumed", &consumedAt},
+		{"not consumed", nil},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			var ownerRegion *string
-			if tc.region != "" {
-				ownerRegion = new(tc.region)
-			}
-			row, err := st.UnitScanSignals(ctx, db.UnitScanSignalsParams{BatchID: 1, Index: 2, ConsumedAt: tc.consumed, OwnerRegion: ownerRegion})
+			row, err := st.UnitScanSignals(ctx, db.UnitScanSignalsParams{BatchID: 1, Index: 2, ConsumedAt: tc.consumed, DeviceHash: "buyer"})
 			if err != nil {
 				t.Fatal(err)
 			}
-			want := risk.FromHistory(scans, tc.consumed, tc.region)
+			want := risk.FromHistory(scans, tc.consumed)
 			got := risk.Signals{
 				TotalScans:             int(row.TotalScans),
 				DevicesBeforeConsume:   int(row.DevicesBeforeConsume),
 				ScansAfterConsume:      int(row.ScansAfterConsume),
 				NewDevicesAfterConsume: int(row.NewDevicesAfterConsume),
-				DistinctRegions:        int(row.DistinctRegions),
-				ForeignRegions:         int(row.ForeignRegions),
-				OwnerRegionKnown:       want.OwnerRegionKnown,
 				Consumed:               want.Consumed,
 			}
 			if got != want {
 				t.Fatalf("sql %+v != memory %+v", got, want)
+			}
+			if row.OtherDevices != 3 || !row.FirstScanAt.Equal(base) {
+				t.Fatalf("history: other devices = %d, first scan = %v", row.OtherDevices, row.FirstScanAt)
 			}
 		})
 	}

@@ -13,6 +13,7 @@ import ir.aut.supplementtracker.core.model.Party
 import ir.aut.supplementtracker.core.model.ProductMetadata
 import ir.aut.supplementtracker.core.model.RiskAssessment
 import ir.aut.supplementtracker.core.model.RiskReason
+import ir.aut.supplementtracker.core.model.ScanHistory
 import ir.aut.supplementtracker.core.model.UnitRef
 import ir.aut.supplementtracker.core.model.UnitVerification
 import ir.aut.supplementtracker.core.model.VerifiedUnit
@@ -80,6 +81,7 @@ class VerifyScreenTest {
         composeRule.onNodeWithTag("verify_status_Authentic").assertIsDisplayed()
         composeRule.onNodeWithText("Vitamin D3").assertIsDisplayed()
         composeRule.onNodeWithTag("verify_risk_medium").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("verify_scan_history").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("verify_consume").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("verify_check_proof_true").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("verify_check_root_true").performScrollTo().assertIsDisplayed()
@@ -131,9 +133,10 @@ class VerifyScreenTest {
                 risk = RiskAssessment(
                     score = 0.42,
                     level = "medium",
-                    reasons = listOf(RiskReason(code = "foreign_region", weight = 0.42, message = "far away")),
+                    reasons = listOf(RiskReason(code = "many_devices", weight = 0.42, message = "many phones")),
                 ),
                 scanCount = 5,
+                scanHistory = ScanHistory(otherDevices = 4, firstScanAt = "2026-09-01T10:00:00.000Z"),
                 evidence = ChainEvidence(
                     unitKey = "0x00000000000000000000000000000000000000cc",
                     merkleRoot = "0x" + "11".repeat(32),
